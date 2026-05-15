@@ -10,17 +10,12 @@ export default function RootPage() {
 
   useEffect(() => {
     if (isLoading) return;
-
-    if (isAuthenticated) {
-      router.replace("/dashboard");
-    } else {
-      router.replace("/login");
-    }
+    router.replace(isAuthenticated ? "/dashboard" : "/login");
   }, [isAuthenticated, isLoading, router]);
 
   return (
-    <div className="flex h-screen items-center justify-center bg-background">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
+    <div className="flex h-screen items-center justify-center bg-taupe-50">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-taupe-200 border-t-foreground" />
     </div>
   );
 }

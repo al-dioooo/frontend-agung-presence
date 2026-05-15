@@ -33,25 +33,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-taupe-50 px-6">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-10 flex flex-col items-center">
-          <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-accent shadow-md">
+          <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-foreground">
             <span className="text-xl font-bold text-white tracking-tight">AP</span>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
             Agung Presence
           </h1>
-          <p className="mt-1.5 text-sm text-muted">Masuk ke akun Anda</p>
+          <p className="mt-1.5 text-sm text-taupe-400">Masuk ke akun Anda</p>
         </div>
 
         {/* Form */}
-        <form id="login-form" onSubmit={handleSubmit} className="space-y-5">
+        <form id="login-form" onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="login-input"
-              className="mb-2 block text-sm font-medium text-foreground"
+              className="mb-1.5 block text-sm font-medium text-foreground"
             >
               Email atau Username
             </label>
@@ -61,16 +61,16 @@ export default function LoginPage() {
               value={loginValue}
               onChange={(e) => setLoginValue(e.target.value)}
               autoComplete="username"
-              placeholder="Masukkan email atau username"
+              placeholder="Email atau username"
               required
-              className="input-elegant"
+              className="h-11 w-full rounded-xl border border-taupe-200 bg-white px-4 text-sm text-foreground placeholder:text-taupe-400 outline-none focus:border-taupe-300"
             />
           </div>
 
           <div>
             <label
               htmlFor="password-input"
-              className="mb-2 block text-sm font-medium text-foreground"
+              className="mb-1.5 block text-sm font-medium text-foreground"
             >
               Password
             </label>
@@ -81,15 +81,15 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                placeholder="Masukkan password"
+                placeholder="Password"
                 required
-                className="input-elegant pr-11"
+                className="h-11 w-full rounded-xl border border-taupe-200 bg-white pl-4 pr-11 text-sm text-foreground placeholder:text-taupe-400 outline-none focus:border-taupe-300"
               />
               <button
                 type="button"
                 id="toggle-password"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-3 flex items-center text-muted transition-colors hover:text-foreground"
+                className="absolute inset-y-0 right-3 flex items-center text-taupe-400"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-5">
                   {showPassword ? (
@@ -118,7 +118,7 @@ export default function LoginPage() {
             id="login-submit"
             type="submit"
             disabled={isSubmitting}
-            className="btn-primary mt-1"
+            className="h-11 w-full rounded-xl bg-foreground text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
           >
             {isSubmitting ? "Memproses..." : "Masuk"}
           </button>

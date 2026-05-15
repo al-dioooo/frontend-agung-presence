@@ -6,28 +6,6 @@ import { getEmployees } from "@/lib/api/client";
 import type { Employee } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-const avatarColors = [
-  "bg-accent",
-  "bg-amber-700",
-  "bg-emerald-700",
-  "bg-rose-700",
-  "bg-indigo-700",
-  "bg-teal-700",
-];
-
-function getAvatarColor(index: number) {
-  return avatarColors[index % avatarColors.length];
-}
-
 export default function EmployeePage() {
   const { token } = useAuth();
   const [search, setSearch] = useState("");
@@ -50,65 +28,52 @@ export default function EmployeePage() {
   );
 
   return (
-    <div className="px-5 pt-7">
-      <h1 className="mb-5 text-xl font-semibold text-foreground tracking-tight">Employee</h1>
+    <div className="px-5 pt-6">
+      <h1 className="mb-5 text-xl font-bold text-foreground">Employee</h1>
 
       <div className="mb-5">
         <SearchBar
           id="employee-search"
           value={search}
           onChange={setSearch}
-          placeholder="Cari karyawan..."
+          placeholder="Search"
         />
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 px-1">
-              <div className="h-11 w-11 animate-pulse rounded-full bg-surface-warm" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-3.5 w-32 animate-pulse rounded bg-surface-warm" />
-                <div className="h-2.5 w-20 animate-pulse rounded bg-surface-warm" />
-              </div>
-            </div>
+            <div key={i} className="h-10 animate-pulse rounded bg-taupe-100" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-muted">
+        <p className="mt-10 text-center text-sm text-taupe-400">
           {search ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
         </p>
       ) : (
-        <div id="employee-list" className="card-soft overflow-hidden">
+        <div id="employee-list">
           {filtered.map((employee, index) => (
             <div
               key={employee.id}
               id={`employee-${employee.id}`}
-              className={`flex items-center justify-between px-4 py-3.5 ${
-                index < filtered.length - 1 ? "border-b border-border" : ""
+              className={`flex items-center justify-between py-3.5 ${
+                index < filtered.length - 1 ? "border-b border-taupe-200/60" : ""
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex size-11 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${getAvatarColor(index)}`}
-                >
-                  {getInitials(employee.name)}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {employee.name}
-                  </p>
-                  <p className="text-xs text-muted capitalize">
-                    {employee.role}
-                  </p>
-                </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {employee.name}
+                </p>
+                <p className="mt-0.5 text-xs text-taupe-400 capitalize">
+                  {employee.role}
+                </p>
               </div>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth={2}
-                className="size-4 shrink-0 text-muted/50"
+                strokeWidth={2.5}
+                className="ml-3 size-4 shrink-0 text-taupe-300"
               >
                 <path
                   strokeLinecap="round"

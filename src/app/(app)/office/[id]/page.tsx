@@ -27,9 +27,9 @@ function haversineDistance(
 
 function formatDistance(meters: number) {
   if (meters < 1000) {
-    return `${Math.round(meters)}m`;
+    return `${Math.round(meters)}m Away`;
   }
-  return `${(meters / 1000).toFixed(1)}km`;
+  return `${(meters / 1000).toFixed(1)}km Away`;
 }
 
 export default function OfficeDetailPage() {
@@ -100,7 +100,7 @@ export default function OfficeDetailPage() {
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-taupe-200 border-t-foreground" />
       </div>
     );
   }
@@ -108,7 +108,7 @@ export default function OfficeDetailPage() {
   if (!office) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center px-5 text-center">
-        <p className="text-sm text-muted">Kantor tidak ditemukan.</p>
+        <p className="text-sm text-taupe-400">Kantor tidak ditemukan.</p>
         <button
           onClick={() => router.back()}
           className="mt-4 text-sm font-medium text-foreground underline"
@@ -119,28 +119,24 @@ export default function OfficeDetailPage() {
     );
   }
 
-  const descText = office.address;
-  const shouldTruncate = descText.length > 120;
-
   return (
-    <div className="flex flex-col">
-      {/* Top bar */}
+    <div className="flex min-h-[calc(100vh-80px)] flex-col">
+      {/* Top bar — back chevron + dots */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <button
           id="back-button"
           onClick={() => router.back()}
-          className="flex size-10 items-center justify-center rounded-full bg-surface text-foreground shadow-sm"
+          className="text-foreground"
         >
-          <ChevronBackIcon className="size-5" />
+          <ChevronBackIcon className="size-6" />
         </button>
-        <h1 className="text-base font-semibold text-foreground">Detail</h1>
-        <button className="flex size-10 items-center justify-center rounded-full bg-surface text-muted shadow-sm">
-          <DotsIcon className="size-5" />
+        <button className="text-foreground">
+          <DotsIcon className="size-6" />
         </button>
       </div>
 
-      {/* Photo */}
-      <div className="relative mx-5 h-52 overflow-hidden rounded-2xl bg-surface-warm">
+      {/* Photo area */}
+      <div className="relative mx-5 h-48 overflow-hidden rounded-2xl bg-taupe-100">
         {office.photo ? (
           <Image
             src={office.photo}
@@ -150,7 +146,7 @@ export default function OfficeDetailPage() {
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <EnterpriseIcon className="size-14 text-muted/30" />
+            <EnterpriseIcon className="size-14 text-taupe-300" />
           </div>
         )}
       </div>
@@ -159,46 +155,41 @@ export default function OfficeDetailPage() {
       <div className="flex-1 px-5 pt-5">
         <h2
           id="office-name"
-          className="text-lg font-semibold text-foreground tracking-tight"
+          className="text-lg font-bold text-foreground"
         >
           {office.name}
         </h2>
 
-        {/* Location */}
-        <div className="mt-3 flex items-start gap-2.5">
-          <MapPinIcon className="mt-0.5 size-[18px] shrink-0 text-muted" />
+        {/* Location row */}
+        <div className="mt-4 flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+            <MapPinIcon className="size-[18px] text-taupe-400" />
+          </div>
           <div>
-            <p className="text-xs font-medium text-muted uppercase tracking-wider">Location</p>
-            <p id="office-address" className="mt-0.5 text-sm text-foreground/80">
+            <p className="text-sm font-medium text-foreground">Location</p>
+            <p id="office-address" className="mt-0.5 text-xs text-taupe-400">
               {office.address}
             </p>
-            {distance !== null && (
-              <p className="mt-0.5 text-xs text-muted">
-                {formatDistance(distance)} dari lokasi Anda
-              </p>
-            )}
           </div>
         </div>
 
         {/* Description */}
         <div className="mt-5">
-          <p className="text-sm font-semibold text-foreground mb-2">Description</p>
           <p
             id="office-description"
-            className={`text-sm leading-relaxed text-foreground/70 ${!isExpanded && shouldTruncate ? "line-clamp-3" : ""}`}
+            className={`text-sm leading-relaxed text-taupe-500 ${!isExpanded ? "line-clamp-3" : ""}`}
           >
             Radius absensi: {office.radius} meter dari titik kantor.
             {office.is_active ? " Kantor aktif." : " Kantor tidak aktif."}
+            {" "}Lokasi kantor berada di {office.address}.
           </p>
-          {shouldTruncate && (
-            <button
-              id="expand-description"
-              onClick={() => setIsExpanded((p) => !p)}
-              className="mt-1 text-xs font-semibold text-foreground underline underline-offset-2"
-            >
-              {isExpanded ? "Lebih sedikit" : "Read More..."}
-            </button>
-          )}
+          <button
+            id="expand-description"
+            onClick={() => setIsExpanded((p) => !p)}
+            className="mt-1 text-sm font-bold text-foreground"
+          >
+            {isExpanded ? "Less" : "More"}
+          </button>
         </div>
 
         {/* Feedback message */}
@@ -207,8 +198,8 @@ export default function OfficeDetailPage() {
             id="presence-message"
             className={`mt-4 rounded-xl px-4 py-3 text-sm ${
               message.includes("berhasil")
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                : "bg-red-50 text-red-600 border border-red-100"
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-red-50 text-red-600"
             }`}
           >
             {message}
@@ -217,11 +208,11 @@ export default function OfficeDetailPage() {
       </div>
 
       {/* Bottom CTA */}
-      <div className="sticky bottom-[72px] px-5 pb-4 pt-4">
-        <div className="flex items-center justify-between rounded-2xl bg-accent px-5 py-3.5">
+      <div className="sticky bottom-[72px] mt-auto px-5 pb-4 pt-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-white/60">Nearby</p>
-            <p className="text-sm font-semibold text-white">
+            <p className="text-sm font-bold text-foreground">Nearby</p>
+            <p className="text-xs text-taupe-400">
               {distance !== null ? formatDistance(distance) : "Memuat..."}
             </p>
           </div>
@@ -229,13 +220,13 @@ export default function OfficeDetailPage() {
             id="presence-button"
             onClick={handlePresence}
             disabled={isChecking || !userLocation}
-            className="rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-accent disabled:opacity-50 transition-opacity"
+            className="rounded-full bg-foreground px-8 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
           >
             {isChecking ? "Memproses..." : "Presence"}
           </button>
         </div>
         {!isWithinRadius && distance !== null && (
-          <p className="mt-2 text-center text-xs text-muted">
+          <p className="mt-2 text-center text-xs text-taupe-400">
             Anda harus berada dalam radius {office?.radius}m untuk absen
           </p>
         )}

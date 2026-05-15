@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#f8f7f4",
+  themeColor: "#faf8f5",
 };
 
 export default function RootLayout({
@@ -37,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${geistSans.variable} h-full`}>
-      <body className="h-full bg-background font-sans antialiased">
+      <body className="h-full bg-taupe-50 font-sans antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
