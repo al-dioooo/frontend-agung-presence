@@ -7,14 +7,6 @@ import type { Attendance, Office } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import Link from "next/link";
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function formatTime(iso: string | null) {
   if (!iso) return "--:--";
   return new Date(iso).toLocaleTimeString("id-ID", {
@@ -39,13 +31,13 @@ function statusLabel(status: string) {
 function statusColor(status: string) {
   switch (status) {
     case "present":
-      return "bg-green-100 text-green-700";
+      return "bg-emerald-50 text-emerald-700 border border-emerald-100";
     case "late":
-      return "bg-yellow-100 text-yellow-700";
+      return "bg-amber-50 text-amber-700 border border-amber-100";
     case "absent":
-      return "bg-red-100 text-red-700";
+      return "bg-red-50 text-red-600 border border-red-100";
     default:
-      return "bg-gray-100 text-gray-700";
+      return "bg-surface-warm text-muted border border-border";
   }
 }
 
@@ -78,17 +70,17 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="px-4 pt-6">
+    <div className="px-5 pt-7">
       {/* Header */}
-      <div className="mb-5">
-        <p className="text-sm text-gray-500">Selamat datang,</p>
-        <h1 className="text-xl font-semibold text-gray-900">
+      <div className="mb-6">
+        <p className="text-sm text-muted">Selamat datang,</p>
+        <h1 className="text-xl font-semibold text-foreground tracking-tight">
           {user?.name ?? "—"}
         </h1>
       </div>
 
       {/* Search */}
-      <div className="mb-6">
+      <div className="mb-7">
         <SearchBar
           id="dashboard-search"
           value={search}
@@ -98,52 +90,46 @@ export default function DashboardPage() {
       </div>
 
       {/* Report Section */}
-      <section className="mb-6" aria-label="Laporan Absensi">
-        <h2 className="mb-3 text-base font-semibold text-gray-900">Report</h2>
-        <div className="grid grid-cols-2 gap-3">
+      <section className="mb-7" aria-label="Laporan Absensi">
+        <h2 className="mb-3.5 text-base font-semibold text-foreground">Report</h2>
+        <div className="grid grid-cols-2 gap-3.5">
           {/* Today */}
-          <div
-            id="report-today"
-            className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
-          >
-            <p className="mb-2 text-xs font-medium text-gray-500">
+          <div id="report-today" className="card-soft p-4">
+            <p className="mb-2.5 text-xs font-medium text-muted uppercase tracking-wider">
               Today&apos;s Presence
             </p>
             {isLoading ? (
-              <div className="h-12 animate-pulse rounded-lg bg-gray-200" />
+              <div className="h-12 animate-pulse rounded-lg bg-surface-warm" />
             ) : today ? (
               <>
-                <p
-                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(today.status)}`}
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusColor(today.status)}`}
                 >
                   {statusLabel(today.status)}
-                </p>
-                <div className="mt-2 space-y-0.5 text-xs text-gray-600">
+                </span>
+                <div className="mt-2.5 space-y-0.5 text-xs text-muted">
                   <p>Masuk: {formatTime(today.in_at)}</p>
                   <p>Keluar: {formatTime(today.out_at)}</p>
                 </div>
               </>
             ) : (
-              <p className="text-sm text-gray-400">Belum ada absensi</p>
+              <p className="text-sm text-muted">Belum ada absensi</p>
             )}
           </div>
 
           {/* Weekly */}
-          <div
-            id="report-weekly"
-            className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
-          >
-            <p className="mb-2 text-xs font-medium text-gray-500">
+          <div id="report-weekly" className="card-soft p-4">
+            <p className="mb-2.5 text-xs font-medium text-muted uppercase tracking-wider">
               Weekly Presence
             </p>
             {isLoading ? (
-              <div className="h-12 animate-pulse rounded-lg bg-gray-200" />
+              <div className="h-12 animate-pulse rounded-lg bg-surface-warm" />
             ) : (
               <>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {thisWeek.filter((a) => a.status === "present" || a.status === "late").length}
                 </p>
-                <p className="text-xs text-gray-500">dari {thisWeek.length} hari</p>
+                <p className="text-xs text-muted">dari {thisWeek.length} hari</p>
               </>
             )}
           </div>
@@ -152,7 +138,7 @@ export default function DashboardPage() {
 
       {/* Nearby Office */}
       <section aria-label="Kantor Terdekat">
-        <h2 className="mb-3 text-base font-semibold text-gray-900">
+        <h2 className="mb-3.5 text-base font-semibold text-foreground">
           Nearby Office
         </h2>
 
@@ -161,31 +147,30 @@ export default function DashboardPage() {
             {[1, 2].map((i) => (
               <div
                 key={i}
-                className="h-20 animate-pulse rounded-2xl bg-gray-100"
+                className="h-20 animate-pulse rounded-2xl bg-surface-warm"
               />
             ))}
           </div>
         ) : filteredOffices.length === 0 ? (
-          <p className="rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-400">
+          <p className="card-soft px-4 py-8 text-center text-sm text-muted">
             Tidak ada kantor ditemukan
           </p>
         ) : (
-          <div
-            id="nearby-office-list"
-            className="overflow-hidden rounded-2xl border border-gray-100"
-          >
-            {filteredOffices.map((office) => (
+          <div id="nearby-office-list" className="card-soft overflow-hidden">
+            {filteredOffices.map((office, index) => (
               <Link
                 key={office.id}
                 href={`/office/${office.id}`}
                 id={`office-${office.id}`}
-                className="flex items-center justify-between border-b border-gray-100 px-4 py-4 last:border-b-0 active:bg-gray-50"
+                className={`flex items-center justify-between px-4 py-4 transition-colors active:bg-surface-warm ${
+                  index < filteredOffices.length - 1 ? "border-b border-border" : ""
+                }`}
               >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
                     {office.name}
                   </p>
-                  <p className="mt-0.5 text-xs text-gray-400">
+                  <p className="mt-0.5 text-xs text-muted truncate">
                     {office.address}
                   </p>
                 </div>
@@ -194,7 +179,7 @@ export default function DashboardPage() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
-                  className="size-4 shrink-0 text-gray-300"
+                  className="size-4 shrink-0 text-muted/50 ml-2"
                 >
                   <path
                     strokeLinecap="round"

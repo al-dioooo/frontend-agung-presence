@@ -17,8 +17,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
       </div>
     );
   }
@@ -28,7 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-md flex-col bg-white">
+    <div className="mx-auto flex h-full max-w-md flex-col bg-background">
       <main className="flex-1 overflow-y-auto page-content">{children}</main>
       <BottomNav />
     </div>

@@ -39,13 +39,13 @@ function statusLabel(status: string) {
 function statusColor(status: string) {
   switch (status) {
     case "present":
-      return "bg-green-100 text-green-700";
+      return "bg-emerald-50 text-emerald-700 border border-emerald-100";
     case "late":
-      return "bg-yellow-100 text-yellow-700";
+      return "bg-amber-50 text-amber-700 border border-amber-100";
     case "absent":
-      return "bg-red-100 text-red-700";
+      return "bg-red-50 text-red-600 border border-red-100";
     default:
-      return "bg-gray-100 text-gray-600";
+      return "bg-surface-warm text-muted border border-border";
   }
 }
 
@@ -71,12 +71,12 @@ export default function PresencePage() {
   );
 
   return (
-    <div className="px-4 pt-6">
-      <h1 className="mb-5 text-xl font-semibold text-gray-900">
+    <div className="px-5 pt-7">
+      <h1 className="mb-5 text-xl font-semibold text-foreground tracking-tight">
         Presence History
       </h1>
 
-      <div className="mb-4">
+      <div className="mb-5">
         <SearchBar
           id="presence-search"
           value={search}
@@ -88,39 +88,36 @@ export default function PresencePage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-gray-100" />
+            <div key={i} className="h-16 animate-pulse rounded-2xl bg-surface-warm" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="mt-8 text-center text-sm text-gray-400">
+        <p className="mt-10 text-center text-sm text-muted">
           {search ? "Tidak ada hasil ditemukan" : "Belum ada riwayat absensi"}
         </p>
       ) : (
-        <div
-          id="presence-list"
-          className="overflow-hidden rounded-2xl border border-gray-100"
-        >
+        <div id="presence-list" className="card-soft overflow-hidden">
           {filtered.map((attendance, index) => (
             <div
               key={attendance.id}
               id={`attendance-${attendance.id}`}
-              className={`px-4 py-4 ${index < filtered.length - 1 ? "border-b border-gray-100" : ""}`}
+              className={`px-4 py-4 ${index < filtered.length - 1 ? "border-b border-border" : ""}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900">
+                  <p className="truncate text-sm font-medium text-foreground">
                     {attendance.office?.name ?? `Office #${attendance.office_id}`}
                   </p>
-                  <p className="mt-0.5 text-xs text-gray-400">
+                  <p className="mt-0.5 text-xs text-muted">
                     {formatDate(attendance.date)}
                   </p>
-                  <div className="mt-1.5 flex gap-3 text-xs text-gray-500">
+                  <div className="mt-1.5 flex gap-3 text-xs text-muted">
                     <span>Masuk: {formatTime(attendance.in_at)}</span>
                     <span>Keluar: {formatTime(attendance.out_at)}</span>
                   </div>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(attendance.status)}`}
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusColor(attendance.status)}`}
                 >
                   {statusLabel(attendance.status)}
                 </span>
