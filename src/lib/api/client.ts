@@ -143,15 +143,64 @@ export async function checkIn(
     office_id: number;
     latitude: number;
     longitude: number;
+    user_id?: number;
+    proof_photo?: string | null;
   },
 ) {
   const response = await apiRequest<ApiEnvelope<Attendance>>("/attendances", {
+    method: "POST",
+    token,
+    body: {
+      office_id: data.office_id,
+      in_latitude: data.latitude,
+      in_longitude: data.longitude,
+      ...(data.user_id !== undefined ? { user_id: data.user_id } : {}),
+      ...(data.proof_photo !== undefined ? { proof_photo: data.proof_photo } : {}),
+    },
+  });
+
+  return response.data;
+}
+
+export type OfficeInput = {
+  name: string;
+  address?: string | null;
+  latitude: number;
+  longitude: number;
+  radius?: number;
+  photo?: string | null;
+  is_active?: boolean;
+};
+
+export async function createOffice(token: string, data: OfficeInput) {
+  const response = await apiRequest<ApiEnvelope<Office>>(`/offices`, {
     method: "POST",
     token,
     body: data,
   });
 
   return response.data;
+}
+
+export async function updateOffice(
+  token: string,
+  id: number,
+  data: Partial<OfficeInput>,
+) {
+  const response = await apiRequest<ApiEnvelope<Office>>(`/offices/${id}`, {
+    method: "PATCH",
+    token,
+    body: data,
+  });
+
+  return response.data;
+}
+
+export async function deleteOffice(token: string, id: number) {
+  return apiRequest<ApiEnvelope<null>>(`/offices/${id}`, {
+    method: "DELETE",
+    token,
+  });
 }
 
 // ─── Employees ───────────────────────────────────────────────────────────────
@@ -164,4 +213,62 @@ export async function getEmployees(token: string, search?: string) {
   );
 
   return response.data;
+}
+
+export async function getEmployee(token: string, id: number) {
+  const response = await apiRequest<ApiEnvelope<Employee>>(`/users/${id}`, {
+    token,
+  });
+
+  return response.data;
+}
+
+export type CreateEmployeeInput = {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  role: "administrator" | "employee";
+};
+
+export async function createEmployee(token: string, data: CreateEmployeeInput) {
+  const response = await apiRequest<ApiEnvelope<{ user: Employee }>>(
+    `/auth/register`,
+    {
+      method: "POST",
+      token,
+      body: data,
+    },
+  );
+
+  return response.data.user;
+}
+
+export type UpdateEmployeeInput = {
+  name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  role?: "administrator" | "employee";
+};
+
+export async function updateEmployee(
+  token: string,
+  id: number,
+  data: UpdateEmployeeInput,
+) {
+  const response = await apiRequest<ApiEnvelope<Employee>>(`/users/${id}`, {
+    method: "PATCH",
+    token,
+    body: data,
+  });
+
+  return response.data;
+}
+
+export async function deleteEmployee(token: string, id: number) {
+  return apiRequest<ApiEnvelope<null>>(`/users/${id}`, {
+    method: "DELETE",
+    token,
+  });
 }

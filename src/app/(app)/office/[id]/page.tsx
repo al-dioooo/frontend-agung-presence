@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError, checkIn, getOffice } from "@/lib/api/client";
+import { ApiError, checkIn, deleteOffice, getOffice } from "@/lib/api/client";
 import type { Office } from "@/lib/api/types";
-import { ChevronBackIcon, MapPinIcon, DotsIcon } from "@/components/icons/outline";
+import { ChevronBackIcon, MapPinIcon, DotsIcon, PencilIcon, TrashIcon } from "@/components/icons/outline";
 import { EnterpriseIcon } from "@/components/icons/outline";
+import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
 
 function haversineDistance(
   lat1: number,
@@ -34,7 +36,7 @@ function formatDistance(meters: number) {
 
 export default function OfficeDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
 
   const [office, setOffice] = useState<Office | null>(null);
@@ -46,6 +48,9 @@ export default function OfficeDetailPage() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -61,6 +66,19 @@ export default function OfficeDetailPage() {
       });
     });
   }, [id, token]);
+
+  async function handleDelete() {
+    if (!token || !office) return;
+    setIsDeleting(true);
+    try {
+      await deleteOffice(token, office.id);
+      router.replace("/office");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Gagal menghapus kantor.");
+      setConfirmDelete(false);
+      setIsDeleting(false);
+    }
+  }
 
   const distance =
     office && userLocation
@@ -86,6 +104,7 @@ export default function OfficeDetailPage() {
         office_id: office.id,
         latitude: userLocation.lat,
         longitude: userLocation.lng,
+        ...(user?.role === "administrator" ? { user_id: user.id } : {}),
       });
       setMessage("Absensi berhasil dicatat!");
     } catch (err) {
@@ -130,10 +149,64 @@ export default function OfficeDetailPage() {
         >
           <ChevronBackIcon className="size-6" />
         </button>
-        <button className="text-foreground">
+        <button
+          onClick={() => setSheetOpen(true)}
+          className="text-foreground"
+          aria-label="Open actions"
+        >
           <DotsIcon className="size-6" />
         </button>
       </div>
+
+      {/* Actions bottom sheet */}
+      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
+        <BottomSheetItem
+          icon={<PencilIcon className="size-5" strokeWidth={2} />}
+          label="Edit"
+          onClick={() => {
+            setSheetOpen(false);
+            router.push(`/office/${id}/edit`);
+          }}
+        />
+        <BottomSheetItem
+          icon={<TrashIcon className="size-5" strokeWidth={2} />}
+          label="Delete"
+          variant="danger"
+          onClick={() => {
+            setSheetOpen(false);
+            setConfirmDelete(true);
+          }}
+        />
+      </BottomSheet>
+
+      {/* Delete confirmation bottom sheet */}
+      <BottomSheet
+        open={confirmDelete}
+        onClose={() => !isDeleting && setConfirmDelete(false)}
+        title="Hapus Kantor?"
+      >
+        <div className="px-4 pt-1">
+          <p className="text-sm text-taupe-400">
+            Tindakan ini tidak dapat dibatalkan. Kantor akan dihapus secara permanen.
+          </p>
+          <div className="mt-5 flex gap-3">
+            <button
+              onClick={() => setConfirmDelete(false)}
+              disabled={isDeleting}
+              className="flex-1 rounded-full border border-taupe-200 py-3 text-sm font-semibold text-foreground transition-opacity disabled:opacity-50 active:opacity-70"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="flex-1 rounded-full bg-red-500 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
+            >
+              {isDeleting ? "Menghapus..." : "Hapus"}
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* Photo area */}
       <div className="relative mx-5 h-48 overflow-hidden rounded-2xl bg-taupe-100">
@@ -193,22 +266,29 @@ export default function OfficeDetailPage() {
         </div>
 
         {/* Feedback message */}
-        {message && (
-          <div
-            id="presence-message"
-            className={`mt-4 rounded-xl px-4 py-3 text-sm ${
-              message.includes("berhasil")
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-red-50 text-red-600"
-            }`}
-          >
-            {message}
-          </div>
-        )}
+        <AnimatePresence>
+          {message && (
+            <motion.div
+              key="presence-message"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2 }}
+              id="presence-message"
+              className={`mt-4 rounded-xl px-4 py-3 text-sm ${
+                message.includes("berhasil")
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-red-50 text-red-600"
+              }`}
+            >
+              {message}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Bottom CTA */}
-      <div className="sticky bottom-[72px] mt-auto px-5 pb-4 pt-4">
+      <div className="sticky bottom-[92px] mt-auto px-5 pb-4 pt-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-foreground">Nearby</p>

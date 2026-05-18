@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/auth-context";
 import { getEmployees } from "@/lib/api/client";
 import type { Employee } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
+import { ChevronRightIcon } from "@/components/icons/outline";
+import Link from "next/link";
 
 export default function EmployeePage() {
   const { token } = useAuth();
@@ -29,7 +31,15 @@ export default function EmployeePage() {
 
   return (
     <div className="px-5 pt-6">
-      <h1 className="mb-5 text-xl font-bold text-foreground">Employee</h1>
+      <div className="mb-5 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground">Employee</h1>
+        <Link
+          href="/employee/create"
+          className="flex items-center gap-1 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-white transition-opacity active:opacity-80"
+        >
+          + Create
+        </Link>
+      </div>
 
       <div className="mb-5">
         <SearchBar
@@ -53,8 +63,9 @@ export default function EmployeePage() {
       ) : (
         <div id="employee-list">
           {filtered.map((employee, index) => (
-            <div
+            <Link
               key={employee.id}
+              href={`/employee/${employee.id}`}
               id={`employee-${employee.id}`}
               className={`flex items-center justify-between py-3.5 ${
                 index < filtered.length - 1 ? "border-b border-taupe-200/60" : ""
@@ -68,20 +79,11 @@ export default function EmployeePage() {
                   {employee.role}
                 </p>
               </div>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
+              <ChevronRightIcon
                 strokeWidth={2.5}
-                className="ml-3 size-4 shrink-0 text-taupe-300"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                />
-              </svg>
-            </div>
+                className="ml-1 size-4 shrink-0 text-taupe-300"
+              />
+            </Link>
           ))}
         </div>
       )}

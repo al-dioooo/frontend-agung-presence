@@ -43,38 +43,108 @@ export const CommunityIcon = ({ className, strokeWidth = 0 }: Props) => {
     )
 }
 
-export const SearchIcon = ({ className, strokeWidth = 0 }: Props) => {
+export const SearchIcon = ({ className, strokeWidth = 2 }: Props) => {
     return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"currentColor"} viewBox={"0 0 24 24"}>
-            <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
-            <path d="M21 21l-6 -6" />
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6 -6" />
         </svg>
     )
 }
 
-export const ChevronBackIcon = ({ className, strokeWidth = 0 }: Props) => {
+export const ChevronBackIcon = ({ className, strokeWidth = 2 }: Props) => {
     return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"currentColor"} viewBox={"0 0 24 24"}>
-            <path d="M15 6l-6 6l6 6" />
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 6l-6 6l6 6" />
         </svg>
     )
 }
 
-export const DotsIcon = ({ className, strokeWidth = 0 }: Props) => {
+export const DotsIcon = ({ className, strokeWidth = 2 }: Props) => {
     return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"currentColor"} viewBox={"0 0 24 24"}>
-            <path d="M4 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
-            <path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
-            <path d="M18 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
         </svg>
     )
 }
 
-export const MapPinIcon = ({ className, strokeWidth = 0 }: Props) => {
+export const MapPinIcon = ({ className, strokeWidth = 2 }: Props) => {
     return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"currentColor"} viewBox={"0 0 24 24"}>
-            <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
-            <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0" />
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0" />
+        </svg>
+    )
+}
+
+export const EyeIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    )
+}
+
+export const EyeSlashIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+        </svg>
+    )
+}
+
+export const ChevronLeftIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    )
+}
+
+export const ChevronRightIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+    )
+}
+
+export const ChevronDownIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+    )
+}
+
+export const UploadIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+        </svg>
+    )
+}
+
+export const PencilIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+            <path d="M13.5 6.5l4 4" />
+        </svg>
+    )
+}
+
+export const TrashIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7l16 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 11l0 6" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 11l0 6" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
         </svg>
     )
 }

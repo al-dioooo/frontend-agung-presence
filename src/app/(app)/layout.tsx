@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mx-auto flex h-full max-w-md flex-col bg-taupe-50">
-      <main className="flex-1 overflow-y-auto page-content">{children}</main>
+      <main className="flex-1 overflow-y-auto page-content pb-28">{children}</main>
       <BottomNav />
     </div>
   );
