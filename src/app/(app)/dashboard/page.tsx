@@ -19,6 +19,8 @@ function statusLabel(status: string) {
   switch (status) {
     case "present":
       return "Hadir";
+    case "on_time":
+      return "Tepat Waktu";
     case "late":
       return "Terlambat";
     case "absent":
@@ -114,7 +116,7 @@ export default function DashboardPage() {
             ) : (
               <>
                 <p className="text-2xl font-bold text-foreground">
-                  {thisWeek.filter((a) => a.status === "present" || a.status === "late").length}
+                  {thisWeek.filter((a) => a.status === "present" || a.status === "on_time" || a.status === "late").length}
                 </p>
                 <p className="text-xs text-taupe-500">dari {thisWeek.length} hari</p>
               </>

@@ -27,6 +27,8 @@ function statusLabel(status: string) {
   switch (status) {
     case "present":
       return "Hadir";
+    case "on_time":
+      return "Tepat Waktu";
     case "late":
       return "Terlambat";
     case "absent":
@@ -39,6 +41,7 @@ function statusLabel(status: string) {
 function statusColor(status: string) {
   switch (status) {
     case "present":
+    case "on_time":
       return "text-emerald-600";
     case "late":
       return "text-amber-600";
