@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { BottomNav } from "@/app/components/bottom-nav";
+import { PermissionGate } from "@/app/components/permission-gate";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -28,9 +29,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-md flex-col bg-taupe-50">
-      <main className="flex-1 overflow-y-auto page-content pb-28">{children}</main>
-      <BottomNav />
-    </div>
+    <PermissionGate>
+      <div className="mx-auto flex h-full max-w-md flex-col bg-taupe-50">
+        <main className="flex-1 overflow-y-auto page-content pb-28">{children}</main>
+        <BottomNav />
+      </div>
+    </PermissionGate>
   );
 }

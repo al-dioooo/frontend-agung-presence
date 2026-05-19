@@ -148,3 +148,78 @@ export const TrashIcon = ({ className, strokeWidth = 0 }: Props) => {
         </svg>
     )
 }
+
+export const ExpandIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V6a2 2 0 0 1 2 -2h2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 0 0 2 2h2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 4h2a2 2 0 0 1 2 2v2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 20h2a2 2 0 0 0 2 -2v-2" />
+        </svg>
+    )
+}
+
+export const CollapseIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 9h4V5" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15h4v4" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9h-4V5" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19v-4h4" />
+        </svg>
+    )
+}
+
+export const MailIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8l-9 6-9-6" />
+        </svg>
+    )
+}
+
+export const ClockDownIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20.984 12.535a9 9 0 1 0 -8.431 8.448" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 3" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 16v6" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M22 19l-3 3l-3 -3" />
+        </svg>
+    )
+}
+
+export const ClockUpIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20.983 12.548a9 9 0 1 0 -8.45 8.436" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 22v-6" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M22 19l-3 -3l-3 3" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l2.5 2.5" />
+        </svg>
+    )
+}
+
+export const CurrentLocationIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l0 2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 20l0 2" />
+            <path d="M20 12l2 0" />
+            <path d="M2 12l2 0" />
+        </svg>
+    )
+}
+
+export const CameraIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+        </svg>
+    )
+}

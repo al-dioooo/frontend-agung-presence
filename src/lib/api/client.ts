@@ -127,10 +127,26 @@ export async function getOffice(token: string, id: number) {
 
 // ─── Attendances ─────────────────────────────────────────────────────────────
 
-export async function getAttendances(token: string, search?: string) {
-  const query = search ? `?search=${encodeURIComponent(search)}` : "";
+export async function getAttendances(
+  token: string,
+  params?: { search?: string; office_id?: number; date?: string },
+) {
+  const q = new URLSearchParams();
+  if (params?.search) q.set("search", params.search);
+  if (params?.office_id) q.set("office_id", String(params.office_id));
+  if (params?.date) q.set("date", params.date);
+  const qs = q.toString();
   const response = await apiRequest<PaginatedEnvelope<Attendance>>(
-    `/attendances${query}`,
+    `/attendances${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+
+  return response.data;
+}
+
+export async function getAttendance(token: string, id: number) {
+  const response = await apiRequest<ApiEnvelope<Attendance>>(
+    `/attendances/${id}`,
     { token },
   );
 
@@ -158,6 +174,15 @@ export async function checkIn(
       ...(data.proof_photo !== undefined ? { proof_photo: data.proof_photo } : {}),
     },
   });
+
+  return response.data;
+}
+
+export async function checkOut(token: string, id: number) {
+  const response = await apiRequest<ApiEnvelope<Attendance>>(
+    `/attendances/${id}/checkout`,
+    { method: "POST", token },
+  );
 
   return response.data;
 }

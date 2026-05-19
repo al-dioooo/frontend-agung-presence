@@ -20,6 +20,7 @@ import {
   TrashIcon,
 } from "@/components/icons/outline";
 import { FormField, FormTextArea } from "@/app/components/form-field";
+import { MapPicker } from "@/app/components/map-picker";
 
 type Mode = { kind: "create" } | { kind: "edit"; office: Office };
 
@@ -30,13 +31,13 @@ export function OfficeForm({ mode }: { mode: Mode }) {
     mode.kind === "edit"
       ? mode.office
       : {
-          name: "",
-          address: "",
-          latitude: "",
-          longitude: "",
-          radius: 50,
-          is_active: true,
-        };
+        name: "",
+        address: "",
+        latitude: "",
+        longitude: "",
+        radius: 50,
+        is_active: true,
+      };
 
   const [name, setName] = useState(String(initial.name ?? ""));
   const [address, setAddress] = useState(String(initial.address ?? ""));
@@ -52,6 +53,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mapFlyToRef = useRef<((lat: number, lng: number) => void) | null>(null);
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -86,8 +88,11 @@ export function OfficeForm({ mode }: { mode: Mode }) {
   function useCurrentLocation() {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition((pos) => {
-      setLatitude(String(pos.coords.latitude));
-      setLongitude(String(pos.coords.longitude));
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      setLatitude(String(lat));
+      setLongitude(String(lng));
+      mapFlyToRef.current?.(lat, lng);
     });
   }
 
@@ -241,6 +246,26 @@ export function OfficeForm({ mode }: { mode: Mode }) {
           error={fieldErrors.address}
         />
 
+        {/* Map picker */}
+        <div>
+          <span className="block text-sm font-medium text-foreground mb-1.5">
+            Lokasi Kantor
+          </span>
+          <MapPicker
+            lat={latitude}
+            lng={longitude}
+            radius={Number(radius) || 50}
+            onChange={(lat, lng) => {
+              setLatitude(lat);
+              setLongitude(lng);
+            }}
+            flyToRef={mapFlyToRef}
+          />
+          <p className="mt-1 text-xs text-taupe-400">
+            Ketuk peta atau seret penanda untuk memilih lokasi.
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <FormField
             label="Latitude"
@@ -307,7 +332,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
         )}
       </form>
 
-      <div className="sticky bottom-[92px] mt-auto px-5 pb-3 pt-3">
+      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3">
         <button
           onClick={handleSubmit}
           disabled={submitting}

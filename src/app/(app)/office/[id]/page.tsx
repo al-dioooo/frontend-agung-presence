@@ -5,11 +5,20 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError, checkIn, deleteOffice, getOffice } from "@/lib/api/client";
-import type { Office } from "@/lib/api/types";
-import { ChevronBackIcon, MapPinIcon, DotsIcon, PencilIcon, TrashIcon } from "@/components/icons/outline";
-import { EnterpriseIcon } from "@/components/icons/outline";
+import { ApiError, checkIn, checkOut, deleteOffice, getAttendances, getOffice } from "@/lib/api/client";
+import type { Attendance, Office } from "@/lib/api/types";
+import {
+  ChevronBackIcon,
+  MapPinIcon,
+  DotsIcon,
+  PencilIcon,
+  TrashIcon,
+  EnterpriseIcon,
+  DatabaseIcon,
+  CurrentLocationIcon,
+} from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
+import { SelfieCapture } from "@/app/components/selfie-capture";
 
 function haversineDistance(
   lat1: number,
@@ -41,7 +50,6 @@ export default function OfficeDetailPage() {
 
   const [office, setOffice] = useState<Office | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [message, setMessage] = useState("");
   const [userLocation, setUserLocation] = useState<{
@@ -51,12 +59,22 @@ export default function OfficeDetailPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [selfieOpen, setSelfieOpen] = useState(false);
+  const [activeCheckIn, setActiveCheckIn] = useState<Attendance | null>(null);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  function loadTodayAttendance(tok: string, officeId: number) {
+    const today = new Date().toISOString().slice(0, 10);
+    getAttendances(tok, { office_id: officeId, date: today }).then((list) => {
+      setActiveCheckIn(list.find((a) => a.in_at && !a.out_at) ?? null);
+    });
+  }
 
   useEffect(() => {
     if (!token) return;
 
     getOffice(token, Number(id))
-      .then(setOffice)
+      .then((office) => { setOffice(office); loadTodayAttendance(token, office.id); })
       .finally(() => setIsLoading(false));
 
     navigator.geolocation?.getCurrentPosition((pos) => {
@@ -83,19 +101,25 @@ export default function OfficeDetailPage() {
   const distance =
     office && userLocation
       ? haversineDistance(
-          userLocation.lat,
-          userLocation.lng,
-          Number(office.latitude),
-          Number(office.longitude),
-        )
+        userLocation.lat,
+        userLocation.lng,
+        Number(office.latitude),
+        Number(office.longitude),
+      )
       : null;
 
   const isWithinRadius =
     office && distance !== null && distance <= office.radius;
 
-  async function handlePresence() {
+  function handlePresence() {
+    if (!token || !office || !userLocation) return;
+    setSelfieOpen(true);
+  }
+
+  async function handleSelfieCapture(base64: string) {
     if (!token || !office || !userLocation) return;
 
+    setSelfieOpen(false);
     setIsChecking(true);
     setMessage("");
 
@@ -104,15 +128,32 @@ export default function OfficeDetailPage() {
         office_id: office.id,
         latitude: userLocation.lat,
         longitude: userLocation.lng,
+        proof_photo: base64,
         ...(user?.role === "administrator" ? { user_id: user.id } : {}),
       });
       setMessage("Absensi berhasil dicatat!");
+      loadTodayAttendance(token, office.id);
     } catch (err) {
       setMessage(
         err instanceof ApiError ? err.message : "Absensi gagal. Coba lagi.",
       );
     } finally {
       setIsChecking(false);
+    }
+  }
+
+  async function handleCheckOut() {
+    if (!token || !office || !activeCheckIn) return;
+    setIsCheckingOut(true);
+    setMessage("");
+    try {
+      await checkOut(token, activeCheckIn.id);
+      setMessage("Absen keluar berhasil dicatat!");
+      setActiveCheckIn(null);
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Absen keluar gagal.");
+    } finally {
+      setIsCheckingOut(false);
     }
   }
 
@@ -225,44 +266,77 @@ export default function OfficeDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-5 pt-5">
-        <h2
-          id="office-name"
-          className="text-lg font-bold text-foreground"
-        >
-          {office.name}
-        </h2>
-
-        {/* Location row */}
-        <div className="mt-4 flex items-start gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
-            <MapPinIcon className="size-[18px] text-taupe-400" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">Location</p>
-            <p id="office-address" className="mt-0.5 text-xs text-taupe-400">
-              {office.address}
-            </p>
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="flex-1 px-5 pt-5 pb-2"
+      >
+        {/* Name + status badge */}
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <h2 id="office-name" className="text-lg font-bold text-foreground">
+            {office.name}
+          </h2>
+          <span
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${office.is_active
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-taupe-100 text-taupe-400"
+              }`}
+          >
+            {office.is_active ? "Aktif" : "Nonaktif"}
+          </span>
         </div>
 
-        {/* Description */}
-        <div className="mt-5">
-          <p
-            id="office-description"
-            className={`text-sm leading-relaxed text-taupe-500 ${!isExpanded ? "line-clamp-3" : ""}`}
-          >
-            Radius absensi: {office.radius} meter dari titik kantor.
-            {office.is_active ? " Kantor aktif." : " Kantor tidak aktif."}
-            {" "}Lokasi kantor berada di {office.address}.
-          </p>
-          <button
-            id="expand-description"
-            onClick={() => setIsExpanded((p) => !p)}
-            className="mt-1 text-sm font-bold text-foreground"
-          >
-            {isExpanded ? "Less" : "More"}
-          </button>
+        {/* Info rows */}
+        <div className="space-y-4">
+          {office.address && (
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                <MapPinIcon className="size-[18px] text-taupe-400" strokeWidth={2} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Alamat</p>
+                <p id="office-address" className="mt-0.5 break-words text-xs text-taupe-400">
+                  {office.address}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+              <CurrentLocationIcon className="size-[18px] text-taupe-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Koordinat</p>
+              <p className="mt-0.5 text-xs text-taupe-400">
+                {Number(office.latitude).toFixed(6)}, {Number(office.longitude).toFixed(6)}
+              </p>
+            </div>
+          </div>
+
+          {/* Radius — color-coded by whether user is within range */}
+          <div className="flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+              <DatabaseIcon className="size-[18px] text-taupe-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">Radius Absensi</p>
+              <div className="mt-0.5 flex items-center gap-2">
+                <p className="text-xs text-taupe-400">{office.radius}m dari titik kantor</p>
+                {distance !== null && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isWithinRadius
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-taupe-100 text-taupe-500"
+                      }`}
+                  >
+                    {formatDistance(distance)} {isWithinRadius ? "• Dalam jangkauan" : "• Di luar jangkauan"}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Feedback message */}
@@ -275,20 +349,29 @@ export default function OfficeDetailPage() {
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2 }}
               id="presence-message"
-              className={`mt-4 rounded-xl px-4 py-3 text-sm ${
-                message.includes("berhasil")
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-red-50 text-red-600"
-              }`}
+              className={`mt-5 rounded-xl px-4 py-3 text-sm ${message.includes("berhasil")
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-red-50 text-red-600"
+                }`}
             >
               {message}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
+
+      {/* Selfie capture overlay */}
+      <SelfieCapture
+        open={selfieOpen}
+        onClose={() => setSelfieOpen(false)}
+        onCapture={handleSelfieCapture}
+        officeName={office.name}
+        latitude={Number(office.latitude)}
+        longitude={Number(office.longitude)}
+      />
 
       {/* Bottom CTA */}
-      <div className="sticky bottom-[92px] mt-auto px-5 pb-4 pt-4">
+      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-4 pt-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-foreground">Nearby</p>
@@ -296,16 +379,27 @@ export default function OfficeDetailPage() {
               {distance !== null ? formatDistance(distance) : "Memuat..."}
             </p>
           </div>
-          <button
-            id="presence-button"
-            onClick={handlePresence}
-            disabled={isChecking || !userLocation}
-            className="rounded-full bg-foreground px-8 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
-          >
-            {isChecking ? "Memproses..." : "Presence"}
-          </button>
+          {activeCheckIn ? (
+            <button
+              id="checkout-button"
+              onClick={handleCheckOut}
+              disabled={isCheckingOut}
+              className="rounded-full bg-emerald-600 px-8 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+            >
+              {isCheckingOut ? "Memproses..." : "Absen Keluar"}
+            </button>
+          ) : (
+            <button
+              id="presence-button"
+              onClick={handlePresence}
+              disabled={isChecking || !userLocation}
+              className="rounded-full bg-foreground px-8 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+            >
+              {isChecking ? "Memproses..." : "Presence"}
+            </button>
+          )}
         </div>
-        {!isWithinRadius && distance !== null && (
+        {!activeCheckIn && !isWithinRadius && distance !== null && (
           <p className="mt-2 text-center text-xs text-taupe-400">
             Anda harus berada dalam radius {office?.radius}m untuk absen
           </p>

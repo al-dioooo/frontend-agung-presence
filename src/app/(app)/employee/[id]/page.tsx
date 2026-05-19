@@ -14,6 +14,7 @@ import {
   UserIcon,
   EnterpriseIcon,
   CommunityIcon,
+  MailIcon,
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
 
@@ -41,7 +42,7 @@ function InfoRow({
 
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
 
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -109,6 +110,10 @@ export default function EmployeeDetailPage() {
     year: "numeric",
   });
 
+  // Protect administrator accounts and the current user's own account from edit/delete
+  const isProtected =
+    employee.role === "administrator" || user?.id === employee.id;
+
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
       {/* Top bar */}
@@ -120,35 +125,39 @@ export default function EmployeeDetailPage() {
         >
           <ChevronBackIcon className="size-6" />
         </button>
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="text-foreground"
-          aria-label="Open actions"
-        >
-          <DotsIcon className="size-6" />
-        </button>
+        {!isProtected && (
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="text-foreground"
+            aria-label="Open actions"
+          >
+            <DotsIcon className="size-6" />
+          </button>
+        )}
       </div>
 
       {/* Actions bottom sheet */}
-      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
-        <BottomSheetItem
-          icon={<PencilIcon className="size-5" strokeWidth={2} />}
-          label="Edit"
-          onClick={() => {
-            setSheetOpen(false);
-            router.push(`/employee/${id}/edit`);
-          }}
-        />
-        <BottomSheetItem
-          icon={<TrashIcon className="size-5" strokeWidth={2} />}
-          label="Delete"
-          variant="danger"
-          onClick={() => {
-            setSheetOpen(false);
-            setConfirmDelete(true);
-          }}
-        />
-      </BottomSheet>
+      {!isProtected && (
+        <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
+          <BottomSheetItem
+            icon={<PencilIcon className="size-5" strokeWidth={2} />}
+            label="Edit"
+            onClick={() => {
+              setSheetOpen(false);
+              router.push(`/employee/${id}/edit`);
+            }}
+          />
+          <BottomSheetItem
+            icon={<TrashIcon className="size-5" strokeWidth={2} />}
+            label="Delete"
+            variant="danger"
+            onClick={() => {
+              setSheetOpen(false);
+              setConfirmDelete(true);
+            }}
+          />
+        </BottomSheet>
+      )}
 
       {/* Delete confirmation bottom sheet */}
       <BottomSheet
@@ -203,7 +212,7 @@ export default function EmployeeDetailPage() {
           value={`@${employee.username}`}
         />
         <InfoRow
-          icon={<CommunityIcon className="size-[18px] text-taupe-400" />}
+          icon={<MailIcon className="size-[18px] text-taupe-400" strokeWidth={2} />}
           label="Email"
           value={employee.email}
         />
@@ -236,15 +245,17 @@ export default function EmployeeDetailPage() {
         )}
       </AnimatePresence>
 
-      {/* Bottom CTA */}
-      <div className="sticky bottom-[92px] mt-auto px-5 pb-4 pt-4">
-        <button
-          onClick={() => router.push(`/employee/${id}/edit`)}
-          className="w-full rounded-full bg-foreground py-3 text-sm font-semibold text-white transition-opacity active:opacity-80"
-        >
-          Edit Karyawan
-        </button>
-      </div>
+      {/* Bottom CTA — hidden for protected accounts */}
+      {!isProtected && (
+        <div className="sticky bottom-4 mt-auto px-5 pb-4 pt-4">
+          <button
+            onClick={() => router.push(`/employee/${id}/edit`)}
+            className="w-full rounded-full bg-foreground py-3 text-sm font-semibold text-white transition-opacity active:opacity-80"
+          >
+            Edit Karyawan
+          </button>
+        </div>
+      )}
     </div>
   );
 }

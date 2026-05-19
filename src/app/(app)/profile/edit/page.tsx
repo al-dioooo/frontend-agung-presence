@@ -4,14 +4,41 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError, updateProfile } from "@/lib/api/client";
-import { ChevronBackIcon, UploadIcon, ChevronDownIcon, EyeIcon, EyeSlashIcon } from "@/components/icons/outline";
+import { ChevronBackIcon, ChevronDownIcon, EyeIcon, EyeSlashIcon } from "@/components/icons/outline";
+import { BottomSheet } from "@/app/components/bottom-sheet";
+
+const COUNTRIES = [
+  { code: "ID", flag: "🇮🇩", name: "Indonesia", dial: "+62" },
+  { code: "MY", flag: "🇲🇾", name: "Malaysia", dial: "+60" },
+  { code: "SG", flag: "🇸🇬", name: "Singapura", dial: "+65" },
+  { code: "PH", flag: "🇵🇭", name: "Filipina", dial: "+63" },
+  { code: "TH", flag: "🇹🇭", name: "Thailand", dial: "+66" },
+  { code: "VN", flag: "🇻🇳", name: "Vietnam", dial: "+84" },
+  { code: "AU", flag: "🇦🇺", name: "Australia", dial: "+61" },
+  { code: "US", flag: "🇺🇸", name: "Amerika Serikat", dial: "+1" },
+  { code: "GB", flag: "🇬🇧", name: "Inggris", dial: "+44" },
+  { code: "JP", flag: "🇯🇵", name: "Jepang", dial: "+81" },
+  { code: "KR", flag: "🇰🇷", name: "Korea Selatan", dial: "+82" },
+  { code: "CN", flag: "🇨🇳", name: "Tiongkok", dial: "+86" },
+  { code: "IN", flag: "🇮🇳", name: "India", dial: "+91" },
+  { code: "SA", flag: "🇸🇦", name: "Arab Saudi", dial: "+966" },
+  { code: "AE", flag: "🇦🇪", name: "UAE", dial: "+971" },
+] as const;
 
 export default function EditProfilePage() {
   const { user, token, refreshUser } = useAuth();
   const router = useRouter();
 
+  const [country, setCountry] = useState(COUNTRIES[0]);
+  const [countrySheetOpen, setCountrySheetOpen] = useState(false);
+
   const [username, setUsername] = useState(user?.username ?? "");
-  const [phone, setPhone] = useState(user?.phone?.replace(/^\+62/, "") ?? "");
+  const [phone, setPhone] = useState(() => {
+    const raw = user?.phone ?? "";
+    const match = COUNTRIES.find((c) => raw.startsWith(c.dial));
+    if (match) return raw.slice(match.dial.length);
+    return raw.replace(/^\+62/, "");
+  });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +60,7 @@ export default function EditProfilePage() {
     }
 
     if (phone) {
-      payload.phone = `+62${phone}`;
+      payload.phone = `${country.dial}${phone}`;
     }
 
     if (password) {
@@ -91,13 +118,16 @@ export default function EditProfilePage() {
 
           {/* Phone */}
           <div className="flex gap-2">
-            <div className="flex h-11 items-center rounded-full border border-taupe-200 bg-white px-3.5 text-sm font-medium text-foreground">
-              +62
-              <ChevronDownIcon
-                strokeWidth={2}
-                className="ml-1.5 size-3 text-taupe-400"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={() => setCountrySheetOpen(true)}
+              className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-taupe-200 bg-white px-3.5 text-sm font-medium text-foreground transition-colors active:bg-taupe-50"
+            >
+              <span className="text-base leading-none">{country.flag}</span>
+              <span>{country.dial}</span>
+              <ChevronDownIcon strokeWidth={2} className="size-3 text-taupe-400" />
+            </button>
+
             <input
               id="phone-input"
               type="tel"
@@ -108,6 +138,33 @@ export default function EditProfilePage() {
               className="h-11 flex-1 rounded-full border border-taupe-200 bg-white px-4 text-sm text-foreground placeholder:text-taupe-400 outline-none focus:border-taupe-300"
             />
           </div>
+
+          {/* Country selector sheet */}
+          <BottomSheet
+            open={countrySheetOpen}
+            onClose={() => setCountrySheetOpen(false)}
+            title="Pilih Kode Negara"
+          >
+            <div className="max-h-[55vh] overflow-y-auto">
+              {COUNTRIES.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => { setCountry(c); setCountrySheetOpen(false); }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                >
+                  <span className="text-xl leading-none">{c.flag}</span>
+                  <span className="flex-1 text-left font-medium text-foreground">{c.name}</span>
+                  <span className="text-xs text-taupe-400">{c.dial}</span>
+                  {c.code === country.code && (
+                    <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-foreground" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </BottomSheet>
 
           {/* Password */}
           <div className="relative">

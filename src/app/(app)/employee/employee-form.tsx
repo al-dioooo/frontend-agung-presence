@@ -10,12 +10,13 @@ import {
   updateEmployee,
 } from "@/lib/api/client";
 import type { Employee } from "@/lib/api/types";
-import { ChevronBackIcon } from "@/components/icons/outline";
-import { FormField, FormSelect } from "@/app/components/form-field";
+import { ChevronBackIcon, ChevronDownIcon } from "@/components/icons/outline";
+import { FormField } from "@/app/components/form-field";
+import { BottomSheet } from "@/app/components/bottom-sheet";
 
 type Mode = { kind: "create" } | { kind: "edit"; employee: Employee };
 
-const roleOptions = [
+const ROLE_OPTIONS: { value: "employee" | "administrator"; label: string }[] = [
   { value: "employee", label: "Karyawan" },
   { value: "administrator", label: "Administrator" },
 ];
@@ -36,6 +37,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
     (initial.role as "administrator" | "employee") ?? "employee",
   );
 
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -149,13 +151,45 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
           error={fieldErrors.password}
         />
 
-        <FormSelect
-          label="Role"
-          value={role}
-          onChange={(e) => setRole(e.target.value as "administrator" | "employee")}
-          options={roleOptions}
-          error={fieldErrors.role}
-        />
+        {/* Role picker */}
+        <div>
+          <span className="block text-sm font-medium text-foreground">Role</span>
+          <button
+            type="button"
+            onClick={() => setRoleSheetOpen(true)}
+            className={`mt-1.5 flex h-11 w-full items-center justify-between rounded-2xl bg-white px-4 text-sm ring-1 transition-shadow ${fieldErrors.role ? "ring-red-300" : "ring-taupe-200"}`}
+          >
+            <span className="text-foreground">
+              {ROLE_OPTIONS.find((o) => o.value === role)?.label}
+            </span>
+            <ChevronDownIcon strokeWidth={2} className="size-4 text-taupe-400" />
+          </button>
+          {fieldErrors.role && (
+            <span className="mt-1 block text-xs text-red-500">{fieldErrors.role}</span>
+          )}
+        </div>
+
+        <BottomSheet
+          open={roleSheetOpen}
+          onClose={() => setRoleSheetOpen(false)}
+          title="Pilih Role"
+        >
+          {ROLE_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => { setRole(o.value); setRoleSheetOpen(false); }}
+              className="flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-medium text-foreground transition-colors active:bg-taupe-50"
+            >
+              <span>{o.label}</span>
+              {o.value === role && (
+                <svg viewBox="0 0 24 24" className="size-4 text-foreground" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+          ))}
+        </BottomSheet>
 
         {errorMessage && (
           <motion.div
@@ -168,7 +202,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
         )}
       </form>
 
-      <div className="sticky bottom-[92px] mt-auto px-5 pb-3 pt-3">
+      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3">
         <button
           onClick={handleSubmit}
           disabled={submitting}
