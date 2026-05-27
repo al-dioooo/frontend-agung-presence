@@ -39,14 +39,16 @@ export type LoginResponse = {
 export type Office = {
   id: number;
   name: string;
-  address: string;
+  address: string | null;
   latitude: string | number;
   longitude: string | number;
   radius: number;
+  work_start_time: string | null;
+  work_end_time: string | null;
   photo: string | null;
   is_active: boolean;
-  created_by: number | null;
-  updated_by: number | null;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -62,8 +64,8 @@ export type Attendance = {
   in_longitude: string | number | null;
   proof_photo: string | null;
   status: string;
-  created_by: number | null;
-  updated_by: number | null;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
   user?: User;

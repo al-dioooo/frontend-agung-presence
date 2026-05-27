@@ -193,6 +193,8 @@ export type OfficeInput = {
   latitude: number;
   longitude: number;
   radius?: number;
+  work_start_time: string;
+  work_end_time: string;
   photo?: string | null;
   is_active?: boolean;
 };

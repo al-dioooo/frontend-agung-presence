@@ -33,20 +33,22 @@ function formatDistance(meters: number) {
 
 function statusLabel(status: string) {
   switch (status) {
-    case "present": return "Hadir";
     case "on_time": return "Tepat Waktu";
     case "late": return "Terlambat";
     case "absent": return "Tidak Hadir";
+    case "sick": return "Sakit";
+    case "leave": return "Cuti";
     default: return status;
   }
 }
 
 function statusColor(status: string) {
   switch (status) {
-    case "present":
     case "on_time": return "text-emerald-600";
     case "late": return "text-amber-500";
     case "absent": return "text-red-500";
+    case "sick": return "text-sky-500";
+    case "leave": return "text-violet-500";
     default: return "text-taupe-400";
   }
 }
@@ -79,9 +81,10 @@ export default function DashboardPage() {
     });
   }, [token]);
 
-  const today = attendances.find(
-    (a) => a.date === new Date().toISOString().slice(0, 10),
-  );
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const today =
+    attendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
+    attendances.find((a) => a.date === todayIso);
 
   // Offices sorted by distance from user, max 5
   const sortedOffices = (() => {
@@ -142,6 +145,8 @@ export default function DashboardPage() {
                 { color: "bg-emerald-500", label: "Hadir" },
                 { color: "bg-amber-400", label: "Terlambat" },
                 { color: "bg-red-400", label: "Tidak Hadir" },
+                { color: "bg-sky-400", label: "Sakit" },
+                { color: "bg-violet-500", label: "Cuti" },
                 { color: "bg-taupe-200", label: "Tidak Ada Data" },
               ].map(({ color, label }) => (
                 <div key={label} className="flex items-center gap-1.5">
@@ -153,17 +158,29 @@ export default function DashboardPage() {
 
             {/* Today stats */}
             {today && (
-              <div className="mt-3 border-t border-taupe-200 pt-3 flex items-center justify-between">
-                <div className="space-y-0.5">
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-taupe-200 pt-3">
+                <div className="min-w-0 space-y-0.5">
                   <p className="text-xs text-taupe-400">Hari ini</p>
-                  <div className="flex gap-3 text-xs text-taupe-500">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {today.office?.name ?? `Office #${today.office_id}`}
+                  </p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-taupe-500">
                     <span>Masuk: {formatTime(today.in_at)}</span>
-                    <span>Keluar: {formatTime(today.out_at)}</span>
+                    <span>
+                      Keluar: {today.out_at ? formatTime(today.out_at) : "Belum absen keluar"}
+                    </span>
                   </div>
                 </div>
-                <span className={`text-xs font-semibold ${statusColor(today.status)}`}>
-                  {statusLabel(today.status)}
-                </span>
+                <div className="shrink-0 text-right">
+                  <span className={`text-xs font-semibold ${statusColor(today.status)}`}>
+                    {statusLabel(today.status)}
+                  </span>
+                  {!today.out_at && (
+                    <p className="mt-1 text-[10px] font-semibold text-emerald-600">
+                      Sedang absen
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>

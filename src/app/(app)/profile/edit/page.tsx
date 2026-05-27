@@ -25,11 +25,13 @@ const COUNTRIES = [
   { code: "AE", flag: "🇦🇪", name: "UAE", dial: "+971" },
 ] as const;
 
+type Country = (typeof COUNTRIES)[number];
+
 export default function EditProfilePage() {
   const { user, token, refreshUser } = useAuth();
   const router = useRouter();
 
-  const [country, setCountry] = useState(COUNTRIES[0]);
+  const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [countrySheetOpen, setCountrySheetOpen] = useState(false);
 
   const [username, setUsername] = useState(user?.username ?? "");

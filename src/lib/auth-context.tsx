@@ -35,19 +35,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({ status: "loading" });
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(TOKEN_KEY);
+    let cancelled = false;
 
-    if (!stored) {
-      setAuthState({ status: "unauthenticated" });
-      return;
+    async function restoreSession() {
+      const stored = window.localStorage.getItem(TOKEN_KEY);
+
+      if (!stored) {
+        if (!cancelled) {
+          setAuthState({ status: "unauthenticated" });
+        }
+        return;
+      }
+
+      try {
+        const user = await getProfile(stored);
+        if (!cancelled) {
+          setAuthState({ status: "authenticated", user, token: stored });
+        }
+      } catch {
+        window.localStorage.removeItem(TOKEN_KEY);
+        if (!cancelled) {
+          setAuthState({ status: "unauthenticated" });
+        }
+      }
     }
 
-    getProfile(stored)
-      .then((user) => setAuthState({ status: "authenticated", user, token: stored }))
-      .catch(() => {
-        window.localStorage.removeItem(TOKEN_KEY);
-        setAuthState({ status: "unauthenticated" });
-      });
+    void restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const signIn = useCallback((token: string, user: User) => {

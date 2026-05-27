@@ -8,11 +8,37 @@ import type { Office } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import { ChevronRightIcon } from "@/components/icons/outline";
 
+function haversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371000;
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(deltaPhi / 2) ** 2 +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(meters: number) {
+  if (meters < 1000) return `${Math.round(meters)}m`;
+  return `${(meters / 1000).toFixed(1)}km`;
+}
+
 export default function OfficePage() {
   const { token } = useAuth();
   const [search, setSearch] = useState("");
   const [offices, setOffices] = useState<Office[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -20,13 +46,37 @@ export default function OfficePage() {
     getOffices(token)
       .then(setOffices)
       .finally(() => setIsLoading(false));
+
+    navigator.geolocation?.getCurrentPosition((pos) => {
+      setUserLocation({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+    });
   }, [token]);
 
-  const filtered = offices.filter(
-    (o) =>
-      o.name.toLowerCase().includes(search.toLowerCase()) ||
-      o.address.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = (() => {
+    const searchTerm = search.toLowerCase();
+    const list = offices.filter(
+      (o) =>
+        o.name.toLowerCase().includes(searchTerm) ||
+        (o.address ?? "").toLowerCase().includes(searchTerm),
+    );
+
+    if (!userLocation) return list;
+
+    return list
+      .map((office) => ({
+        ...office,
+        _distance: haversineDistance(
+          userLocation.lat,
+          userLocation.lng,
+          Number(office.latitude),
+          Number(office.longitude),
+        ),
+      }))
+      .sort((a, b) => a._distance - b._distance);
+  })() as (Office & { _distance?: number })[];
 
   return (
     <div className="px-5 pt-6">
@@ -74,14 +124,29 @@ export default function OfficePage() {
                 <p className="text-sm font-medium text-foreground">
                   {office.name}
                 </p>
-                <p className="mt-0.5 text-xs text-taupe-400">
-                  {office.address}
-                </p>
+                {office.address && (
+                  <p className="mt-0.5 truncate text-xs text-taupe-400">
+                    {office.address}
+                  </p>
+                )}
               </div>
-              <ChevronRightIcon
-                strokeWidth={2.5}
-                className="ml-1 size-4 shrink-0 text-taupe-300"
-              />
+              <div className="ml-3 flex shrink-0 items-center gap-2">
+                {office._distance !== undefined && (
+                  <span
+                    className={`text-xs font-semibold ${
+                      office._distance <= office.radius
+                        ? "text-emerald-600"
+                        : "text-taupe-400"
+                    }`}
+                  >
+                    {formatDistance(office._distance)}
+                  </span>
+                )}
+                <ChevronRightIcon
+                  strokeWidth={2.5}
+                  className="size-4 shrink-0 text-taupe-300"
+                />
+              </div>
             </Link>
           ))}
         </div>

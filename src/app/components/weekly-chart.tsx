@@ -9,16 +9,18 @@ interface Props {
 
 const STATUS_COLOR: Record<string, string> = {
   on_time: "#10b981",
-  present: "#10b981",
   late: "#f59e0b",
   absent: "#ef4444",
+  sick: "#38bdf8",
+  leave: "#8b5cf6",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   on_time: "Tepat Waktu",
-  present: "Hadir",
   late: "Terlambat",
   absent: "Tidak Hadir",
+  sick: "Sakit",
+  leave: "Cuti",
 };
 
 const DAY_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];

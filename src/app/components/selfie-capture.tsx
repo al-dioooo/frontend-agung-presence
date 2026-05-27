@@ -28,12 +28,20 @@ export function SelfieCapture({
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!open) {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
-      setReady(false);
-      setError("");
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setReady(false);
+          setError("");
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
     (async () => {
@@ -50,16 +58,21 @@ export function SelfieCapture({
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
-          setReady(true);
+          if (!cancelled) {
+            setReady(true);
+          }
         }
       } catch {
-        setError(
-          "Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.",
-        );
+        if (!cancelled) {
+          setError(
+            "Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.",
+          );
+        }
       }
     })();
 
     return () => {
+      cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
@@ -142,7 +155,6 @@ export function SelfieCapture({
           className="fixed inset-0 z-[100] bg-black"
         >
           {/* Video fills the entire screen */}
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             ref={videoRef}
             playsInline

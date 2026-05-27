@@ -18,6 +18,8 @@ import {
   UploadIcon,
   EnterpriseIcon,
   TrashIcon,
+  ClockDownIcon,
+  ClockUpIcon,
 } from "@/components/icons/outline";
 import { FormField, FormTextArea } from "@/app/components/form-field";
 import { MapPicker } from "@/app/components/map-picker";
@@ -36,6 +38,8 @@ export function OfficeForm({ mode }: { mode: Mode }) {
         latitude: "",
         longitude: "",
         radius: 50,
+        work_start_time: "08:00",
+        work_end_time: "17:00",
         is_active: true,
       };
 
@@ -44,6 +48,12 @@ export function OfficeForm({ mode }: { mode: Mode }) {
   const [latitude, setLatitude] = useState(String(initial.latitude ?? ""));
   const [longitude, setLongitude] = useState(String(initial.longitude ?? ""));
   const [radius, setRadius] = useState(String(initial.radius ?? 50));
+  const [workStartTime, setWorkStartTime] = useState(
+    String(initial.work_start_time ?? "08:00"),
+  );
+  const [workEndTime, setWorkEndTime] = useState(
+    String(initial.work_end_time ?? "17:00"),
+  );
   const [isActive, setIsActive] = useState<boolean>(initial.is_active ?? true);
   const [photo, setPhoto] = useState<string | null>(
     mode.kind === "edit" ? mode.office.photo ?? null : null,
@@ -110,6 +120,8 @@ export function OfficeForm({ mode }: { mode: Mode }) {
       latitude: Number(latitude),
       longitude: Number(longitude),
       radius: Number(radius) || 50,
+      work_start_time: workStartTime,
+      work_end_time: workEndTime,
       is_active: isActive,
       photo: photo,
     };
@@ -305,6 +317,47 @@ export function OfficeForm({ mode }: { mode: Mode }) {
           hint="Jarak maksimum dari titik kantor untuk dianggap hadir."
           error={fieldErrors.radius}
         />
+
+        <section className="space-y-3" aria-label="Jam kerja kantor">
+          <div>
+            <p className="text-sm font-medium text-foreground">Jam Kerja Kantor</p>
+            <p className="mt-0.5 text-xs text-taupe-400">
+              Waktu masuk dipakai untuk menentukan status tepat waktu atau terlambat.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <div className="mt-7 flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                <ClockDownIcon className="size-[18px] text-taupe-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <FormField
+                  label="Masuk"
+                  type="time"
+                  value={workStartTime}
+                  onChange={(e) => setWorkStartTime(e.target.value)}
+                  required
+                  error={fieldErrors.work_start_time}
+                />
+              </div>
+            </div>
+            <div className="flex min-w-0 items-start gap-2">
+              <div className="mt-7 flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                <ClockUpIcon className="size-[18px] text-taupe-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <FormField
+                  label="Keluar"
+                  type="time"
+                  value={workEndTime}
+                  onChange={(e) => setWorkEndTime(e.target.value)}
+                  required
+                  error={fieldErrors.work_end_time}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
 
         <label className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-taupe-200">
           <div>

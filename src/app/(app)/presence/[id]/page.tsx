@@ -10,10 +10,12 @@ import type { Attendance } from "@/lib/api/types";
 import {
   ChevronBackIcon,
   EnterpriseIcon,
-  MapPinIcon,
+  DatabaseIcon,
   ClockDownIcon,
   ClockUpIcon,
   CurrentLocationIcon,
+  UserIcon,
+  MailIcon,
 } from "@/components/icons/outline";
 
 function InfoRow({
@@ -40,20 +42,22 @@ function InfoRow({
 
 function statusLabel(status: string) {
   switch (status) {
-    case "present": return "Hadir";
     case "on_time": return "Tepat Waktu";
     case "late": return "Terlambat";
     case "absent": return "Tidak Hadir";
+    case "sick": return "Sakit";
+    case "leave": return "Cuti";
     default: return status;
   }
 }
 
 function statusColor(status: string) {
   switch (status) {
-    case "present":
     case "on_time": return "bg-emerald-50 text-emerald-700";
     case "late": return "bg-amber-50 text-amber-600";
     case "absent": return "bg-red-50 text-red-600";
+    case "sick": return "bg-sky-50 text-sky-600";
+    case "leave": return "bg-violet-50 text-violet-600";
     default: return "bg-taupe-100 text-taupe-500";
   }
 }
@@ -81,7 +85,7 @@ function formatDate(iso: string) {
 
 export default function PresenceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
 
   const [attendance, setAttendance] = useState<Attendance | null>(null);
@@ -123,6 +127,7 @@ export default function PresenceDetailPage() {
 
   const hasCoords =
     attendance.in_latitude !== null && attendance.in_longitude !== null;
+  const isAdministrator = user?.role === "administrator";
 
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
@@ -221,6 +226,27 @@ export default function PresenceDetailPage() {
 
         {/* Info rows */}
         <div className="space-y-4">
+          {isAdministrator && attendance.user && (
+            <section className="space-y-4" aria-label="Informasi karyawan">
+              <h2 className="text-sm font-bold text-foreground">Informasi Karyawan</h2>
+              <InfoRow
+                icon={<UserIcon className="size-[18px] text-taupe-400" />}
+                label="Nama"
+                value={attendance.user.name}
+              />
+              <InfoRow
+                icon={<UserIcon className="size-[18px] text-taupe-400" />}
+                label="Username"
+                value={`@${attendance.user.username}`}
+              />
+              <InfoRow
+                icon={<MailIcon className="size-[18px] text-taupe-400" />}
+                label="Email"
+                value={attendance.user.email}
+              />
+            </section>
+          )}
+
           <InfoRow
             icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
             label="Kantor"

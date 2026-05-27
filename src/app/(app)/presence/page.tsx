@@ -6,7 +6,8 @@ import { ApiError, checkOut, getAttendances } from "@/lib/api/client";
 import type { Attendance } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import Link from "next/link";
-import { ChevronRightIcon } from "@/components/icons/outline";
+import { BottomSheet } from "@/app/components/bottom-sheet";
+import { ChevronRightIcon, UserIcon } from "@/components/icons/outline";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", {
@@ -27,14 +28,16 @@ function formatTime(iso: string | null) {
 
 function statusLabel(status: string) {
   switch (status) {
-    case "present":
-      return "Hadir";
     case "on_time":
       return "Tepat Waktu";
     case "late":
       return "Terlambat";
     case "absent":
       return "Tidak Hadir";
+    case "sick":
+      return "Sakit";
+    case "leave":
+      return "Cuti";
     default:
       return status;
   }
@@ -42,25 +45,31 @@ function statusLabel(status: string) {
 
 function statusColor(status: string) {
   switch (status) {
-    case "present":
     case "on_time":
       return "text-emerald-600";
     case "late":
       return "text-amber-600";
     case "absent":
       return "text-red-500";
+    case "sick":
+      return "text-sky-500";
+    case "leave":
+      return "text-violet-500";
     default:
       return "text-taupe-400";
   }
 }
 
 export default function PresencePage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [search, setSearch] = useState("");
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkOutError, setCheckOutError] = useState("");
+  const [userFilterOpen, setUserFilterOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const isAdministrator = user?.role === "administrator";
 
   function loadAttendances() {
     if (!token) return;
@@ -76,8 +85,19 @@ export default function PresencePage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const activeCheckIn = attendances.find(
-    (a) => a.date === today && a.in_at && !a.out_at,
+    (a) => !isAdministrator && a.date === today && a.in_at && !a.out_at,
   ) ?? null;
+
+  const userOptions = Array.from(
+    attendances.reduce((map, attendance) => {
+      if (attendance.user) {
+        map.set(attendance.user.id, attendance.user);
+      }
+      return map;
+    }, new Map<number, NonNullable<Attendance["user"]>>()).values(),
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  const selectedUser = userOptions.find((option) => option.id === selectedUserId);
 
   async function handleCheckOut() {
     if (!token || !activeCheckIn) return;
@@ -94,12 +114,21 @@ export default function PresencePage() {
     }
   }
 
-  const filtered = attendances.filter(
-    (a) =>
-      a.date.includes(search) ||
-      a.office?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      statusLabel(a.status).toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = attendances.filter((a) => {
+    if (isAdministrator && selectedUserId !== null && a.user_id !== selectedUserId) {
+      return false;
+    }
+
+    const searchTerm = search.toLowerCase();
+    return (
+      a.date.includes(searchTerm) ||
+      a.office?.name?.toLowerCase().includes(searchTerm) ||
+      a.user?.name.toLowerCase().includes(searchTerm) ||
+      a.user?.username.toLowerCase().includes(searchTerm) ||
+      a.user?.email.toLowerCase().includes(searchTerm) ||
+      statusLabel(a.status).toLowerCase().includes(searchTerm)
+    );
+  });
 
   return (
     <div className="px-5 pt-6">
@@ -138,14 +167,102 @@ export default function PresencePage() {
         </div>
       )}
 
-      <div className="mb-5">
-        <SearchBar
-          id="presence-search"
-          value={search}
-          onChange={setSearch}
-          placeholder="Search"
-        />
+      <div className="mb-5 flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <SearchBar
+            id="presence-search"
+            value={search}
+            onChange={setSearch}
+            placeholder="Search"
+          />
+        </div>
+        {isAdministrator && (
+          <button
+            type="button"
+            onClick={() => setUserFilterOpen(true)}
+            className={`flex size-11 shrink-0 items-center justify-center rounded-full ring-1 transition-colors active:opacity-70 ${
+              selectedUserId
+                ? "bg-foreground text-white ring-foreground"
+                : "bg-white text-foreground ring-taupe-200"
+            }`}
+            aria-label="Filter karyawan"
+          >
+            <UserIcon className="size-5" />
+          </button>
+        )}
       </div>
+
+      {isAdministrator && selectedUser && (
+        <div className="mb-4 flex items-center justify-between rounded-2xl bg-taupe-100 px-4 py-2.5">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-foreground">
+              {selectedUser.name}
+            </p>
+            <p className="truncate text-[10px] text-taupe-400">
+              @{selectedUser.username}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedUserId(null)}
+            className="ml-3 text-xs font-semibold text-taupe-500 active:opacity-70"
+          >
+            Reset
+          </button>
+        </div>
+      )}
+
+      <BottomSheet
+        open={userFilterOpen}
+        onClose={() => setUserFilterOpen(false)}
+        title="Filter Karyawan"
+      >
+        <div className="max-h-[55vh] overflow-y-auto px-2 pb-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedUserId(null);
+              setUserFilterOpen(false);
+            }}
+            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+              <UserIcon className="size-4 text-taupe-400" />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="font-medium text-foreground">Semua karyawan</p>
+              <p className="text-xs text-taupe-400">Tampilkan semua riwayat</p>
+            </div>
+            {selectedUserId === null && (
+              <span className="size-2 rounded-full bg-foreground" />
+            )}
+          </button>
+          {userOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => {
+                setSelectedUserId(option.id);
+                setUserFilterOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+            >
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                <UserIcon className="size-4 text-taupe-400" />
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="truncate font-medium text-foreground">{option.name}</p>
+                <p className="truncate text-xs text-taupe-400">
+                  @{option.username} · {option.email}
+                </p>
+              </div>
+              {selectedUserId === option.id && (
+                <span className="size-2 rounded-full bg-foreground" />
+              )}
+            </button>
+          ))}
+        </div>
+      </BottomSheet>
 
       {isLoading ? (
         <div className="space-y-4">
@@ -169,6 +286,11 @@ export default function PresencePage() {
               }`}
             >
               <div className="min-w-0 flex-1">
+                {isAdministrator && attendance.user && (
+                  <p className="mb-0.5 truncate text-xs font-semibold text-foreground">
+                    {attendance.user.name}
+                  </p>
+                )}
                 <p className="text-sm font-medium text-foreground">
                   {attendance.office?.name ?? `Office #${attendance.office_id}`}
                 </p>

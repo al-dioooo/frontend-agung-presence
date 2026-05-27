@@ -16,6 +16,8 @@ import {
   EnterpriseIcon,
   DatabaseIcon,
   CurrentLocationIcon,
+  ClockDownIcon,
+  ClockUpIcon,
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
 import { SelfieCapture } from "@/app/components/selfie-capture";
@@ -41,6 +43,11 @@ function formatDistance(meters: number) {
     return `${Math.round(meters)}m Away`;
   }
   return `${(meters / 1000).toFixed(1)}km Away`;
+}
+
+function formatOfficeTime(time: string | null) {
+  if (!time) return "--:--";
+  return time.slice(0, 5);
 }
 
 export default function OfficeDetailPage() {
@@ -338,6 +345,34 @@ export default function OfficeDetailPage() {
             </div>
           </div>
         </div>
+
+        <section className="mt-6 space-y-4" aria-label="Jam kerja kantor">
+          <h3 className="text-sm font-bold text-foreground">Jam Kerja Kantor</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                <ClockDownIcon className="size-[18px] text-taupe-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Masuk</p>
+                <p className="mt-0.5 text-xs text-taupe-400">
+                  {formatOfficeTime(office.work_start_time)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                <ClockUpIcon className="size-[18px] text-taupe-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Keluar</p>
+                <p className="mt-0.5 text-xs text-taupe-400">
+                  {formatOfficeTime(office.work_end_time)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Feedback message */}
         <AnimatePresence>
