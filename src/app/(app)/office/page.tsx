@@ -31,7 +31,7 @@ function formatDistance(meters: number) {
 }
 
 export default function OfficePage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [search, setSearch] = useState("");
   const [offices, setOffices] = useState<Office[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +39,7 @@ export default function OfficePage() {
     lat: number;
     lng: number;
   } | null>(null);
+  const isAdministrator = user?.role === "administrator";
 
   useEffect(() => {
     if (!token) return;
@@ -82,12 +83,14 @@ export default function OfficePage() {
     <div className="px-5 pt-6">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Office</h1>
-        <Link
-          href="/office/create"
-          className="flex items-center gap-1 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-white transition-opacity active:opacity-80"
-        >
-          + Create
-        </Link>
+        {isAdministrator && (
+          <Link
+            href="/office/create"
+            className="flex items-center gap-1 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-white transition-opacity active:opacity-80"
+          >
+            + Create
+          </Link>
+        )}
       </div>
 
       <div className="mb-5">

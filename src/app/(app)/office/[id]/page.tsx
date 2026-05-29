@@ -54,6 +54,7 @@ export default function OfficeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, user } = useAuth();
   const router = useRouter();
+  const isAdministrator = user?.role === "administrator";
 
   const [office, setOffice] = useState<Office | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,35 +198,39 @@ export default function OfficeDetailPage() {
         >
           <ChevronBackIcon className="size-6" />
         </button>
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="text-foreground"
-          aria-label="Open actions"
-        >
-          <DotsIcon className="size-6" />
-        </button>
+        {isAdministrator && (
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="text-foreground"
+            aria-label="Open actions"
+          >
+            <DotsIcon className="size-6" />
+          </button>
+        )}
       </div>
 
       {/* Actions bottom sheet */}
-      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
-        <BottomSheetItem
-          icon={<PencilIcon className="size-5" strokeWidth={2} />}
-          label="Edit"
-          onClick={() => {
-            setSheetOpen(false);
-            router.push(`/office/${id}/edit`);
-          }}
-        />
-        <BottomSheetItem
-          icon={<TrashIcon className="size-5" strokeWidth={2} />}
-          label="Delete"
-          variant="danger"
-          onClick={() => {
-            setSheetOpen(false);
-            setConfirmDelete(true);
-          }}
-        />
-      </BottomSheet>
+      {isAdministrator && (
+        <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
+          <BottomSheetItem
+            icon={<PencilIcon className="size-5" strokeWidth={2} />}
+            label="Edit"
+            onClick={() => {
+              setSheetOpen(false);
+              router.push(`/office/${id}/edit`);
+            }}
+          />
+          <BottomSheetItem
+            icon={<TrashIcon className="size-5" strokeWidth={2} />}
+            label="Delete"
+            variant="danger"
+            onClick={() => {
+              setSheetOpen(false);
+              setConfirmDelete(true);
+            }}
+          />
+        </BottomSheet>
+      )}
 
       {/* Delete confirmation bottom sheet */}
       <BottomSheet

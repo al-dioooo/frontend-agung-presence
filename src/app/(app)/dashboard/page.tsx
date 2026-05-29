@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getAttendances, getOffices } from "@/lib/api/client";
 import type { Attendance, Office } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import { DashboardMap } from "@/app/components/dashboard-map";
-import { WeeklyChart } from "@/app/components/weekly-chart";
+import {
+  STATUS_KEYS,
+  STATUS_META,
+  WeeklyChart,
+  type AttendanceStatusKey,
+  type ReportStatusFilter,
+} from "@/app/components/weekly-chart";
+import { BottomSheet } from "@/app/components/bottom-sheet";
+import { FilterIcon } from "@/components/icons/outline";
 import Link from "next/link";
 
 function haversineDistance(
@@ -58,6 +66,15 @@ function formatTime(iso: string | null) {
   return new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
 
+const REPORT_FILTERS: { value: ReportStatusFilter; label: string; description: string }[] = [
+  { value: "all", label: "Semua Status", description: "Tampilkan semua kategori" },
+  ...STATUS_KEYS.map((status) => ({
+    value: status,
+    label: STATUS_META[status].label,
+    description: "Tampilkan kategori ini saja",
+  })),
+];
+
 export default function DashboardPage() {
   const { token, user } = useAuth();
   const [search, setSearch] = useState("");
@@ -65,6 +82,8 @@ export default function DashboardPage() {
   const [offices, setOffices] = useState<Office[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [reportFilterOpen, setReportFilterOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<ReportStatusFilter>("all");
 
   useEffect(() => {
     if (!token) return;
@@ -85,6 +104,27 @@ export default function DashboardPage() {
   const today =
     attendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
     attendances.find((a) => a.date === todayIso);
+
+  const reportCounts = useMemo(() => {
+    const counts: Record<AttendanceStatusKey, number> = {
+      on_time: 0,
+      late: 0,
+      absent: 0,
+      sick: 0,
+      leave: 0,
+    };
+
+    attendances.forEach((attendance) => {
+      if ((STATUS_KEYS as readonly string[]).includes(attendance.status)) {
+        counts[attendance.status as AttendanceStatusKey] += 1;
+      }
+    });
+
+    return counts;
+  }, [attendances]);
+
+  const selectedStatusLabel =
+    selectedStatus === "all" ? "Semua Status" : STATUS_META[selectedStatus].label;
 
   // Offices sorted by distance from user, max 5
   const sortedOffices = (() => {
@@ -127,34 +167,112 @@ export default function DashboardPage() {
 
       {/* Report */}
       <section className="mb-6" aria-label="Laporan Absensi">
-        <h2 className="mb-3 text-base font-bold text-foreground">Report</h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-foreground">Report</h2>
+          <button
+            id="dashboard-report-filter"
+            type="button"
+            onClick={() => setReportFilterOpen(true)}
+            className={`flex size-10 shrink-0 items-center justify-center rounded-full ring-1 transition-colors active:opacity-70 ${
+              selectedStatus === "all"
+                ? "bg-white text-foreground ring-taupe-200"
+                : "bg-foreground text-white ring-foreground"
+            }`}
+            aria-label="Filter laporan"
+          >
+            <FilterIcon className="size-5" strokeWidth={2} />
+          </button>
+        </div>
 
         {isLoading ? (
           <div className="h-[220px] animate-pulse rounded-2xl bg-taupe-100" />
         ) : (
           <div className="rounded-2xl bg-taupe-100 p-4">
-            {/* Weekly bar chart */}
-            <p className="mb-2 text-xs font-medium text-taupe-400">7 Hari Terakhir</p>
-            <div className="h-[120px]">
-              <WeeklyChart attendances={attendances} />
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium text-taupe-400">7 Hari Terakhir</p>
+                <p className="mt-0.5 text-sm font-semibold text-foreground">
+                  {selectedStatusLabel}
+                </p>
+              </div>
+              <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold text-taupe-500 ring-1 ring-taupe-200">
+                {attendances.length} data
+              </span>
             </div>
 
-            {/* Legend */}
-            <div className="mt-2 flex flex-wrap gap-3">
-              {[
-                { color: "bg-emerald-500", label: "Hadir" },
-                { color: "bg-amber-400", label: "Terlambat" },
-                { color: "bg-red-400", label: "Tidak Hadir" },
-                { color: "bg-sky-400", label: "Sakit" },
-                { color: "bg-violet-500", label: "Cuti" },
-                { color: "bg-taupe-200", label: "Tidak Ada Data" },
-              ].map(({ color, label }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <div className={`size-2.5 rounded-sm ${color}`} />
-                  <span className="text-[10px] text-taupe-400">{label}</span>
-                </div>
-              ))}
+            <div className="h-[170px]">
+              <WeeklyChart attendances={attendances} selectedStatus={selectedStatus} />
             </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {STATUS_KEYS.map((status) => {
+                const selected = selectedStatus === status;
+                return (
+                  <div
+                    key={status}
+                    className={`rounded-2xl bg-white px-3 py-2 ring-1 transition-colors ${
+                      selected ? "ring-foreground" : "ring-taupe-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: STATUS_META[status].color }}
+                      />
+                      <span className="min-w-0 truncate text-[10px] font-medium text-taupe-500">
+                        {STATUS_META[status].label}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-lg font-bold leading-none text-foreground">
+                      {reportCounts[status]}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <BottomSheet
+              open={reportFilterOpen}
+              onClose={() => setReportFilterOpen(false)}
+              title="Filter Laporan"
+            >
+              <div className="px-2 pb-2">
+                {REPORT_FILTERS.map((filter) => {
+                  const selected = selectedStatus === filter.value;
+                  const color =
+                    filter.value === "all" ? "#2b2d42" : STATUS_META[filter.value].color;
+                  return (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedStatus(filter.value);
+                        setReportFilterOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                    >
+                      <span
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100"
+                      >
+                        <span
+                          className="size-2.5 rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1 text-left">
+                        <span className="block font-medium text-foreground">
+                          {filter.label}
+                        </span>
+                        <span className="block text-xs text-taupe-400">
+                          {filter.description}
+                        </span>
+                      </span>
+                      {selected && <span className="size-2 rounded-full bg-foreground" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </BottomSheet>
 
             {/* Today stats */}
             {today && (

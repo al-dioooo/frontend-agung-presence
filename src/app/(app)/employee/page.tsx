@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { getEmployees } from "@/lib/api/client";
 import type { Employee } from "@/lib/api/types";
@@ -9,18 +10,26 @@ import { ChevronRightIcon } from "@/components/icons/outline";
 import Link from "next/link";
 
 export default function EmployeePage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isAdministrator = user?.role === "administrator";
 
   useEffect(() => {
-    if (!token) return;
+    if (user && !isAdministrator) {
+      router.replace("/dashboard");
+    }
+  }, [isAdministrator, router, user]);
+
+  useEffect(() => {
+    if (!token || !isAdministrator) return;
 
     getEmployees(token)
       .then(setEmployees)
       .finally(() => setIsLoading(false));
-  }, [token]);
+  }, [isAdministrator, token]);
 
   const filtered = employees.filter(
     (e) =>
@@ -30,6 +39,11 @@ export default function EmployeePage() {
   );
 
   return (
+    !isAdministrator ? (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-taupe-200 border-t-foreground" />
+      </div>
+    ) : (
     <div className="px-5 pt-6">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Employee</h1>
@@ -88,5 +102,6 @@ export default function EmployeePage() {
         </div>
       )}
     </div>
+    )
   );
 }

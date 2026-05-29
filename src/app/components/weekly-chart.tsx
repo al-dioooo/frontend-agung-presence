@@ -5,33 +5,43 @@ import type { Attendance } from "@/lib/api/types";
 
 interface Props {
   attendances: Attendance[];
+  selectedStatus?: ReportStatusFilter;
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  on_time: "#10b981",
-  late: "#f59e0b",
-  absent: "#ef4444",
-  sick: "#38bdf8",
-  leave: "#8b5cf6",
-};
+export const STATUS_KEYS = ["on_time", "late", "absent", "sick", "leave"] as const;
 
-const STATUS_LABEL: Record<string, string> = {
-  on_time: "Tepat Waktu",
-  late: "Terlambat",
-  absent: "Tidak Hadir",
-  sick: "Sakit",
-  leave: "Cuti",
+export type AttendanceStatusKey = (typeof STATUS_KEYS)[number];
+export type ReportStatusFilter = "all" | AttendanceStatusKey;
+
+export const STATUS_META: Record<AttendanceStatusKey, { label: string; color: string }> = {
+  on_time: { label: "Tepat Waktu", color: "#10b981" },
+  late: { label: "Terlambat", color: "#f59e0b" },
+  absent: { label: "Tidak Hadir", color: "#ef4444" },
+  sick: { label: "Sakit", color: "#38bdf8" },
+  leave: { label: "Cuti", color: "#8b5cf6" },
 };
 
 const DAY_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
-export function WeeklyChart({ attendances }: Props) {
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isStatusKey(status: string): status is AttendanceStatusKey {
+  return (STATUS_KEYS as readonly string[]).includes(status);
+}
+
+export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
 
   useEffect(() => {
-    // Build last-7-days data
+    let disposed = false;
+
     const days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (6 - i));
@@ -39,23 +49,31 @@ export function WeeklyChart({ attendances }: Props) {
     });
 
     const labels = days.map((d) => DAY_SHORT[d.getDay()]);
-    const data = days.map((d) => {
-      const iso = d.toISOString().slice(0, 10);
-      return attendances.find((a) => a.date === iso) ?? null;
+    const dateIndex = new Map(days.map((day, index) => [toDateKey(day), index]));
+    const grouped = STATUS_KEYS.reduce(
+      (acc, status) => {
+        acc[status] = Array.from({ length: 7 }, () => 0);
+        return acc;
+      },
+      {} as Record<AttendanceStatusKey, number[]>,
+    );
+
+    attendances.forEach((attendance) => {
+      const index = dateIndex.get(attendance.date);
+      if (index === undefined || !isStatusKey(attendance.status)) return;
+      grouped[attendance.status][index] += 1;
     });
 
-    const barData = data.map((att) => ({
-      value: att ? 1 : 0,
-      itemStyle: {
-        color: att ? (STATUS_COLOR[att.status] ?? "#b8b0a3") : "#e8e4dd",
-        borderRadius: [4, 4, 0, 0],
-      },
-    }));
+    const visibleStatuses =
+      selectedStatus === "all" ? STATUS_KEYS : [selectedStatus];
 
     if (!containerRef.current) return;
 
     (async () => {
       const echarts = await import("echarts");
+      if (disposed || !containerRef.current) return;
+
+      chartRef.current?.dispose();
       const chart = echarts.init(containerRef.current!, null, {
         renderer: "canvas",
       });
@@ -64,7 +82,8 @@ export function WeeklyChart({ attendances }: Props) {
       chart.setOption({
         animation: true,
         animationDuration: 500,
-        grid: { top: 8, right: 8, bottom: 28, left: 8, containLabel: false },
+        color: visibleStatuses.map((status) => STATUS_META[status].color),
+        grid: { top: 16, right: 10, bottom: 28, left: 26, containLabel: false },
         xAxis: {
           type: "category",
           data: labels,
@@ -76,39 +95,68 @@ export function WeeklyChart({ attendances }: Props) {
             fontFamily: "system-ui, sans-serif",
           },
         },
-        yAxis: { show: false, max: 1.3 },
-        series: [
-          {
-            type: "bar",
-            data: barData,
-            barMaxWidth: 32,
-            label: {
-              show: false,
-            },
+        yAxis: {
+          type: "value",
+          minInterval: 1,
+          axisTick: { show: false },
+          axisLine: { show: false },
+          splitLine: { lineStyle: { color: "#e8e4dd" } },
+          axisLabel: {
+            fontSize: 10,
+            color: "#b8b0a3",
+            fontFamily: "system-ui, sans-serif",
           },
-        ],
+        },
+        series: visibleStatuses.map((status) => ({
+          name: STATUS_META[status].label,
+          type: "line",
+          data: grouped[status],
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 6,
+          lineStyle: {
+            width: 3,
+            color: STATUS_META[status].color,
+          },
+          itemStyle: {
+            color: STATUS_META[status].color,
+            borderColor: "#fff",
+            borderWidth: 2,
+          },
+          emphasis: {
+            focus: "series",
+          },
+        })),
+        legend: {
+          show: selectedStatus === "all",
+          bottom: 0,
+          icon: "circle",
+          itemWidth: 8,
+          itemHeight: 8,
+          textStyle: {
+            fontSize: 10,
+            color: "#9c9284",
+            fontFamily: "system-ui, sans-serif",
+          },
+        },
         tooltip: {
-          trigger: "item",
-          formatter: (params: { dataIndex: number }) => {
-            const att = data[params.dataIndex];
-            if (!att) return "Tidak hadir";
-            return `${STATUS_LABEL[att.status] ?? att.status}`;
-          },
+          trigger: "axis",
           backgroundColor: "#2b2d42",
           borderWidth: 0,
           textStyle: { color: "#fff", fontSize: 11 },
-          padding: [4, 8],
+          padding: [6, 8],
+          valueFormatter: (value: number) => `${value} data`,
         },
       });
     })();
 
     return () => {
+      disposed = true;
       chartRef.current?.dispose();
       chartRef.current = null;
     };
-  }, [attendances]);
+  }, [attendances, selectedStatus]);
 
-  // Resize on window resize
   useEffect(() => {
     function onResize() {
       chartRef.current?.resize();

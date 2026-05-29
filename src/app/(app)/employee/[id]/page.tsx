@@ -44,6 +44,7 @@ export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, user } = useAuth();
   const router = useRouter();
+  const isAdministrator = user?.role === "administrator";
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +54,13 @@ export default function EmployeeDetailPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (!token) return;
+    if (user && !isAdministrator) {
+      router.replace("/dashboard");
+    }
+  }, [isAdministrator, router, user]);
+
+  useEffect(() => {
+    if (!token || !isAdministrator) return;
 
     getEmployee(token, Number(id))
       .then(setEmployee)
@@ -63,7 +70,15 @@ export default function EmployeeDetailPage() {
         );
       })
       .finally(() => setIsLoading(false));
-  }, [id, token]);
+  }, [id, isAdministrator, token]);
+
+  if (!isAdministrator) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-taupe-200 border-t-foreground" />
+      </div>
+    );
+  }
 
   async function handleDelete() {
     if (!token || !employee) return;
