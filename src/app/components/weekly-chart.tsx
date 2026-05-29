@@ -83,7 +83,7 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
         animation: true,
         animationDuration: 500,
         color: visibleStatuses.map((status) => STATUS_META[status].color),
-        grid: { top: 16, right: 10, bottom: 28, left: 26, containLabel: false },
+        grid: { top: 16, right: 10, bottom: 56, left: 26, containLabel: false },
         xAxis: {
           type: "category",
           data: labels,
@@ -93,6 +93,7 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
             fontSize: 11,
             color: "#9c9284",
             fontFamily: "system-ui, sans-serif",
+            margin: 12,
           },
         },
         yAxis: {
@@ -129,7 +130,7 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
         })),
         legend: {
           show: selectedStatus === "all",
-          bottom: 0,
+          bottom: 2,
           icon: "circle",
           itemWidth: 8,
           itemHeight: 8,
