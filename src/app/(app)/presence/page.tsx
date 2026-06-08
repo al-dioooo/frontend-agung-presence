@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError, checkOut, getAttendances } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/client";
+import { useAttendances } from "@/lib/api/hooks";
+import { mutateCheckOut } from "@/lib/api/mutations";
 import type { Attendance } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import Link from "next/link";
@@ -63,25 +65,12 @@ function statusColor(status: string) {
 export default function PresencePage() {
   const { token, user } = useAuth();
   const [search, setSearch] = useState("");
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: attendances = [], isLoading } = useAttendances();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkOutError, setCheckOutError] = useState("");
   const [userFilterOpen, setUserFilterOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const isAdministrator = user?.role === "administrator";
-
-  function loadAttendances() {
-    if (!token) return;
-    getAttendances(token)
-      .then(setAttendances)
-      .finally(() => setIsLoading(false));
-  }
-
-  useEffect(() => {
-    loadAttendances();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
 
   const today = new Date().toISOString().slice(0, 10);
   const activeCheckIn = attendances.find(
@@ -104,9 +93,9 @@ export default function PresencePage() {
     setIsCheckingOut(true);
     setCheckOutError("");
     try {
-      await checkOut(token, activeCheckIn.id);
-      setIsLoading(true);
-      loadAttendances();
+      await mutateCheckOut(token, activeCheckIn.id, {
+        currentList: attendances,
+      });
     } catch (err) {
       setCheckOutError(err instanceof ApiError ? err.message : "Gagal absen keluar.");
     } finally {

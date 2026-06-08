@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError, checkIn, checkOut, deleteOffice, getAttendances, getOffice } from "@/lib/api/client";
-import type { Attendance, Office } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/client";
+import { useOffice, useAttendances } from "@/lib/api/hooks";
+import { mutateDeleteOffice, mutateCheckIn, mutateCheckOut } from "@/lib/api/mutations";
+import type { Attendance } from "@/lib/api/types";
 import {
   ChevronBackIcon,
   MapPinIcon,
@@ -56,8 +58,15 @@ export default function OfficeDetailPage() {
   const router = useRouter();
   const isAdministrator = user?.role === "administrator";
 
-  const [office, setOffice] = useState<Office | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: office, isLoading } = useOffice(id);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: todayAttendances = [] } = useAttendances(
+    office ? { office_id: office.id, date: today } : undefined,
+  );
+  const activeCheckIn: Attendance | null =
+    todayAttendances.find((a) => a.in_at && !a.out_at) ?? null;
+
   const [isChecking, setIsChecking] = useState(false);
   const [message, setMessage] = useState("");
   const [userLocation, setUserLocation] = useState<{
@@ -68,36 +77,22 @@ export default function OfficeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selfieOpen, setSelfieOpen] = useState(false);
-  const [activeCheckIn, setActiveCheckIn] = useState<Attendance | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  function loadTodayAttendance(tok: string, officeId: number) {
-    const today = new Date().toISOString().slice(0, 10);
-    getAttendances(tok, { office_id: officeId, date: today }).then((list) => {
-      setActiveCheckIn(list.find((a) => a.in_at && !a.out_at) ?? null);
-    });
-  }
-
   useEffect(() => {
-    if (!token) return;
-
-    getOffice(token, Number(id))
-      .then((office) => { setOffice(office); loadTodayAttendance(token, office.id); })
-      .finally(() => setIsLoading(false));
-
     navigator.geolocation?.getCurrentPosition((pos) => {
       setUserLocation({
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
       });
     });
-  }, [id, token]);
+  }, []);
 
   async function handleDelete() {
     if (!token || !office) return;
     setIsDeleting(true);
     try {
-      await deleteOffice(token, office.id);
+      await mutateDeleteOffice(token, office.id);
       router.replace("/office");
     } catch (err) {
       setMessage(err instanceof ApiError ? err.message : "Gagal menghapus kantor.");
@@ -132,7 +127,7 @@ export default function OfficeDetailPage() {
     setMessage("");
 
     try {
-      await checkIn(token, {
+      await mutateCheckIn(token, {
         office_id: office.id,
         latitude: userLocation.lat,
         longitude: userLocation.lng,
@@ -140,7 +135,6 @@ export default function OfficeDetailPage() {
         ...(user?.role === "administrator" ? { user_id: user.id } : {}),
       });
       setMessage("Absensi berhasil dicatat!");
-      loadTodayAttendance(token, office.id);
     } catch (err) {
       setMessage(
         err instanceof ApiError ? err.message : "Absensi gagal. Coba lagi.",
@@ -155,9 +149,10 @@ export default function OfficeDetailPage() {
     setIsCheckingOut(true);
     setMessage("");
     try {
-      await checkOut(token, activeCheckIn.id);
+      await mutateCheckOut(token, activeCheckIn.id, {
+        currentList: todayAttendances,
+      });
       setMessage("Absen keluar berhasil dicatat!");
-      setActiveCheckIn(null);
     } catch (err) {
       setMessage(err instanceof ApiError ? err.message : "Absen keluar gagal.");
     } finally {

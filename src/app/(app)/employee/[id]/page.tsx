@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError, deleteEmployee, getEmployee } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/client";
+import { useEmployee } from "@/lib/api/hooks";
+import { mutateDeleteEmployee } from "@/lib/api/mutations";
 import type { Employee } from "@/lib/api/types";
 import {
   ChevronBackIcon,
@@ -46,8 +48,7 @@ export default function EmployeeDetailPage() {
   const router = useRouter();
   const isAdministrator = user?.role === "administrator";
 
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: employee, isLoading, error: fetchError } = useEmployee(id);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -58,19 +59,6 @@ export default function EmployeeDetailPage() {
       router.replace("/dashboard");
     }
   }, [isAdministrator, router, user]);
-
-  useEffect(() => {
-    if (!token || !isAdministrator) return;
-
-    getEmployee(token, Number(id))
-      .then(setEmployee)
-      .catch((err) => {
-        setErrorMessage(
-          err instanceof ApiError ? err.message : "Gagal memuat data karyawan.",
-        );
-      })
-      .finally(() => setIsLoading(false));
-  }, [id, isAdministrator, token]);
 
   if (!isAdministrator) {
     return (
@@ -84,7 +72,7 @@ export default function EmployeeDetailPage() {
     if (!token || !employee) return;
     setIsDeleting(true);
     try {
-      await deleteEmployee(token, employee.id);
+      await mutateDeleteEmployee(token, employee.id);
       router.replace("/employee");
     } catch (err) {
       setErrorMessage(
@@ -107,7 +95,7 @@ export default function EmployeeDetailPage() {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center px-5 text-center">
         <p className="text-sm text-taupe-400">
-          {errorMessage || "Karyawan tidak ditemukan."}
+          {fetchError?.message || errorMessage || "Karyawan tidak ditemukan."}
         </p>
         <button
           onClick={() => router.back()}

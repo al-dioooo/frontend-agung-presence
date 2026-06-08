@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getOffice } from "@/lib/api/client";
-import type { Office } from "@/lib/api/types";
+import { useOffice } from "@/lib/api/hooks";
 import { OfficeForm } from "../../office-form";
 
 export default function OfficeEditPage() {
   const { id } = useParams<{ id: string }>();
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
-  const [office, setOffice] = useState<Office | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: office, isLoading } = useOffice(id);
   const isAdministrator = user?.role === "administrator";
 
   useEffect(() => {
@@ -20,13 +18,6 @@ export default function OfficeEditPage() {
       router.replace("/office");
     }
   }, [isAdministrator, router, user]);
-
-  useEffect(() => {
-    if (!token || !isAdministrator) return;
-    getOffice(token, Number(id))
-      .then(setOffice)
-      .finally(() => setIsLoading(false));
-  }, [id, isAdministrator, token]);
 
   if (!isAdministrator) {
     return (

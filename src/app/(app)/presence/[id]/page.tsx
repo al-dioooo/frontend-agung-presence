@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError, getAttendance } from "@/lib/api/client";
-import type { Attendance } from "@/lib/api/types";
+import { useAttendance } from "@/lib/api/hooks";
 import {
   ChevronBackIcon,
   EnterpriseIcon,
@@ -85,23 +84,11 @@ function formatDate(iso: string) {
 
 export default function PresenceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
-  const [attendance, setAttendance] = useState<Attendance | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data: attendance, isLoading, error } = useAttendance(id);
   const [photoOpen, setPhotoOpen] = useState(false);
-
-  useEffect(() => {
-    if (!token) return;
-    getAttendance(token, Number(id))
-      .then(setAttendance)
-      .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Gagal memuat data."),
-      )
-      .finally(() => setIsLoading(false));
-  }, [id, token]);
 
   if (isLoading) {
     return (
@@ -114,7 +101,7 @@ export default function PresenceDetailPage() {
   if (!attendance) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center px-5 text-center">
-        <p className="text-sm text-taupe-400">{error || "Data tidak ditemukan."}</p>
+        <p className="text-sm text-taupe-400">{error?.message || "Data tidak ditemukan."}</p>
         <button
           onClick={() => router.back()}
           className="mt-4 text-sm font-medium text-foreground underline"

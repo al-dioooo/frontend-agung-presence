@@ -1,38 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getEmployees } from "@/lib/api/client";
+import { useEmployees } from "@/lib/api/hooks";
 import type { Employee } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import { ChevronRightIcon } from "@/components/icons/outline";
 import Link from "next/link";
 
 export default function EmployeePage() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const isAdministrator = user?.role === "administrator";
+  const { data: employees = [], isLoading } = useEmployees();
 
-  useEffect(() => {
-    if (user && !isAdministrator) {
-      router.replace("/dashboard");
-    }
-  }, [isAdministrator, router, user]);
-
-  useEffect(() => {
-    if (!token || !isAdministrator) return;
-
-    getEmployees(token)
-      .then(setEmployees)
-      .finally(() => setIsLoading(false));
-  }, [isAdministrator, token]);
+  if (user && !isAdministrator) {
+    router.replace("/dashboard");
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-taupe-200 border-t-foreground" />
+      </div>
+    );
+  }
 
   const filtered = employees.filter(
-    (e) =>
+    (e: Employee) =>
       e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.username.toLowerCase().includes(search.toLowerCase()) ||
       e.role.toLowerCase().includes(search.toLowerCase()),

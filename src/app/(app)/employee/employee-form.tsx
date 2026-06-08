@@ -6,9 +6,8 @@ import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import {
   ApiError,
-  createEmployee,
-  updateEmployee,
 } from "@/lib/api/client";
+import { mutateCreateEmployee, mutateUpdateEmployee } from "@/lib/api/mutations";
 import type { Employee } from "@/lib/api/types";
 import { ChevronBackIcon, ChevronDownIcon } from "@/components/icons/outline";
 import { FormField } from "@/app/components/form-field";
@@ -52,7 +51,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
 
     try {
       if (mode.kind === "create") {
-        const user = await createEmployee(token, {
+        const user = await mutateCreateEmployee(token, {
           name: name.trim(),
           username: username.trim(),
           email: email.trim(),
@@ -61,7 +60,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
         });
         router.replace(`/employee/${user.id}`);
       } else {
-        const updated = await updateEmployee(token, mode.employee.id, {
+        const updated = await mutateUpdateEmployee(token, mode.employee.id, {
           name: name.trim(),
           username: username.trim(),
           email: email.trim(),

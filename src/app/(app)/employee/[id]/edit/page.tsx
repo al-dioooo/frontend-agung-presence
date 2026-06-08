@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getEmployee } from "@/lib/api/client";
-import type { Employee } from "@/lib/api/types";
+import { useEmployee } from "@/lib/api/hooks";
 import { EmployeeForm } from "../../employee-form";
 
 export default function EmployeeEditPage() {
   const { id } = useParams<{ id: string }>();
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: employee, isLoading } = useEmployee(id);
   const isAdministrator = user?.role === "administrator";
 
   useEffect(() => {
@@ -20,13 +18,6 @@ export default function EmployeeEditPage() {
       router.replace("/dashboard");
     }
   }, [isAdministrator, router, user]);
-
-  useEffect(() => {
-    if (!token || !isAdministrator) return;
-    getEmployee(token, Number(id))
-      .then(setEmployee)
-      .finally(() => setIsLoading(false));
-  }, [id, isAdministrator, token]);
 
   if (!isAdministrator) {
     return (

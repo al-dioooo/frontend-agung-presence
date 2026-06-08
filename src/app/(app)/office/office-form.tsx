@@ -7,10 +7,9 @@ import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import {
   ApiError,
-  createOffice,
-  updateOffice,
   type OfficeInput,
 } from "@/lib/api/client";
+import { mutateCreateOffice, mutateUpdateOffice } from "@/lib/api/mutations";
 import type { Office } from "@/lib/api/types";
 import {
   ChevronBackIcon,
@@ -129,8 +128,8 @@ export function OfficeForm({ mode }: { mode: Mode }) {
     try {
       const result =
         mode.kind === "create"
-          ? await createOffice(token, payload)
-          : await updateOffice(token, mode.office.id, payload);
+          ? await mutateCreateOffice(token, payload)
+          : await mutateUpdateOffice(token, mode.office.id, payload);
       router.replace(`/office/${result.id}`);
     } catch (err) {
       if (err instanceof ApiError) {

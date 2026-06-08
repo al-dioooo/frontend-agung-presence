@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getAttendances, getOffices } from "@/lib/api/client";
-import type { Attendance, Office } from "@/lib/api/types";
+import { useAttendances, useOffices } from "@/lib/api/hooks";
+import type { Office } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import { DashboardMap } from "@/app/components/dashboard-map";
 import {
@@ -76,29 +76,20 @@ const REPORT_FILTERS: { value: ReportStatusFilter; label: string; description: s
 ];
 
 export default function DashboardPage() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [offices, setOffices] = useState<Office[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: attendances = [], isLoading: loadingAttendances } = useAttendances();
+  const { data: offices = [], isLoading: loadingOffices } = useOffices();
+  const isLoading = loadingAttendances || loadingOffices;
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [reportFilterOpen, setReportFilterOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ReportStatusFilter>("all");
 
   useEffect(() => {
-    if (!token) return;
-
-    Promise.all([getAttendances(token), getOffices(token)])
-      .then(([att, off]) => {
-        setAttendances(att);
-        setOffices(off);
-      })
-      .finally(() => setIsLoading(false));
-
     navigator.geolocation?.getCurrentPosition((pos) => {
       setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
     });
-  }, [token]);
+  }, []);
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const today =

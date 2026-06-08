@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getOffices } from "@/lib/api/client";
+import { useOffices } from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
 import { SearchBar } from "@/app/components/search-bar";
 import { ChevronRightIcon } from "@/components/icons/outline";
@@ -31,30 +31,24 @@ function formatDistance(meters: number) {
 }
 
 export default function OfficePage() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const [offices, setOffices] = useState<Office[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: offices = [], isLoading } = useOffices();
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const isAdministrator = user?.role === "administrator";
 
-  useEffect(() => {
-    if (!token) return;
-
-    getOffices(token)
-      .then(setOffices)
-      .finally(() => setIsLoading(false));
-
+  // Request geolocation once on mount
+  useState(() => {
     navigator.geolocation?.getCurrentPosition((pos) => {
       setUserLocation({
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
       });
     });
-  }, [token]);
+  });
 
   const filtered = (() => {
     const searchTerm = search.toLowerCase();
