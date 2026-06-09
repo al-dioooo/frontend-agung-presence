@@ -16,6 +16,7 @@ import {
   UserIcon,
   MailIcon,
 } from "@/components/icons/outline";
+import { Button, Card } from "@/components/ui";
 
 function InfoRow({
   icon,
@@ -102,12 +103,13 @@ export default function PresenceDetailPage() {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center px-5 text-center">
         <p className="text-sm text-taupe-400">{error?.message || "Data tidak ditemukan."}</p>
-        <button
+        <Button
+          variant="link"
+          className="mt-4"
           onClick={() => router.back()}
-          className="mt-4 text-sm font-medium text-foreground underline"
         >
           Kembali
-        </button>
+        </Button>
       </div>
     );
   }
@@ -120,13 +122,14 @@ export default function PresenceDetailPage() {
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
       {/* Top bar */}
       <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-        <button
+        <Button
+          variant="secondary"
+          size="icon"
           onClick={() => router.back()}
-          className="text-foreground"
           aria-label="Back"
         >
           <ChevronBackIcon className="size-6" />
-        </button>
+        </Button>
         <h1 className="text-lg font-bold text-foreground">Detail Absensi</h1>
       </div>
 
@@ -214,8 +217,8 @@ export default function PresenceDetailPage() {
         {/* Info rows */}
         <div className="space-y-4">
           {isAdministrator && attendance.user && (
-            <section className="space-y-4" aria-label="Informasi karyawan">
-              <h2 className="text-sm font-bold text-foreground">Informasi Karyawan</h2>
+            <Card className="p-4 space-y-4" aria-label="Informasi karyawan">
+              <h3 className="text-sm font-bold text-foreground">Informasi Karyawan</h3>
               <InfoRow
                 icon={<UserIcon className="size-[18px] text-taupe-400" />}
                 label="Nama"
@@ -231,9 +234,11 @@ export default function PresenceDetailPage() {
                 label="Email"
                 value={attendance.user.email}
               />
-            </section>
+            </Card>
           )}
 
+          <Card className="p-4 space-y-4">
+          <h3 className="text-sm font-bold text-foreground">Informasi Absensi</h3>
           <InfoRow
             icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
             label="Kantor"
@@ -262,6 +267,7 @@ export default function PresenceDetailPage() {
               value={`${Number(attendance.in_latitude).toFixed(6)}, ${Number(attendance.in_longitude).toFixed(6)}`}
             />
           )}
+        </Card>
         </div>
       </motion.div>
     </div>

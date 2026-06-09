@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useEmployees } from "@/lib/api/hooks";
 import type { Employee } from "@/lib/api/types";
-import { SearchBar } from "@/app/components/search-bar";
+import { Button, Card, SearchInput } from "@/components/ui";
 import { ChevronRightIcon } from "@/components/icons/outline";
-import Link from "next/link";
 
 export default function EmployeePage() {
   const { user } = useAuth();
@@ -41,16 +40,13 @@ export default function EmployeePage() {
     <div className="px-5 pt-6">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Employee</h1>
-        <Link
-          href="/employee/create"
-          className="flex items-center gap-1 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-white transition-opacity active:opacity-80"
-        >
+        <Button href="/employee/create" variant="primary" size="sm">
           + Create
-        </Link>
+        </Button>
       </div>
 
       <div className="mb-5">
-        <SearchBar
+        <SearchInput
           id="employee-search"
           value={search}
           onChange={setSearch}
@@ -59,9 +55,9 @@ export default function EmployeePage() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-taupe-100" />
+            <div key={i} className="h-16 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -69,15 +65,13 @@ export default function EmployeePage() {
           {search ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
         </p>
       ) : (
-        <div id="employee-list">
-          {filtered.map((employee, index) => (
-            <Link
+        <div id="employee-list" className="space-y-2">
+          {filtered.map((employee) => (
+            <Card
               key={employee.id}
               href={`/employee/${employee.id}`}
               id={`employee-${employee.id}`}
-              className={`flex items-center justify-between py-3.5 ${
-                index < filtered.length - 1 ? "border-b border-taupe-200/60" : ""
-              }`}
+              className="flex items-center justify-between gap-3 px-4 py-3.5"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
@@ -91,7 +85,7 @@ export default function EmployeePage() {
                 strokeWidth={2.5}
                 className="ml-1 size-4 shrink-0 text-taupe-300"
               />
-            </Link>
+            </Card>
           ))}
         </div>
       )}

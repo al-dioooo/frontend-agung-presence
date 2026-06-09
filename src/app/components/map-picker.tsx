@@ -3,6 +3,7 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { ExpandIcon, CollapseIcon } from "@/components/icons/outline";
+import { Button } from "@/components/ui";
 
 // Palembang (UKMC area) as default center
 const DEFAULT_CENTER: [number, number] = [104.7597, -2.9862];
@@ -88,7 +89,7 @@ export function MapPicker({ lat, lng, radius = 50, onChange, flyToRef }: Props) 
 
       marker = new mapboxgl.default.Marker({
         draggable: true,
-        color: "#2b2d42",
+        color: "#3b82f6",
       })
         .setLngLat(center)
         .addTo(map);
@@ -125,13 +126,13 @@ export function MapPicker({ lat, lng, radius = 50, onChange, flyToRef }: Props) 
           id: "radius-fill",
           type: "fill",
           source: "radius",
-          paint: { "fill-color": "#2b2d42", "fill-opacity": 0.1 },
+          paint: { "fill-color": "#3b82f6", "fill-opacity": 0.1 },
         });
         map.addLayer({
           id: "radius-line",
           type: "line",
           source: "radius",
-          paint: { "line-color": "#2b2d42", "line-width": 1.5 },
+          paint: { "line-color": "#3b82f6", "line-width": 1.5 },
         });
         setLoaded(true);
       });
@@ -179,7 +180,7 @@ export function MapPicker({ lat, lng, radius = 50, onChange, flyToRef }: Props) 
         }
       />
 
-      {/* Fullscreen toggle */}
+      {/* Fullscreen toggle — bespoke floating map control, not a standard Button variant */}
       <button
         type="button"
         onClick={() => setIsFullscreen((f) => !f)}
@@ -196,13 +197,13 @@ export function MapPicker({ lat, lng, radius = 50, onChange, flyToRef }: Props) 
       {/* Confirm button shown in fullscreen */}
       {isFullscreen && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            className="px-8 py-3 shadow-lg"
             onClick={() => setIsFullscreen(false)}
-            className="rounded-full bg-foreground px-8 py-3 text-sm font-semibold text-white shadow-lg transition-opacity active:opacity-80"
           >
             Konfirmasi Lokasi
-          </button>
+          </Button>
         </div>
       )}
     </div>

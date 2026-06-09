@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { useEmployee } from "@/lib/api/hooks";
 import { mutateDeleteEmployee } from "@/lib/api/mutations";
-import type { Employee } from "@/lib/api/types";
 import {
   ChevronBackIcon,
   DotsIcon,
@@ -19,6 +18,7 @@ import {
   MailIcon,
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
+import { Button, Card } from "@/components/ui";
 
 function InfoRow({
   icon,
@@ -97,12 +97,13 @@ export default function EmployeeDetailPage() {
         <p className="text-sm text-taupe-400">
           {fetchError?.message || errorMessage || "Karyawan tidak ditemukan."}
         </p>
-        <button
+        <Button
+          variant="link"
+          className="mt-4"
           onClick={() => router.back()}
-          className="mt-4 text-sm font-medium text-foreground underline"
         >
           Kembali
-        </button>
+        </Button>
       </div>
     );
   }
@@ -121,21 +122,23 @@ export default function EmployeeDetailPage() {
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <button
+        <Button
+          variant="secondary"
+          size="icon"
           onClick={() => router.back()}
-          className="text-foreground"
           aria-label="Back"
         >
           <ChevronBackIcon className="size-6" />
-        </button>
+        </Button>
         {!isProtected && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setSheetOpen(true)}
-            className="text-foreground"
             aria-label="Open actions"
           >
             <DotsIcon className="size-6" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -173,20 +176,23 @@ export default function EmployeeDetailPage() {
             Tindakan ini tidak dapat dibatalkan. Data karyawan akan dihapus secara permanen.
           </p>
           <div className="mt-5 flex gap-3">
-            <button
+            <Button
+              variant="secondary"
+              className="flex-1 py-3"
               onClick={() => setConfirmDelete(false)}
               disabled={isDeleting}
-              className="flex-1 rounded-full border border-taupe-200 py-3 text-sm font-semibold text-foreground transition-opacity disabled:opacity-50 active:opacity-70"
             >
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1 py-3"
               onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex-1 rounded-full bg-red-500 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
+              loading={isDeleting}
+              loadingText="Menghapus..."
             >
-              {isDeleting ? "Menghapus..." : "Hapus"}
-            </button>
+              Hapus
+            </Button>
           </div>
         </div>
       </BottomSheet>
@@ -208,7 +214,9 @@ export default function EmployeeDetailPage() {
       </motion.div>
 
       {/* Info rows */}
-      <div className="flex-1 space-y-4 px-5">
+      <div className="flex-1 px-5">
+        <Card className="p-4 space-y-4">
+        <h3 className="text-sm font-bold text-foreground">Informasi Karyawan</h3>
         <InfoRow
           icon={<UserIcon className="size-[18px] text-taupe-400" />}
           label="Username"
@@ -231,6 +239,7 @@ export default function EmployeeDetailPage() {
           label="Bergabung"
           value={joinedAt}
         />
+        </Card>
       </div>
 
       <AnimatePresence>
@@ -251,12 +260,14 @@ export default function EmployeeDetailPage() {
       {/* Bottom CTA — hidden for protected accounts */}
       {!isProtected && (
         <div className="sticky bottom-4 mt-auto px-5 pb-4 pt-4">
-          <button
+          <Button
+            variant="primary"
+            fullWidth
+            className="py-3"
             onClick={() => router.push(`/employee/${id}/edit`)}
-            className="w-full rounded-full bg-foreground py-3 text-sm font-semibold text-white transition-opacity active:opacity-80"
           >
             Edit Karyawan
-          </button>
+          </Button>
         </div>
       )}
     </div>

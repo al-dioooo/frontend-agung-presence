@@ -1,18 +1,18 @@
 import { SearchIcon } from "@/components/icons/outline";
 
-type SearchBarProps = {
+type SearchInputProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   id?: string;
 };
 
-export function SearchBar({
+export function SearchInput({
   value,
   onChange,
   placeholder = "Search",
   id = "search",
-}: SearchBarProps) {
+}: SearchInputProps) {
   return (
     <div className="relative">
       <div className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">

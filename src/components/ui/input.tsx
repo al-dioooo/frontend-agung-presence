@@ -6,15 +6,15 @@ type FieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
 };
 
-export const FormField = forwardRef<HTMLInputElement, FieldProps>(
-  function FormField({ label, hint, error, className = "", ...rest }, ref) {
+export const Input = forwardRef<HTMLInputElement, FieldProps>(
+  function Input({ label, hint, error, className = "", ...rest }, ref) {
     return (
       <label className="block">
         <span className="block text-sm font-medium text-foreground">{label}</span>
         <input
           ref={ref}
           {...rest}
-          className={`mt-1.5 h-11 w-full rounded-2xl bg-white px-4 text-sm text-foreground placeholder:text-taupe-400 outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-foreground ${
+          className={`mt-1.5 h-11 w-full rounded-2xl bg-white px-4 text-sm text-foreground placeholder:text-taupe-400 outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-primary ${
             error ? "ring-red-300 focus:ring-red-500" : ""
           } ${className}`}
         />
@@ -38,7 +38,7 @@ type TextAreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
 };
 
-export function FormTextArea({
+export function Textarea({
   label,
   hint,
   error,
@@ -50,7 +50,7 @@ export function FormTextArea({
       <span className="block text-sm font-medium text-foreground">{label}</span>
       <textarea
         {...rest}
-        className={`mt-1.5 min-h-[88px] w-full rounded-2xl bg-white px-4 py-3 text-sm text-foreground placeholder:text-taupe-400 outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-foreground ${
+        className={`mt-1.5 min-h-[88px] w-full rounded-2xl bg-white px-4 py-3 text-sm text-foreground placeholder:text-taupe-400 outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-primary ${
           error ? "ring-red-300 focus:ring-red-500" : ""
         } ${className}`}
       />
@@ -74,7 +74,7 @@ type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   options: { value: string; label: string }[];
 };
 
-export function FormSelect({
+export function Select({
   label,
   hint,
   error,
@@ -87,7 +87,7 @@ export function FormSelect({
       <span className="block text-sm font-medium text-foreground">{label}</span>
       <select
         {...rest}
-        className={`mt-1.5 h-11 w-full appearance-none rounded-2xl bg-white px-4 text-sm text-foreground outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-foreground ${
+        className={`mt-1.5 h-11 w-full appearance-none rounded-2xl bg-white px-4 text-sm text-foreground outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-primary ${
           error ? "ring-red-300 focus:ring-red-500" : ""
         } ${className}`}
       >

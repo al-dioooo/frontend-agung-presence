@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MapPinIcon, CameraIcon } from "@/components/icons/outline";
+import { Button } from "@/components/ui";
 
 type Status = "checking" | "granted" | "needs-prompt" | "denied";
 
@@ -152,6 +153,7 @@ export function PermissionGate({ children }: { children: React.ReactNode }) {
               Akses ditolak. Buka Pengaturan perangkat Anda dan izinkan kamera
               serta lokasi untuk aplikasi ini.
             </p>
+            {/* bespoke — tonal taupe button, not a standard Button variant */}
             <button
               onClick={() => queryPermissions().then(setStatus)}
               className="rounded-full bg-taupe-100 px-6 py-2.5 text-sm font-semibold text-foreground transition-opacity active:opacity-70"
@@ -160,13 +162,16 @@ export function PermissionGate({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         ) : (
-          <button
+          <Button
+            variant="primary"
+            fullWidth
+            className="mt-8 py-3.5"
             onClick={handleRequest}
-            disabled={requesting}
-            className="mt-8 w-full rounded-full bg-foreground py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+            loading={requesting}
+            loadingText="Meminta izin..."
           >
-            {requesting ? "Meminta izin..." : "Izinkan Akses"}
-          </button>
+            Izinkan Akses
+          </Button>
         )}
       </motion.div>
     </AnimatePresence>

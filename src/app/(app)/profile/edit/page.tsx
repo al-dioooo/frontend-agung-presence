@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError, updateProfile } from "@/lib/api/client";
 import { ChevronBackIcon, ChevronDownIcon, EyeIcon, EyeSlashIcon } from "@/components/icons/outline";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import { Button, Card } from "@/components/ui";
 
 const COUNTRIES = [
   { code: "ID", flag: "🇮🇩", name: "Indonesia", dial: "+62" },
@@ -89,13 +90,15 @@ export default function EditProfilePage() {
     <div className="flex flex-col">
       {/* Top bar — back, title, upload icon */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <button
+        <Button
           id="back-button"
+          variant="secondary"
+          size="icon"
           onClick={() => router.back()}
-          className="text-foreground"
+          aria-label="Kembali"
         >
           <ChevronBackIcon className="size-6" />
-        </button>
+        </Button>
         <h1 className="text-base font-semibold text-foreground">Edit Profile</h1>
         <div></div>
       </div>
@@ -107,6 +110,8 @@ export default function EditProfilePage() {
         </p>
 
         <form id="edit-profile-form" onSubmit={handleSubmit} className="space-y-3">
+          <Card className="p-4 space-y-3">
+          <h3 className="text-sm font-bold text-foreground">Akun</h3>
           {/* Username */}
           <input
             id="username-input"
@@ -140,6 +145,7 @@ export default function EditProfilePage() {
               className="h-11 flex-1 rounded-full border border-taupe-200 bg-white px-4 text-sm text-foreground placeholder:text-taupe-400 outline-none focus:border-taupe-300"
             />
           </div>
+          </Card>
 
           {/* Country selector sheet */}
           <BottomSheet
@@ -168,6 +174,8 @@ export default function EditProfilePage() {
             </div>
           </BottomSheet>
 
+          <Card className="p-4 space-y-3">
+          <h3 className="text-sm font-bold text-foreground">Keamanan</h3>
           {/* Password */}
           <div className="relative">
             <input
@@ -192,6 +200,7 @@ export default function EditProfilePage() {
               )}
             </button>
           </div>
+          </Card>
 
           {/* Feedback */}
           {message && (
@@ -208,22 +217,24 @@ export default function EditProfilePage() {
 
           {/* Buttons — side by side */}
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
               id="save-profile-button"
               type="submit"
-              disabled={isSaving}
-              className="h-11 rounded-full bg-foreground px-6 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+              variant="primary"
+              className="h-11 px-6"
+              loading={isSaving}
+              loadingText="Menyimpan..."
             >
-              {isSaving ? "Menyimpan..." : "Save Profile"}
-            </button>
-            <button
+              Save Profile
+            </Button>
+            <Button
               id="cancel-button"
-              type="button"
+              variant="secondary"
+              className="h-11 px-6 bg-white"
               onClick={() => router.back()}
-              className="h-11 rounded-full border border-taupe-200 bg-white px-6 text-sm font-semibold text-foreground transition-opacity active:opacity-80"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       </div>

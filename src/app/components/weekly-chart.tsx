@@ -91,7 +91,7 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
           axisLine: { show: false },
           axisLabel: {
             fontSize: 11,
-            color: "#9c9284",
+            color: "#94a3b8",
             fontFamily: "system-ui, sans-serif",
             margin: 12,
           },
@@ -101,10 +101,10 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
           minInterval: 1,
           axisTick: { show: false },
           axisLine: { show: false },
-          splitLine: { lineStyle: { color: "#e8e4dd" } },
+          splitLine: { lineStyle: { color: "#e2e8f0" } },
           axisLabel: {
             fontSize: 10,
-            color: "#b8b0a3",
+            color: "#94a3b8",
             fontFamily: "system-ui, sans-serif",
           },
         },
@@ -136,13 +136,13 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
           itemHeight: 8,
           textStyle: {
             fontSize: 10,
-            color: "#9c9284",
+            color: "#94a3b8",
             fontFamily: "system-ui, sans-serif",
           },
         },
         tooltip: {
           trigger: "axis",
-          backgroundColor: "#2b2d42",
+          backgroundColor: "#0f172a",
           borderWidth: 0,
           textStyle: { color: "#fff", fontSize: 11 },
           padding: [6, 8],

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useAttendances, useOffices } from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
-import { SearchBar } from "@/app/components/search-bar";
+import { Button, Card, SearchInput } from "@/components/ui";
 import { DashboardMap } from "@/app/components/dashboard-map";
 import {
   STATUS_KEYS,
@@ -15,7 +15,6 @@ import {
 } from "@/app/components/weekly-chart";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { FilterIcon } from "@/components/icons/outline";
-import Link from "next/link";
 
 function haversineDistance(
   lat1: number,
@@ -148,7 +147,7 @@ export default function DashboardPage() {
 
       {/* Search */}
       <div className="mb-5">
-        <SearchBar
+        <SearchInput
           id="dashboard-search"
           value={search}
           onChange={setSearch}
@@ -160,25 +159,21 @@ export default function DashboardPage() {
       <section className="mb-6" aria-label="Laporan Absensi">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-foreground">Report</h2>
-          <button
+          <Button
             id="dashboard-report-filter"
-            type="button"
+            variant={selectedStatus === "all" ? "secondary" : "primary"}
+            size="icon"
             onClick={() => setReportFilterOpen(true)}
-            className={`flex size-10 shrink-0 items-center justify-center rounded-full ring-1 transition-colors active:opacity-70 ${
-              selectedStatus === "all"
-                ? "bg-white text-foreground ring-taupe-200"
-                : "bg-foreground text-white ring-foreground"
-            }`}
             aria-label="Filter laporan"
           >
             <FilterIcon className="size-5" strokeWidth={2} />
-          </button>
+          </Button>
         </div>
 
         {isLoading ? (
-          <div className="h-[220px] animate-pulse rounded-2xl bg-taupe-100" />
+          <div className="h-[220px] animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
         ) : (
-          <div className="rounded-2xl bg-taupe-100 p-4">
+          <Card className="p-4">
             <div className="mb-2 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-medium text-taupe-400">7 Hari Terakhir</p>
@@ -186,7 +181,7 @@ export default function DashboardPage() {
                   {selectedStatusLabel}
                 </p>
               </div>
-              <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold text-taupe-500 ring-1 ring-taupe-200">
+              <span className="rounded-full bg-taupe-50 px-3 py-1 text-[10px] font-semibold text-taupe-500 ring-1 ring-taupe-200">
                 {attendances.length} data
               </span>
             </div>
@@ -201,8 +196,8 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={status}
-                    className={`rounded-2xl bg-white px-3 py-2 ring-1 transition-colors ${
-                      selected ? "ring-foreground" : "ring-taupe-200"
+                    className={`rounded-2xl bg-taupe-50 px-3 py-2 ring-1 transition-colors ${
+                      selected ? "ring-primary" : "ring-taupe-200"
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -231,7 +226,7 @@ export default function DashboardPage() {
                 {REPORT_FILTERS.map((filter) => {
                   const selected = selectedStatus === filter.value;
                   const color =
-                    filter.value === "all" ? "#2b2d42" : STATUS_META[filter.value].color;
+                    filter.value === "all" ? "#0f172a" : STATUS_META[filter.value].color;
                   return (
                     <button
                       key={filter.value}
@@ -258,7 +253,7 @@ export default function DashboardPage() {
                           {filter.description}
                         </span>
                       </span>
-                      {selected && <span className="size-2 rounded-full bg-foreground" />}
+                      {selected && <span className="size-2 rounded-full bg-primary" />}
                     </button>
                   );
                 })}
@@ -292,7 +287,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
         )}
       </section>
 
@@ -315,13 +310,13 @@ export default function DashboardPage() {
 
         {/* Office list */}
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {[1, 2].map((i) => (
-              <div key={i} className="h-16 animate-pulse rounded-2xl bg-taupe-100" />
+              <div key={i} className="h-16 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
             ))}
           </div>
         ) : sortedOffices.length === 0 ? (
-          <p className="rounded-2xl bg-taupe-100 px-4 py-8 text-center text-sm text-taupe-400">
+          <p className="rounded-2xl bg-white px-4 py-8 text-center text-sm text-taupe-400 ring-1 ring-taupe-200 shadow-sm">
             Tidak ada kantor ditemukan
           </p>
         ) : (
@@ -330,11 +325,11 @@ export default function DashboardPage() {
               const dist = office._distance;
               const withinRadius = dist !== undefined && dist <= office.radius;
               return (
-                <Link
+                <Card
                   key={office.id}
                   href={`/office/${office.id}`}
                   id={`office-${office.id}`}
-                  className="flex items-center justify-between rounded-2xl bg-taupe-100 px-4 py-3.5 active:bg-taupe-200/60 transition-colors"
+                  className="flex items-center justify-between px-4 py-3.5"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{office.name}</p>
@@ -351,7 +346,7 @@ export default function DashboardPage() {
                       {formatDistance(dist)}
                     </span>
                   )}
-                </Link>
+                </Card>
               );
             })}
           </div>

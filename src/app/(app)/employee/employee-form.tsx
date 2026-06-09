@@ -10,7 +10,7 @@ import {
 import { mutateCreateEmployee, mutateUpdateEmployee } from "@/lib/api/mutations";
 import type { Employee } from "@/lib/api/types";
 import { ChevronBackIcon, ChevronDownIcon } from "@/components/icons/outline";
-import { FormField } from "@/app/components/form-field";
+import { Button, Card, Input } from "@/components/ui";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 
 type Mode = { kind: "create" } | { kind: "edit"; employee: Employee };
@@ -90,14 +90,14 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
       <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="icon"
           onClick={() => router.back()}
-          className="text-foreground"
           aria-label="Back"
         >
           <ChevronBackIcon className="size-6" />
-        </button>
+        </Button>
         <h1 className="text-lg font-bold text-foreground">
           {mode.kind === "create" ? "Tambah Karyawan" : "Edit Karyawan"}
         </h1>
@@ -107,7 +107,9 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
         onSubmit={handleSubmit}
         className="flex-1 space-y-4 px-5 pb-32 pt-2"
       >
-        <FormField
+        <Card className="p-4 space-y-4">
+        <h3 className="text-sm font-bold text-foreground">Informasi Karyawan</h3>
+        <Input
           label="Nama Lengkap"
           placeholder="Contoh: Budi Santoso"
           value={name}
@@ -116,7 +118,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
           error={fieldErrors.name}
         />
 
-        <FormField
+        <Input
           label="Username"
           placeholder="budi.santoso"
           value={username}
@@ -126,7 +128,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
           error={fieldErrors.username}
         />
 
-        <FormField
+        <Input
           label="Email"
           type="email"
           placeholder="budi@example.com"
@@ -137,7 +139,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
           error={fieldErrors.email}
         />
 
-        <FormField
+        <Input
           label={mode.kind === "create" ? "Password" : "Password baru"}
           type="password"
           placeholder={
@@ -167,6 +169,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
             <span className="mt-1 block text-xs text-red-500">{fieldErrors.role}</span>
           )}
         </div>
+        </Card>
 
         <BottomSheet
           open={roleSheetOpen}
@@ -202,17 +205,16 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
       </form>
 
       <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3">
-        <button
+        <Button
+          variant="primary"
+          fullWidth
+          className="py-3"
           onClick={handleSubmit}
-          disabled={submitting}
-          className="w-full rounded-full bg-foreground py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+          loading={submitting}
+          loadingText="Menyimpan..."
         >
-          {submitting
-            ? "Menyimpan..."
-            : mode.kind === "create"
-              ? "Buat Karyawan"
-              : "Simpan Perubahan"}
-        </button>
+          {mode.kind === "create" ? "Buat Karyawan" : "Simpan Perubahan"}
+        </Button>
       </div>
     </div>
   );

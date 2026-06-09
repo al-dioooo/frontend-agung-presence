@@ -118,11 +118,11 @@ export function DashboardMap({ offices, userLocation }: Props) {
         const lng = Number(office.longitude);
         if (isNaN(lat) || isNaN(lng)) continue;
 
-        new mapboxgl.default.Marker({ color: "#2b2d42" })
+        new mapboxgl.default.Marker({ color: "#3b82f6" })
           .setLngLat([lng, lat])
           .setPopup(
             new mapboxgl.default.Popup({ offset: 25, closeButton: false }).setHTML(
-              `<p style="font-size:12px;font-weight:600;margin:0;color:#2b2d42">${office.name}</p>`,
+              `<p style="font-size:12px;font-weight:600;margin:0;color:#0f172a">${office.name}</p>`,
             ),
           )
           .addTo(map);
@@ -134,9 +134,9 @@ export function DashboardMap({ offices, userLocation }: Props) {
         el.style.cssText = `
           width: 18px; height: 18px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #0f172a;
           border: 3px solid white;
-          box-shadow: 0 0 0 4px rgba(59,130,246,0.25);
+          box-shadow: 0 0 0 4px rgba(15,23,42,0.22);
         `;
         new mapboxgl.default.Marker({ element: el })
           .setLngLat([userLocation.lng, userLocation.lat])
@@ -181,7 +181,7 @@ export function DashboardMap({ offices, userLocation }: Props) {
           }}
         >
           {/* Outer ring */}
-          <div className="flex size-6 items-center justify-center rounded-full bg-foreground/80 shadow-md">
+          <div className="flex size-6 items-center justify-center rounded-full bg-primary/80 shadow-md">
             {/* Arrow pointing toward the off-screen office */}
             <svg
               width="12"

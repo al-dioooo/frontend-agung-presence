@@ -31,7 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <PermissionGate>
-      <div className="mx-auto flex h-full max-w-md flex-col bg-taupe-50">
+      <div className="mx-auto flex h-full max-w-md flex-col">
         <main className="flex-1 overflow-y-auto overflow-x-hidden page-content pb-28">
           <PageTransition>{children}</PageTransition>
         </main>

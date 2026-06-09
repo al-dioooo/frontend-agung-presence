@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useOffices } from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
-import { SearchBar } from "@/app/components/search-bar";
+import { Button, Card, SearchInput } from "@/components/ui";
 import { ChevronRightIcon } from "@/components/icons/outline";
 
 function haversineDistance(
@@ -78,17 +77,14 @@ export default function OfficePage() {
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Office</h1>
         {isAdministrator && (
-          <Link
-            href="/office/create"
-            className="flex items-center gap-1 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-white transition-opacity active:opacity-80"
-          >
+          <Button href="/office/create" variant="primary" size="sm">
             + Create
-          </Link>
+          </Button>
         )}
       </div>
 
       <div className="mb-5">
-        <SearchBar
+        <SearchInput
           id="office-search"
           value={search}
           onChange={setSearch}
@@ -97,9 +93,9 @@ export default function OfficePage() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-taupe-100" />
+            <div key={i} className="h-16 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -107,15 +103,13 @@ export default function OfficePage() {
           {search ? "Tidak ada kantor ditemukan" : "Belum ada data kantor"}
         </p>
       ) : (
-        <div id="office-list">
-          {filtered.map((office, index) => (
-            <Link
+        <div id="office-list" className="space-y-2">
+          {filtered.map((office) => (
+            <Card
               key={office.id}
               href={`/office/${office.id}`}
               id={`office-item-${office.id}`}
-              className={`flex items-center justify-between py-3.5 ${
-                index < filtered.length - 1 ? "border-b border-taupe-200/60" : ""
-              }`}
+              className="flex items-center justify-between gap-3 px-4 py-3.5"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
@@ -144,7 +138,7 @@ export default function OfficePage() {
                   className="size-4 shrink-0 text-taupe-300"
                 />
               </div>
-            </Link>
+            </Card>
           ))}
         </div>
       )}

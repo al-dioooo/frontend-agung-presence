@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useRef, ReactNode, useContext } from "react";
+import { useEffect, useState, ReactNode, useContext } from "react";
 import { motion, AnimatePresence, Variants } from "motion/react";
 import { LayoutRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
@@ -25,7 +25,7 @@ function getTabIndex(path: string): number {
 
 export function FrozenRoute({ children }: { children: ReactNode }) {
   const context = useContext(LayoutRouterContext);
-  const frozen = useRef(context).current;
+  const [frozen] = useState(context);
   return (
     <LayoutRouterContext.Provider value={frozen}>
       {children}

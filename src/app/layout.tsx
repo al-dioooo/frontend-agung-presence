@@ -13,6 +13,14 @@ export const metadata: Metadata = {
   title: "Agung Presence",
   description: "Sistem Absensi Karyawan - Universitas Katolik Musi Charitas",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -28,7 +36,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#faf8f5",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -38,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${geistSans.variable} h-full`}>
-      <body className="h-full bg-taupe-50 font-sans antialiased">
+      <body className="h-full font-sans antialiased">
         <AuthProvider>
           <SWRProvider>{children}</SWRProvider>
         </AuthProvider>

@@ -71,7 +71,7 @@ export function BottomNav() {
     return (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[max(env(safe-area-inset-bottom),1rem)]">
             <nav className="pointer-events-auto mx-3 w-full max-w-md">
-                <div className="relative flex items-stretch justify-around rounded-full bg-taupe-200/90 border-2 border-taupe-100 px-2 py-2 backdrop-blur-xl backdrop-saturate-150">
+                <div className="relative flex items-stretch justify-around rounded-full bg-white/90 border border-taupe-200 px-2 py-2 shadow-sm backdrop-blur-xl backdrop-saturate-150">
                     {visibleItems.map((item) => {
                         const isActive =
                             pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -90,15 +90,15 @@ export function BottomNav() {
                                         <motion.div
                                             layoutId="bottom-nav-indicator"
                                             transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                                            className="absolute inset-0 rounded-full bg-taupe-300"
+                                            className="absolute inset-0 rounded-full bg-primary-50"
                                         />
                                     )}
                                     <Icon
-                                        className={`relative size-[22px] transition-colors text-foreground`}
+                                        className={`relative size-[22px] transition-colors ${isActive ? "text-primary" : "text-taupe-400"}`}
                                     />
                                 </div>
                                 <span
-                                    className={`text-[10px] font-medium leading-none transition-colors text-foreground`}
+                                    className={`text-[10px] font-medium leading-none transition-colors ${isActive ? "text-primary" : "text-taupe-400"}`}
                                 >
                                     {item.label}
                                 </span>

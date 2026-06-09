@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { Button, Card } from "@/components/ui";
 
 function getInitials(name: string) {
   return name
@@ -37,43 +37,46 @@ export default function ProfilePage() {
     <div className="px-5 pt-6">
       <h1 className="mb-8 text-xl font-bold text-foreground">Profile</h1>
 
-      {/* Avatar */}
-      <div className="mb-8 flex flex-col items-center">
-        <div className="flex size-20 items-center justify-center rounded-full bg-foreground text-2xl font-semibold text-white">
-          {getInitials(user.name)}
+      {/* Profile card */}
+      <Card className="mb-8 p-5">
+        <div className="flex flex-col items-center">
+          <div className="flex size-20 items-center justify-center rounded-full bg-primary text-2xl font-semibold text-white">
+            {getInitials(user.name)}
+          </div>
+          <h2 id="profile-name" className="mt-4 text-lg font-bold text-foreground">
+            {user.name}
+          </h2>
+          <span className="mt-1 text-xs text-taupe-400 capitalize">
+            {user.role}
+          </span>
         </div>
-        <h2 id="profile-name" className="mt-4 text-lg font-bold text-foreground">
-          {user.name}
-        </h2>
-        <span className="mt-1 text-xs text-taupe-400 capitalize">
-          {user.role}
-        </span>
-      </div>
 
-      {/* Info */}
-      <div id="profile-info" className="mb-8 px-1">
-        <InfoRow label="Username" value={user.username} />
-        <InfoRow label="Email" value={user.email} />
-        <InfoRow label="Role" value={user.role} />
-        {user.phone && <InfoRow label="Phone" value={user.phone} />}
-      </div>
+        <div id="profile-info" className="mt-6">
+          <InfoRow label="Username" value={user.username} />
+          <InfoRow label="Email" value={user.email} />
+          <InfoRow label="Role" value={user.role} />
+          {user.phone && <InfoRow label="Phone" value={user.phone} />}
+        </div>
+      </Card>
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Link
+        <Button
           id="edit-profile-button"
           href="/profile/edit"
-          className="flex h-11 flex-1 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-white active:opacity-80 transition-opacity"
+          variant="primary"
+          className="h-11 flex-1"
         >
           Edit Profile
-        </Link>
-        <button
+        </Button>
+        <Button
           id="logout-button"
+          variant="secondary"
+          className="h-11 flex-1 bg-white"
           onClick={handleLogout}
-          className="flex h-11 flex-1 items-center justify-center rounded-full border border-taupe-200 bg-white text-sm font-semibold text-foreground active:opacity-80 transition-opacity"
         >
           Logout
-        </button>
+        </Button>
       </div>
     </div>
   );

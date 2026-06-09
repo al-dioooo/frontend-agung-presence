@@ -163,7 +163,7 @@ export function SelfieCapture({
             style={{ transform: "scaleX(-1)" }}
           />
 
-          {/* Back button */}
+          {/* Back button — bespoke camera overlay control, not a standard Button variant */}
           <button
             type="button"
             onClick={onClose}
@@ -195,7 +195,7 @@ export function SelfieCapture({
               </div>
             )}
 
-            {/* Capture button — centered, above safe area */}
+            {/* Capture button — bespoke camera shutter, centered above safe area; not a standard Button variant */}
             <div className="absolute bottom-[max(env(safe-area-inset-bottom),2rem)] left-1/2 -translate-x-1/2">
               <button
                 type="button"

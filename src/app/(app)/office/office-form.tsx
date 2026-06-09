@@ -20,7 +20,7 @@ import {
   ClockDownIcon,
   ClockUpIcon,
 } from "@/components/icons/outline";
-import { FormField, FormTextArea } from "@/app/components/form-field";
+import { Button, Card, Input, Textarea } from "@/components/ui";
 import { MapPicker } from "@/app/components/map-picker";
 
 type Mode = { kind: "create" } | { kind: "edit"; office: Office };
@@ -152,14 +152,14 @@ export function OfficeForm({ mode }: { mode: Mode }) {
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
       <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="icon"
           onClick={() => router.back()}
-          className="text-foreground"
           aria-label="Back"
         >
           <ChevronBackIcon className="size-6" />
-        </button>
+        </Button>
         <h1 className="text-lg font-bold text-foreground">
           {mode.kind === "create" ? "Tambah Kantor" : "Edit Kantor"}
         </h1>
@@ -170,10 +170,8 @@ export function OfficeForm({ mode }: { mode: Mode }) {
         className="flex-1 space-y-4 px-5 pb-32 pt-2"
       >
         {/* Photo picker */}
-        <div>
-          <span className="block text-sm font-medium text-foreground">
-            Foto Kantor
-          </span>
+        <Card className="p-4">
+          <h3 className="mb-1.5 text-sm font-bold text-foreground">Foto Kantor</h3>
           <input
             ref={fileInputRef}
             type="file"
@@ -186,7 +184,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
             initial={false}
             animate={{ scale: 1 }}
             whileTap={{ scale: 0.98 }}
-            className="relative mt-1.5 h-44 overflow-hidden rounded-2xl bg-white ring-1 ring-taupe-200"
+            className="relative mt-1.5 h-44 overflow-hidden rounded-2xl bg-taupe-50 ring-1 ring-taupe-200"
           >
             {photo ? (
               <>
@@ -238,30 +236,30 @@ export function OfficeForm({ mode }: { mode: Mode }) {
               {fieldErrors.photo}
             </span>
           )}
-        </div>
+        </Card>
 
-        <FormField
-          label="Nama Kantor"
-          placeholder="Contoh: Kantor Pusat"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          error={fieldErrors.name}
-        />
+        <Card className="p-4 space-y-4">
+          <h3 className="text-sm font-bold text-foreground">Informasi Dasar</h3>
+          <Input
+            label="Nama Kantor"
+            placeholder="Contoh: Kantor Pusat"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            error={fieldErrors.name}
+          />
+          <Textarea
+            label="Alamat"
+            placeholder="Alamat lengkap kantor"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            error={fieldErrors.address}
+          />
+        </Card>
 
-        <FormTextArea
-          label="Alamat"
-          placeholder="Alamat lengkap kantor"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          error={fieldErrors.address}
-        />
-
-        {/* Map picker */}
-        <div>
-          <span className="block text-sm font-medium text-foreground mb-1.5">
-            Lokasi Kantor
-          </span>
+        {/* Location */}
+        <Card className="p-4 space-y-4">
+          <h3 className="text-sm font-bold text-foreground">Lokasi</h3>
           <MapPicker
             lat={latitude}
             lng={longitude}
@@ -275,10 +273,9 @@ export function OfficeForm({ mode }: { mode: Mode }) {
           <p className="mt-1 text-xs text-taupe-400">
             Ketuk peta atau seret penanda untuk memilih lokasi.
           </p>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
+          <div className="grid grid-cols-2 gap-3">
+          <Input
             label="Latitude"
             placeholder="-2.987..."
             value={latitude}
@@ -287,7 +284,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
             required
             error={fieldErrors.latitude}
           />
-          <FormField
+          <Input
             label="Longitude"
             placeholder="104.756..."
             value={longitude}
@@ -307,7 +304,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
           Gunakan lokasi saat ini
         </button>
 
-        <FormField
+        <Input
           label="Radius (meter)"
           placeholder="50"
           value={radius}
@@ -316,10 +313,11 @@ export function OfficeForm({ mode }: { mode: Mode }) {
           hint="Jarak maksimum dari titik kantor untuk dianggap hadir."
           error={fieldErrors.radius}
         />
+        </Card>
 
-        <section className="space-y-3" aria-label="Jam kerja kantor">
+        <Card className="p-4 space-y-3" aria-label="Jam kerja kantor">
           <div>
-            <p className="text-sm font-medium text-foreground">Jam Kerja Kantor</p>
+            <h3 className="text-sm font-bold text-foreground">Jam Kerja Kantor</h3>
             <p className="mt-0.5 text-xs text-taupe-400">
               Waktu masuk dipakai untuk menentukan status tepat waktu atau terlambat.
             </p>
@@ -330,7 +328,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
                 <ClockDownIcon className="size-[18px] text-taupe-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <FormField
+                <Input
                   label="Masuk"
                   type="time"
                   value={workStartTime}
@@ -345,7 +343,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
                 <ClockUpIcon className="size-[18px] text-taupe-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <FormField
+                <Input
                   label="Keluar"
                   type="time"
                   value={workEndTime}
@@ -356,9 +354,9 @@ export function OfficeForm({ mode }: { mode: Mode }) {
               </div>
             </div>
           </div>
-        </section>
+        </Card>
 
-        <label className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-taupe-200">
+        <label className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-taupe-200 shadow-sm">
           <div>
             <p className="text-sm font-medium text-foreground">Kantor aktif</p>
             <p className="text-xs text-taupe-400">
@@ -385,17 +383,16 @@ export function OfficeForm({ mode }: { mode: Mode }) {
       </form>
 
       <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3">
-        <button
+        <Button
+          variant="primary"
+          fullWidth
+          className="py-3"
           onClick={handleSubmit}
-          disabled={submitting}
-          className="w-full rounded-full bg-foreground py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+          loading={submitting}
+          loadingText="Menyimpan..."
         >
-          {submitting
-            ? "Menyimpan..."
-            : mode.kind === "create"
-              ? "Buat Kantor"
-              : "Simpan Perubahan"}
-        </button>
+          {mode.kind === "create" ? "Buat Kantor" : "Simpan Perubahan"}
+        </Button>
       </div>
     </div>
   );

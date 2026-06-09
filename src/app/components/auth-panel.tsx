@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ApiError, getProfile, getStatus, login, logout } from "@/lib/api/client";
 import type { ApiStatus, User } from "@/lib/api/types";
 
+// NOTE: This is a standalone dev/test auth panel that intentionally uses its own
+// slate/emerald visual language (rounded-md, hover states) rather than the shared
+// app theme. Its buttons are bespoke and deliberately not migrated to the Button component.
 const tokenStorageKey = "agung-presence-token";
 
 type ConnectionState =

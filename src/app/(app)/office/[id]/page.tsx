@@ -23,6 +23,7 @@ import {
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
 import { SelfieCapture } from "@/app/components/selfie-capture";
+import { Button, Card } from "@/components/ui";
 
 function haversineDistance(
   lat1: number,
@@ -172,12 +173,13 @@ export default function OfficeDetailPage() {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center px-5 text-center">
         <p className="text-sm text-taupe-400">Kantor tidak ditemukan.</p>
-        <button
+        <Button
+          variant="link"
+          className="mt-4"
           onClick={() => router.back()}
-          className="mt-4 text-sm font-medium text-foreground underline"
         >
           Kembali
-        </button>
+        </Button>
       </div>
     );
   }
@@ -186,21 +188,24 @@ export default function OfficeDetailPage() {
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
       {/* Top bar — back chevron + dots */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <button
+        <Button
           id="back-button"
+          variant="secondary"
+          size="icon"
           onClick={() => router.back()}
-          className="text-foreground"
+          aria-label="Kembali"
         >
           <ChevronBackIcon className="size-6" />
-        </button>
+        </Button>
         {isAdministrator && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setSheetOpen(true)}
-            className="text-foreground"
             aria-label="Open actions"
           >
             <DotsIcon className="size-6" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -238,20 +243,23 @@ export default function OfficeDetailPage() {
             Tindakan ini tidak dapat dibatalkan. Kantor akan dihapus secara permanen.
           </p>
           <div className="mt-5 flex gap-3">
-            <button
+            <Button
+              variant="secondary"
+              className="flex-1 py-3"
               onClick={() => setConfirmDelete(false)}
               disabled={isDeleting}
-              className="flex-1 rounded-full border border-taupe-200 py-3 text-sm font-semibold text-foreground transition-opacity disabled:opacity-50 active:opacity-70"
             >
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1 py-3"
               onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex-1 rounded-full bg-red-500 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
+              loading={isDeleting}
+              loadingText="Menghapus..."
             >
-              {isDeleting ? "Menghapus..." : "Hapus"}
-            </button>
+              Hapus
+            </Button>
           </div>
         </div>
       </BottomSheet>
@@ -295,7 +303,8 @@ export default function OfficeDetailPage() {
         </div>
 
         {/* Info rows */}
-        <div className="space-y-4">
+        <Card className="p-4 space-y-4">
+          <h3 className="text-sm font-bold text-foreground">Informasi Kantor</h3>
           {office.address && (
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
@@ -344,9 +353,9 @@ export default function OfficeDetailPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
-        <section className="mt-6 space-y-4" aria-label="Jam kerja kantor">
+        <Card className="mt-4 p-4 space-y-4" aria-label="Jam kerja kantor">
           <h3 className="text-sm font-bold text-foreground">Jam Kerja Kantor</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-start gap-3">
@@ -372,7 +381,7 @@ export default function OfficeDetailPage() {
               </div>
             </div>
           </div>
-        </section>
+        </Card>
 
         {/* Feedback message */}
         <AnimatePresence>
@@ -415,23 +424,28 @@ export default function OfficeDetailPage() {
             </p>
           </div>
           {activeCheckIn ? (
-            <button
+            <Button
               id="checkout-button"
+              variant="success"
+              className="px-8 py-3"
               onClick={handleCheckOut}
-              disabled={isCheckingOut}
-              className="rounded-full bg-emerald-600 px-8 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+              loading={isCheckingOut}
+              loadingText="Memproses..."
             >
-              {isCheckingOut ? "Memproses..." : "Absen Keluar"}
-            </button>
+              Absen Keluar
+            </Button>
           ) : (
-            <button
+            <Button
               id="presence-button"
+              variant="primary"
+              className="px-8 py-3"
               onClick={handlePresence}
               disabled={isChecking || !userLocation}
-              className="rounded-full bg-foreground px-8 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity active:opacity-80"
+              loading={isChecking}
+              loadingText="Memproses..."
             >
-              {isChecking ? "Memproses..." : "Presence"}
-            </button>
+              Presence
+            </Button>
           )}
         </div>
         {!activeCheckIn && !isWithinRadius && distance !== null && (

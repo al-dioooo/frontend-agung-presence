@@ -6,8 +6,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAttendances } from "@/lib/api/hooks";
 import { mutateCheckOut } from "@/lib/api/mutations";
 import type { Attendance } from "@/lib/api/types";
-import { SearchBar } from "@/app/components/search-bar";
-import Link from "next/link";
+import { Button, Card, SearchInput } from "@/components/ui";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { ChevronRightIcon, UserIcon } from "@/components/icons/outline";
 
@@ -140,13 +139,15 @@ export default function PresencePage() {
                 Masuk: {formatTime(activeCheckIn.in_at)}
               </p>
             </div>
-            <button
+            <Button
+              variant="success"
+              className="shrink-0"
               onClick={handleCheckOut}
-              disabled={isCheckingOut}
-              className="shrink-0 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
+              loading={isCheckingOut}
+              loadingText="Memproses..."
             >
-              {isCheckingOut ? "Memproses..." : "Absen Keluar"}
-            </button>
+              Absen Keluar
+            </Button>
           </div>
           {checkOutError && (
             <p className="border-t border-emerald-100 px-4 py-2 text-xs text-red-500">
@@ -158,7 +159,7 @@ export default function PresencePage() {
 
       <div className="mb-5 flex items-center gap-2">
         <div className="min-w-0 flex-1">
-          <SearchBar
+          <SearchInput
             id="presence-search"
             value={search}
             onChange={setSearch}
@@ -166,18 +167,14 @@ export default function PresencePage() {
           />
         </div>
         {isAdministrator && (
-          <button
-            type="button"
+          <Button
+            variant={selectedUserId ? "primary" : "secondary"}
+            size="icon"
             onClick={() => setUserFilterOpen(true)}
-            className={`flex size-11 shrink-0 items-center justify-center rounded-full ring-1 transition-colors active:opacity-70 ${
-              selectedUserId
-                ? "bg-foreground text-white ring-foreground"
-                : "bg-white text-foreground ring-taupe-200"
-            }`}
             aria-label="Filter karyawan"
           >
             <UserIcon className="size-5" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -223,7 +220,7 @@ export default function PresencePage() {
               <p className="text-xs text-taupe-400">Tampilkan semua riwayat</p>
             </div>
             {selectedUserId === null && (
-              <span className="size-2 rounded-full bg-foreground" />
+              <span className="size-2 rounded-full bg-primary" />
             )}
           </button>
           {userOptions.map((option) => (
@@ -246,7 +243,7 @@ export default function PresencePage() {
                 </p>
               </div>
               {selectedUserId === option.id && (
-                <span className="size-2 rounded-full bg-foreground" />
+                <span className="size-2 rounded-full bg-primary" />
               )}
             </button>
           ))}
@@ -254,9 +251,9 @@ export default function PresencePage() {
       </BottomSheet>
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-14 animate-pulse rounded bg-taupe-100" />
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -264,15 +261,13 @@ export default function PresencePage() {
           {search ? "Tidak ada hasil ditemukan" : "Belum ada riwayat absensi"}
         </p>
       ) : (
-        <div id="presence-list">
-          {filtered.map((attendance, index) => (
-            <Link
+        <div id="presence-list" className="space-y-2">
+          {filtered.map((attendance) => (
+            <Card
               key={attendance.id}
               href={`/presence/${attendance.id}`}
               id={`attendance-${attendance.id}`}
-              className={`flex items-center justify-between gap-3 py-3.5 active:opacity-70 transition-opacity ${
-                index < filtered.length - 1 ? "border-b border-taupe-200/60" : ""
-              }`}
+              className="flex items-center justify-between gap-3 px-4 py-3.5"
             >
               <div className="min-w-0 flex-1">
                 {isAdministrator && attendance.user && (
@@ -297,7 +292,7 @@ export default function PresencePage() {
                 </span>
                 <ChevronRightIcon strokeWidth={2.5} className="size-4 text-taupe-300" />
               </div>
-            </Link>
+            </Card>
           ))}
         </div>
       )}
