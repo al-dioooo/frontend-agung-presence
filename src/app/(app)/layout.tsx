@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { PermissionGate } from "@/app/components/permission-gate";
+import { PageTransition } from "@/app/components/page-transition";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -31,7 +32,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <PermissionGate>
       <div className="mx-auto flex h-full max-w-md flex-col bg-taupe-50">
-        <main className="flex-1 overflow-y-auto page-content pb-28">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden page-content pb-28">
+          <PageTransition>{children}</PageTransition>
+        </main>
         <BottomNav />
       </div>
     </PermissionGate>
