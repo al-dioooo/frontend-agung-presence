@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronBackIcon, ChevronRightIcon } from "@/components/icons/outline";
+import { Button } from "@/components/ui";
 
 type MobileDatePickerProps = {
   open: boolean;
@@ -226,14 +227,15 @@ export function MobileDatePicker({
                 })}
               </div>
 
-              <button
-                type="button"
+              <Button
+                variant="success"
+                fullWidth
                 disabled={!draftDate}
                 onClick={() => onConfirm(draftDate)}
-                className="mt-8 flex h-14 w-full items-center justify-center rounded-full bg-emerald-500 text-base font-bold text-white transition-opacity active:opacity-80 disabled:opacity-50"
+                className="mt-8 h-14 text-base"
               >
                 Selesai
-              </button>
+              </Button>
             </div>
           </motion.div>
         </div>
