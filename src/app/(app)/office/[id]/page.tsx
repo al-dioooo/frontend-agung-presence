@@ -7,8 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { useOffice, useAttendances } from "@/lib/api/hooks";
-import { mutateDeleteOffice, mutateCheckIn, mutateCheckOut } from "@/lib/api/mutations";
-import type { Attendance } from "@/lib/api/types";
+import { mutateDeleteOffice, mutateCheckIn } from "@/lib/api/mutations";
 import {
   ChevronBackIcon,
   MapPinIcon,
@@ -23,6 +22,7 @@ import {
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
 import { SelfieCapture } from "@/app/components/selfie-capture";
+import { StaticLocationMap } from "@/app/components/static-location-map";
 import { Button, Card } from "@/components/ui";
 
 function haversineDistance(
@@ -61,12 +61,9 @@ export default function OfficeDetailPage() {
 
   const { data: office, isLoading } = useOffice(id);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: todayAttendances = [] } = useAttendances(
-    office ? { office_id: office.id, date: today } : undefined,
-  );
-  const activeCheckIn: Attendance | null =
-    todayAttendances.find((a) => a.in_at && !a.out_at) ?? null;
+  const { data: attendances = [], isLoading: loadingAttendances } = useAttendances();
+  const activeAttendance =
+    attendances.find((a) => a.user_id === user?.id && a.in_at && !a.out_at) ?? null;
 
   const [isChecking, setIsChecking] = useState(false);
   const [message, setMessage] = useState("");
@@ -78,7 +75,6 @@ export default function OfficeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selfieOpen, setSelfieOpen] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition((pos) => {
@@ -146,23 +142,7 @@ export default function OfficeDetailPage() {
     }
   }
 
-  async function handleCheckOut() {
-    if (!token || !office || !activeCheckIn) return;
-    setIsCheckingOut(true);
-    setMessage("");
-    try {
-      await mutateCheckOut(token, activeCheckIn.id, {
-        currentList: todayAttendances,
-      });
-      setMessage("Absen keluar berhasil dicatat!");
-    } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "Absen keluar gagal.");
-    } finally {
-      setIsCheckingOut(false);
-    }
-  }
-
-  if (isLoading) {
+  if (isLoading || loadingAttendances) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-taupe-200 border-t-foreground" />
@@ -332,6 +312,13 @@ export default function OfficeDetailPage() {
             </div>
           </div>
 
+          <StaticLocationMap
+            latitude={office.latitude}
+            longitude={office.longitude}
+            radius={office.radius}
+            label="Koordinat Kantor"
+          />
+
           {/* Radius — color-coded by whether user is within range */}
           <div className="flex items-start gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
@@ -424,16 +411,14 @@ export default function OfficeDetailPage() {
               {distance !== null ? formatDistance(distance) : "Memuat..."}
             </p>
           </div>
-          {activeCheckIn ? (
+          {activeAttendance ? (
             <Button
-              id="checkout-button"
-              variant="success"
+              id="active-attendance-link"
+              href={`/presence/${activeAttendance.id}`}
+              variant="secondary"
               className="px-8 py-3"
-              onClick={handleCheckOut}
-              loading={isCheckingOut}
-              loadingText="Memproses..."
             >
-              Absen Keluar
+              Lihat Absensi
             </Button>
           ) : (
             <Button
@@ -449,12 +434,17 @@ export default function OfficeDetailPage() {
             </Button>
           )}
         </div>
-        {!activeCheckIn && !isWithinRadius && distance !== null && (
+        {activeAttendance && (
+          <p className="mt-2 text-center text-xs text-taupe-400">
+            Selesaikan absen aktif di {activeAttendance.office?.name ?? `Office #${activeAttendance.office_id}`} terlebih dahulu.
+          </p>
+        )}
+        {!activeAttendance && !isWithinRadius && distance !== null && (
           <p className="mt-2 text-center text-xs text-taupe-400">
             Anda harus berada dalam radius {office?.radius}m untuk absen
           </p>
         )}
-        {!activeCheckIn && !office.is_active && (
+        {!activeAttendance && !office.is_active && (
           <p className="mt-2 text-center text-xs text-taupe-400">
             Kantor nonaktif tidak dapat digunakan untuk absen
           </p>

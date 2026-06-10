@@ -71,4 +71,12 @@ export type Attendance = {
   office?: Office;
 };
 
+export type AttendanceQueryParams = {
+  search?: string;
+  office_id?: number;
+  date?: string;
+  start_date?: string;
+  end_date?: string;
+};
+
 export type Employee = User;

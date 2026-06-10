@@ -3,6 +3,7 @@ import type {
   ApiEnvelope,
   ApiStatus,
   Attendance,
+  AttendanceQueryParams,
   Employee,
   LoginResponse,
   Office,
@@ -136,12 +137,14 @@ export async function getOffice(token: string, id: number) {
 
 export async function getAttendances(
   token: string,
-  params?: { search?: string; office_id?: number; date?: string },
+  params?: AttendanceQueryParams,
 ) {
   const q = new URLSearchParams();
   if (params?.search) q.set("search", params.search);
   if (params?.office_id) q.set("office_id", String(params.office_id));
   if (params?.date) q.set("date", params.date);
+  if (params?.start_date) q.set("start_date", params.start_date);
+  if (params?.end_date) q.set("end_date", params.end_date);
   const qs = q.toString();
   const response = await apiRequest<PaginatedEnvelope<Attendance>>(
     `/attendances${qs ? `?${qs}` : ""}`,

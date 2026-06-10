@@ -17,6 +17,7 @@ import {
   MailIcon,
 } from "@/components/icons/outline";
 import { Button, Card } from "@/components/ui";
+import { StaticLocationMap } from "@/app/components/static-location-map";
 
 function InfoRow({
   icon,
@@ -121,7 +122,7 @@ export default function PresenceDetailPage() {
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
       {/* Top bar */}
-      <div className="flex items-center gap-2 px-5 pt-5 pb-3">
+      <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <Button
           variant="secondary"
           size="icon"
@@ -130,7 +131,8 @@ export default function PresenceDetailPage() {
         >
           <ChevronBackIcon className="size-6" />
         </Button>
-        <h1 className="text-lg font-bold text-foreground">Detail Absensi</h1>
+        <h1 className="text-base font-semibold text-foreground">Detail Absensi</h1>
+        <div className="size-11" aria-hidden="true" />
       </div>
 
       <motion.div
@@ -238,36 +240,43 @@ export default function PresenceDetailPage() {
           )}
 
           <Card className="p-4 space-y-4">
-          <h3 className="text-sm font-bold text-foreground">Informasi Absensi</h3>
-          <InfoRow
-            icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
-            label="Kantor"
-            value={
-              attendance.office?.name ??
-              `Office #${attendance.office_id}`
-            }
-          />
-
-          <InfoRow
-            icon={<ClockDownIcon className="size-[18px] text-taupe-400" />}
-            label="Waktu Masuk"
-            value={formatDateTime(attendance.in_at)}
-          />
-
-          <InfoRow
-            icon={<ClockUpIcon className="size-[18px] text-taupe-400" />}
-            label="Waktu Keluar"
-            value={attendance.out_at ? formatDateTime(attendance.out_at) : "Belum absen keluar"}
-          />
-
-          {hasCoords && (
+            <h3 className="text-sm font-bold text-foreground">Informasi Absensi</h3>
             <InfoRow
-              icon={<CurrentLocationIcon className="size-[18px] text-taupe-400" />}
-              label="Lokasi Absen"
-              value={`${Number(attendance.in_latitude).toFixed(6)}, ${Number(attendance.in_longitude).toFixed(6)}`}
+              icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
+              label="Kantor"
+              value={
+                attendance.office?.name ??
+                `Office #${attendance.office_id}`
+              }
             />
-          )}
-        </Card>
+
+            <InfoRow
+              icon={<ClockDownIcon className="size-[18px] text-taupe-400" />}
+              label="Waktu Masuk"
+              value={formatDateTime(attendance.in_at)}
+            />
+
+            <InfoRow
+              icon={<ClockUpIcon className="size-[18px] text-taupe-400" />}
+              label="Waktu Keluar"
+              value={attendance.out_at ? formatDateTime(attendance.out_at) : "Belum absen keluar"}
+            />
+
+            {hasCoords && (
+              <>
+                <InfoRow
+                  icon={<CurrentLocationIcon className="size-[18px] text-taupe-400" />}
+                  label="Lokasi Absen"
+                  value={`${Number(attendance.in_latitude).toFixed(6)}, ${Number(attendance.in_longitude).toFixed(6)}`}
+                />
+                <StaticLocationMap
+                  latitude={attendance.in_latitude}
+                  longitude={attendance.in_longitude}
+                  label="Lokasi Absen"
+                />
+              </>
+            )}
+          </Card>
         </div>
       </motion.div>
     </div>

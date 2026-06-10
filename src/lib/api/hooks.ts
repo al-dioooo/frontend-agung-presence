@@ -8,6 +8,7 @@ import {
   getAttendances,
   getAttendance,
 } from "./client";
+import type { AttendanceQueryParams } from "./types";
 
 // ─── Key helpers ─────────────────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ export function employeeKey(token: string | null, id: number | string) {
 
 export function attendancesKey(
   token: string | null,
-  params?: { search?: string; office_id?: number; date?: string },
+  params?: AttendanceQueryParams,
 ) {
   if (!token) return null;
   return [
@@ -46,6 +47,8 @@ export function attendancesKey(
     params?.search ?? "",
     params?.office_id ?? "",
     params?.date ?? "",
+    params?.start_date ?? "",
+    params?.end_date ?? "",
   ] as const;
 }
 
@@ -86,18 +89,16 @@ export function useEmployee(id: number | string) {
   );
 }
 
-export function useAttendances(params?: {
-  search?: string;
-  office_id?: number;
-  date?: string;
-}) {
+export function useAttendances(params?: AttendanceQueryParams) {
   const { token } = useAuth();
 
-  return useSWR(attendancesKey(token, params), ([, tok, search, officeId, date]) =>
+  return useSWR(attendancesKey(token, params), ([, tok, search, officeId, date, startDate, endDate]) =>
     getAttendances(tok, {
       search: search || undefined,
       office_id: officeId ? Number(officeId) : undefined,
       date: date || undefined,
+      start_date: startDate || undefined,
+      end_date: endDate || undefined,
     }),
   );
 }

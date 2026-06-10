@@ -14,7 +14,7 @@ import {
   type ReportStatusFilter,
 } from "@/app/components/weekly-chart";
 import { BottomSheet } from "@/app/components/bottom-sheet";
-import { FilterIcon } from "@/components/icons/outline";
+import { ChevronBackIcon, ChevronRightIcon, FilterIcon } from "@/components/icons/outline";
 
 function haversineDistance(
   lat1: number,
@@ -65,6 +65,19 @@ function formatTime(iso: string | null) {
   return new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
 
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
 const REPORT_FILTERS: { value: ReportStatusFilter; label: string; description: string }[] = [
   { value: "all", label: "Semua Status", description: "Tampilkan semua kategori" },
   ...STATUS_KEYS.map((status) => ({
@@ -74,19 +87,58 @@ const REPORT_FILTERS: { value: ReportStatusFilter; label: string; description: s
   })),
 ];
 
+type DateRangePreset = "today" | "last_7_days" | "last_30_days" | "custom";
+type ReportFilterLevel = "root" | "category" | "date" | "custom";
+
+const DATE_RANGE_FILTERS: {
+  value: DateRangePreset;
+  label: string;
+  description: string;
+}[] = [
+  { value: "today", label: "Hari Ini", description: "Data tanggal hari ini saja" },
+  { value: "last_7_days", label: "7 Hari Terakhir", description: "Termasuk hari ini" },
+  { value: "last_30_days", label: "30 Hari Terakhir", description: "Termasuk hari ini" },
+  { value: "custom", label: "Rentang Custom", description: "Pilih tanggal mulai dan akhir" },
+];
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const { data: attendances = [], isLoading: loadingAttendances } = useAttendances();
   const isAdministrator = user?.role === "administrator";
   const { data: offices = [], isLoading: loadingOffices } = useOffices(
     undefined,
     !isAdministrator,
   );
-  const isLoading = loadingAttendances || loadingOffices;
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [reportFilterOpen, setReportFilterOpen] = useState(false);
+  const [reportFilterLevel, setReportFilterLevel] = useState<ReportFilterLevel>("root");
   const [selectedStatus, setSelectedStatus] = useState<ReportStatusFilter>("all");
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("last_7_days");
+
+  const todayIso = toDateKey(new Date());
+  const [customStartDate, setCustomStartDate] = useState(todayIso);
+  const [customEndDate, setCustomEndDate] = useState(todayIso);
+
+  const reportDateRange = useMemo(() => {
+    const today = new Date();
+    if (dateRangePreset === "today") {
+      return { start_date: todayIso, end_date: todayIso };
+    }
+    if (dateRangePreset === "last_30_days") {
+      return { start_date: toDateKey(addDays(today, -29)), end_date: todayIso };
+    }
+    if (dateRangePreset === "custom") {
+      return { start_date: customStartDate, end_date: customEndDate };
+    }
+    return { start_date: toDateKey(addDays(today, -6)), end_date: todayIso };
+  }, [customEndDate, customStartDate, dateRangePreset, todayIso]);
+
+  const { data: attendances = [], isLoading: loadingAttendances } = useAttendances(reportDateRange);
+  const { data: todayAttendances = [], isLoading: loadingTodayAttendances } = useAttendances({
+    date: todayIso,
+  });
+  const isLoading = loadingAttendances || loadingTodayAttendances || loadingOffices;
+  const isSearching = search.trim().length > 0;
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition((pos) => {
@@ -94,10 +146,9 @@ export default function DashboardPage() {
     });
   }, []);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
   const today =
-    attendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
-    attendances.find((a) => a.date === todayIso);
+    todayAttendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
+    todayAttendances.find((a) => a.date === todayIso);
 
   const reportCounts = useMemo(() => {
     const counts: Record<AttendanceStatusKey, number> = {
@@ -119,6 +170,20 @@ export default function DashboardPage() {
 
   const selectedStatusLabel =
     selectedStatus === "all" ? "Semua Status" : STATUS_META[selectedStatus].label;
+  const selectedRangeLabel =
+    DATE_RANGE_FILTERS.find((filter) => filter.value === dateRangePreset)?.label ??
+    "7 Hari Terakhir";
+  const chartAttendances =
+    selectedStatus === "all"
+      ? attendances
+      : attendances.filter((attendance) => attendance.status === selectedStatus);
+  const reportFilterActive =
+    selectedStatus !== "all" || dateRangePreset !== "last_7_days";
+
+  function closeReportFilter() {
+    setReportFilterOpen(false);
+    setReportFilterLevel("root");
+  }
 
   // Offices sorted by distance from user, max 5
   const sortedOffices = (() => {
@@ -160,140 +225,287 @@ export default function DashboardPage() {
       </div>
 
       {/* Report */}
-      <section className="mb-6" aria-label="Laporan Absensi">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-foreground">Report</h2>
-          <Button
-            id="dashboard-report-filter"
-            variant={selectedStatus === "all" ? "secondary" : "primary"}
-            size="icon"
-            onClick={() => setReportFilterOpen(true)}
-            aria-label="Filter laporan"
-          >
-            <FilterIcon className="size-5" strokeWidth={2} />
-          </Button>
-        </div>
-
-        {isLoading ? (
-          <div className="h-[220px] animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
-        ) : (
-          <Card className="p-4">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium text-taupe-400">7 Hari Terakhir</p>
-                <p className="mt-0.5 text-sm font-semibold text-foreground">
-                  {selectedStatusLabel}
-                </p>
-              </div>
-              <span className="rounded-full bg-taupe-50 px-3 py-1 text-[10px] font-semibold text-taupe-500 ring-1 ring-taupe-200">
-                {attendances.length} data
-              </span>
-            </div>
-
-            <div className="h-[170px]">
-              <WeeklyChart attendances={attendances} selectedStatus={selectedStatus} />
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {STATUS_KEYS.map((status) => {
-                const selected = selectedStatus === status;
-                return (
-                  <div
-                    key={status}
-                    className={`rounded-2xl bg-taupe-50 px-3 py-2 ring-1 transition-colors ${
-                      selected ? "ring-primary" : "ring-taupe-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: STATUS_META[status].color }}
-                      />
-                      <span className="min-w-0 truncate text-[10px] font-medium text-taupe-500">
-                        {STATUS_META[status].label}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-lg font-bold leading-none text-foreground">
-                      {reportCounts[status]}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <BottomSheet
-              open={reportFilterOpen}
-              onClose={() => setReportFilterOpen(false)}
-              title="Filter Laporan"
+      {!isSearching && (
+        <section className="mb-6" aria-label="Laporan Absensi">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-bold text-foreground">Report</h2>
+            <Button
+              id="dashboard-report-filter"
+              variant={reportFilterActive ? "primary" : "secondary"}
+              size="icon"
+              onClick={() => {
+                setReportFilterLevel("root");
+                setReportFilterOpen(true);
+              }}
+              aria-label="Filter laporan"
             >
-              <div className="px-2 pb-2">
-                {REPORT_FILTERS.map((filter) => {
-                  const selected = selectedStatus === filter.value;
-                  const color =
-                    filter.value === "all" ? "#0f172a" : STATUS_META[filter.value].color;
+              <FilterIcon className="size-5" strokeWidth={2} />
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="h-[220px] animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
+          ) : (
+            <Card className="p-4">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium text-taupe-400">{selectedRangeLabel}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-foreground">
+                    {selectedStatusLabel}
+                  </p>
+                </div>
+                <span className="rounded-full bg-taupe-50 px-3 py-1 text-[10px] font-semibold text-taupe-500 ring-1 ring-taupe-200">
+                  {chartAttendances.length} data
+                </span>
+              </div>
+
+              <div className="h-[170px]">
+                <WeeklyChart
+                  attendances={attendances}
+                  selectedStatus={selectedStatus}
+                  startDate={reportDateRange.start_date}
+                  endDate={reportDateRange.end_date}
+                />
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {STATUS_KEYS.map((status) => {
+                  const selected = selectedStatus === status;
                   return (
-                    <button
-                      key={filter.value}
-                      type="button"
-                      onClick={() => {
-                        setSelectedStatus(filter.value);
-                        setReportFilterOpen(false);
-                      }}
-                      className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                    <div
+                      key={status}
+                      className={`rounded-2xl bg-taupe-50 px-3 py-2 ring-1 transition-colors ${
+                        selected ? "ring-primary" : "ring-taupe-200"
+                      }`}
                     >
-                      <span
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100"
-                      >
+                      <div className="flex items-center gap-2">
                         <span
-                          className="size-2.5 rounded-full"
-                          style={{ backgroundColor: color }}
+                          className="size-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: STATUS_META[status].color }}
                         />
-                      </span>
-                      <span className="min-w-0 flex-1 text-left">
-                        <span className="block font-medium text-foreground">
-                          {filter.label}
+                        <span className="min-w-0 truncate text-[10px] font-medium text-taupe-500">
+                          {STATUS_META[status].label}
                         </span>
-                        <span className="block text-xs text-taupe-400">
-                          {filter.description}
-                        </span>
-                      </span>
-                      {selected && <span className="size-2 rounded-full bg-primary" />}
-                    </button>
+                      </div>
+                      <p className="mt-1 text-lg font-bold leading-none text-foreground">
+                        {reportCounts[status]}
+                      </p>
+                    </div>
                   );
                 })}
               </div>
-            </BottomSheet>
 
-            {/* Today stats */}
-            {today && (
-              <div className="mt-3 flex items-center justify-between gap-3 border-t border-taupe-200 pt-3">
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-xs text-taupe-400">Hari ini</p>
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {today.office?.name ?? `Office #${today.office_id}`}
-                  </p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-taupe-500">
-                    <span>Masuk: {formatTime(today.in_at)}</span>
-                    <span>
-                      Keluar: {today.out_at ? formatTime(today.out_at) : "Belum absen keluar"}
+              {/* Today stats */}
+              {today && (
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-taupe-200 pt-3">
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-xs text-taupe-400">Hari ini</p>
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {today.office?.name ?? `Office #${today.office_id}`}
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-taupe-500">
+                      <span>Masuk: {formatTime(today.in_at)}</span>
+                      <span>
+                        Keluar: {today.out_at ? formatTime(today.out_at) : "Belum absen keluar"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className={`text-xs font-semibold ${statusColor(today.status)}`}>
+                      {statusLabel(today.status)}
                     </span>
+                    {!today.out_at && (
+                      <p className="mt-1 text-[10px] font-semibold text-emerald-600">
+                        Sedang absen
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="shrink-0 text-right">
-                  <span className={`text-xs font-semibold ${statusColor(today.status)}`}>
-                    {statusLabel(today.status)}
-                  </span>
-                  {!today.out_at && (
-                    <p className="mt-1 text-[10px] font-semibold text-emerald-600">
-                      Sedang absen
-                    </p>
-                  )}
-                </div>
+              )}
+            </Card>
+          )}
+        </section>
+      )}
+
+      <BottomSheet
+        open={reportFilterOpen}
+        onClose={closeReportFilter}
+        title={
+          reportFilterLevel === "category"
+            ? "Kategori"
+            : reportFilterLevel === "date"
+              ? "Rentang Tanggal"
+              : reportFilterLevel === "custom"
+                ? "Rentang Custom"
+                : "Filter Laporan"
+        }
+      >
+        <div className="px-2 pb-2">
+          {reportFilterLevel !== "root" && (
+            <button
+              type="button"
+              onClick={() => setReportFilterLevel("root")}
+              className="mb-2 flex h-11 items-center gap-2 rounded-2xl px-3 text-sm font-medium text-taupe-500 transition-colors active:bg-taupe-50"
+            >
+              <ChevronBackIcon className="size-5" strokeWidth={2} />
+              Kembali
+            </button>
+          )}
+
+          {reportFilterLevel === "root" && (
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setReportFilterLevel("category")}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm transition-colors active:bg-taupe-50"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                  <span className="size-2.5 rounded-full bg-primary" />
+                </span>
+                <span className="min-w-0 flex-1 text-left">
+                  <span className="block font-medium text-foreground">Kategori</span>
+                  <span className="block text-xs text-taupe-400">{selectedStatusLabel}</span>
+                </span>
+                <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setReportFilterLevel("date")}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm transition-colors active:bg-taupe-50"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                  <span className="size-2.5 rounded-full bg-emerald-500" />
+                </span>
+                <span className="min-w-0 flex-1 text-left">
+                  <span className="block font-medium text-foreground">Rentang Tanggal</span>
+                  <span className="block text-xs text-taupe-400">{selectedRangeLabel}</span>
+                </span>
+                <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
+              </button>
+            </div>
+          )}
+
+          {reportFilterLevel === "category" && (
+            <div className="space-y-1">
+              {REPORT_FILTERS.map((filter) => {
+                const selected = selectedStatus === filter.value;
+                const color =
+                  filter.value === "all" ? "#0f172a" : STATUS_META[filter.value].color;
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => {
+                      setSelectedStatus(filter.value);
+                      setReportFilterLevel("root");
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                      <span
+                        className="size-2.5 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                    </span>
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="block font-medium text-foreground">
+                        {filter.label}
+                      </span>
+                      <span className="block text-xs text-taupe-400">
+                        {filter.description}
+                      </span>
+                    </span>
+                    {selected && <span className="size-2 rounded-full bg-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {reportFilterLevel === "date" && (
+            <div className="space-y-1">
+              {DATE_RANGE_FILTERS.map((filter) => {
+                const selected = dateRangePreset === filter.value;
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => {
+                      if (filter.value === "custom") {
+                        setReportFilterLevel("custom");
+                        return;
+                      }
+                      setDateRangePreset(filter.value);
+                      setReportFilterLevel("root");
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                      <span className="size-2.5 rounded-full bg-emerald-500" />
+                    </span>
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="block font-medium text-foreground">
+                        {filter.label}
+                      </span>
+                      <span className="block text-xs text-taupe-400">
+                        {filter.description}
+                      </span>
+                    </span>
+                    {filter.value === "custom" ? (
+                      <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
+                    ) : selected ? (
+                      <span className="size-2 rounded-full bg-primary" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {reportFilterLevel === "custom" && (
+            <div className="space-y-4 px-2 pb-1">
+              <div className="grid grid-cols-1 gap-3">
+                <label className="block">
+                  <span className="block text-sm font-medium text-foreground">Tanggal Mulai</span>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(event) => setCustomStartDate(event.target.value)}
+                    className="mt-1.5 h-12 w-full rounded-2xl bg-white px-4 text-base text-foreground outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-primary"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-sm font-medium text-foreground">Tanggal Akhir</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(event) => setCustomEndDate(event.target.value)}
+                    className="mt-1.5 h-12 w-full rounded-2xl bg-white px-4 text-base text-foreground outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-primary"
+                  />
+                </label>
               </div>
-            )}
-          </Card>
-        )}
-      </section>
+              {customStartDate > customEndDate && (
+                <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+                  Tanggal mulai tidak boleh lebih besar dari tanggal akhir.
+                </p>
+              )}
+              <Button
+                variant="primary"
+                fullWidth
+                className="h-12"
+                disabled={customStartDate > customEndDate}
+                onClick={() => {
+                  setDateRangePreset("custom");
+                  setReportFilterLevel("root");
+                }}
+              >
+                Terapkan
+              </Button>
+            </div>
+          )}
+        </div>
+      </BottomSheet>
 
       {/* Nearby Office */}
       <section aria-label="Kantor Terdekat">

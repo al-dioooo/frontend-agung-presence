@@ -6,6 +6,8 @@ import type { Attendance } from "@/lib/api/types";
 interface Props {
   attendances: Attendance[];
   selectedStatus?: ReportStatusFilter;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const STATUS_KEYS = ["on_time", "late", "absent", "sick", "leave"] as const;
@@ -30,11 +32,48 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function parseDateKey(dateKey: string | undefined) {
+  if (!dateKey) return null;
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function dateWindow(startDate?: string, endDate?: string) {
+  const end = parseDateKey(endDate) ?? new Date();
+  const start = parseDateKey(startDate) ?? new Date(end);
+
+  if (!startDate) {
+    start.setDate(end.getDate() - 6);
+  }
+
+  if (start > end) return [end];
+
+  const days: Date[] = [];
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    days.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return days.length > 0 ? days : [end];
+}
+
+function labelForDate(date: Date, total: number) {
+  if (total <= 7) return DAY_SHORT[date.getDay()];
+  return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+}
+
 function isStatusKey(status: string): status is AttendanceStatusKey {
   return (STATUS_KEYS as readonly string[]).includes(status);
 }
 
-export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
+export function WeeklyChart({
+  attendances,
+  selectedStatus = "all",
+  startDate,
+  endDate,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -42,17 +81,12 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
   useEffect(() => {
     let disposed = false;
 
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d;
-    });
-
-    const labels = days.map((d) => DAY_SHORT[d.getDay()]);
+    const days = dateWindow(startDate, endDate);
+    const labels = days.map((d) => labelForDate(d, days.length));
     const dateIndex = new Map(days.map((day, index) => [toDateKey(day), index]));
     const grouped = STATUS_KEYS.reduce(
       (acc, status) => {
-        acc[status] = Array.from({ length: 7 }, () => 0);
+        acc[status] = Array.from({ length: days.length }, () => 0);
         return acc;
       },
       {} as Record<AttendanceStatusKey, number[]>,
@@ -94,6 +128,7 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
             color: "#94a3b8",
             fontFamily: "system-ui, sans-serif",
             margin: 12,
+            rotate: days.length > 10 ? 35 : 0,
           },
         },
         yAxis: {
@@ -156,7 +191,7 @@ export function WeeklyChart({ attendances, selectedStatus = "all" }: Props) {
       chartRef.current?.dispose();
       chartRef.current = null;
     };
-  }, [attendances, selectedStatus]);
+  }, [attendances, selectedStatus, startDate, endDate]);
 
   useEffect(() => {
     function onResize() {
