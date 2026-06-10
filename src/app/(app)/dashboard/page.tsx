@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { useAttendances, useOffices } from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
@@ -13,6 +14,7 @@ import {
   type AttendanceStatusKey,
   type ReportStatusFilter,
 } from "@/app/components/weekly-chart";
+import { AutoHeight } from "@/app/components/auto-height";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { MobileDatePicker } from "@/app/components/mobile-date-picker";
 import { ChevronBackIcon, ChevronRightIcon, FilterIcon } from "@/components/icons/outline";
@@ -363,180 +365,198 @@ export default function DashboardPage() {
                 : "Filter Laporan"
         }
       >
-        <div className="px-2 pb-2">
-          {reportFilterLevel !== "root" && (
-            <button
-              type="button"
-              onClick={() => setReportFilterLevel("root")}
-              className="mb-2 flex h-11 items-center gap-2 rounded-2xl px-3 text-sm font-medium text-taupe-500 transition-colors active:bg-taupe-50"
+        <AutoHeight
+          className="px-2 pb-2"
+          deps={[
+            reportFilterLevel,
+            customStartDate,
+            customEndDate,
+            customStartDate > customEndDate,
+          ]}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={reportFilterLevel}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.14 }}
             >
-              <ChevronBackIcon className="size-5" strokeWidth={2} />
-              Kembali
-            </button>
-          )}
+              {reportFilterLevel !== "root" && (
+                <button
+                  type="button"
+                  onClick={() => setReportFilterLevel("root")}
+                  className="mb-2 flex h-11 items-center gap-2 rounded-2xl px-3 text-sm font-medium text-taupe-500 transition-colors active:bg-taupe-50"
+                >
+                  <ChevronBackIcon className="size-5" strokeWidth={2} />
+                  Kembali
+                </button>
+              )}
 
-          {reportFilterLevel === "root" && (
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => setReportFilterLevel("category")}
-                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm transition-colors active:bg-taupe-50"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
-                  <span className="size-2.5 rounded-full bg-primary" />
-                </span>
-                <span className="min-w-0 flex-1 text-left">
-                  <span className="block font-medium text-foreground">Kategori</span>
-                  <span className="block text-xs text-taupe-400">{selectedStatusLabel}</span>
-                </span>
-                <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setReportFilterLevel("date")}
-                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm transition-colors active:bg-taupe-50"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
-                  <span className="size-2.5 rounded-full bg-emerald-500" />
-                </span>
-                <span className="min-w-0 flex-1 text-left">
-                  <span className="block font-medium text-foreground">Rentang Tanggal</span>
-                  <span className="block text-xs text-taupe-400">{selectedRangeLabel}</span>
-                </span>
-                <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
-              </button>
-            </div>
-          )}
-
-          {reportFilterLevel === "category" && (
-            <div className="space-y-1">
-              {REPORT_FILTERS.map((filter) => {
-                const selected = selectedStatus === filter.value;
-                const color =
-                  filter.value === "all" ? "#0f172a" : STATUS_META[filter.value].color;
-                return (
+              {reportFilterLevel === "root" && (
+                <div className="space-y-1">
                   <button
-                    key={filter.value}
                     type="button"
-                    onClick={() => {
-                      setSelectedStatus(filter.value);
-                      setReportFilterLevel("root");
-                    }}
-                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                    onClick={() => setReportFilterLevel("category")}
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm transition-colors active:bg-taupe-50"
                   >
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
-                      <span
-                        className="size-2.5 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
+                      <span className="size-2.5 rounded-full bg-primary" />
                     </span>
                     <span className="min-w-0 flex-1 text-left">
-                      <span className="block font-medium text-foreground">
-                        {filter.label}
-                      </span>
-                      <span className="block text-xs text-taupe-400">
-                        {filter.description}
-                      </span>
+                      <span className="block font-medium text-foreground">Kategori</span>
+                      <span className="block text-xs text-taupe-400">{selectedStatusLabel}</span>
                     </span>
-                    {selected && <span className="size-2 rounded-full bg-primary" />}
+                    <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
                   </button>
-                );
-              })}
-            </div>
-          )}
 
-          {reportFilterLevel === "date" && (
-            <div className="space-y-1">
-              {DATE_RANGE_FILTERS.map((filter) => {
-                const selected = dateRangePreset === filter.value;
-                return (
                   <button
-                    key={filter.value}
                     type="button"
-                    onClick={() => {
-                      if (filter.value === "custom") {
-                        setReportFilterLevel("custom");
-                        return;
-                      }
-                      setDateRangePreset(filter.value);
-                      setReportFilterLevel("root");
-                    }}
-                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                    onClick={() => setReportFilterLevel("date")}
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm transition-colors active:bg-taupe-50"
                   >
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
                       <span className="size-2.5 rounded-full bg-emerald-500" />
                     </span>
                     <span className="min-w-0 flex-1 text-left">
-                      <span className="block font-medium text-foreground">
-                        {filter.label}
-                      </span>
-                      <span className="block text-xs text-taupe-400">
-                        {filter.description}
-                      </span>
+                      <span className="block font-medium text-foreground">Rentang Tanggal</span>
+                      <span className="block text-xs text-taupe-400">{selectedRangeLabel}</span>
                     </span>
-                    {filter.value === "custom" ? (
-                      <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
-                    ) : selected ? (
-                      <span className="size-2 rounded-full bg-primary" />
-                    ) : null}
+                    <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
                   </button>
-                );
-              })}
-            </div>
-          )}
-
-          {reportFilterLevel === "custom" && (
-            <div className="space-y-4 px-2 pb-1">
-              <div className="grid grid-cols-1 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveCustomDateField("start")}
-                  className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left ring-1 ring-taupe-200 transition-shadow active:bg-taupe-50 focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-foreground">Tanggal Mulai</span>
-                    <span className="mt-0.5 block truncate text-xs text-taupe-400">
-                      {formatDisplayDate(customStartDate)}
-                    </span>
-                  </span>
-                  <ChevronRightIcon className="size-5 shrink-0 text-taupe-400" strokeWidth={2} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveCustomDateField("end")}
-                  className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left ring-1 ring-taupe-200 transition-shadow active:bg-taupe-50 focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-foreground">Tanggal Akhir</span>
-                    <span className="mt-0.5 block truncate text-xs text-taupe-400">
-                      {formatDisplayDate(customEndDate)}
-                    </span>
-                  </span>
-                  <ChevronRightIcon className="size-5 shrink-0 text-taupe-400" strokeWidth={2} />
-                </button>
-              </div>
-              {customStartDate > customEndDate && (
-                <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
-                  Tanggal mulai tidak boleh lebih besar dari tanggal akhir.
-                </p>
+                </div>
               )}
-              <Button
-                variant="primary"
-                fullWidth
-                className="h-12"
-                disabled={customStartDate > customEndDate}
-                onClick={() => {
-                  setDateRangePreset("custom");
-                  setReportFilterLevel("root");
-                }}
-              >
-                Terapkan
-              </Button>
-            </div>
-          )}
-        </div>
+
+              {reportFilterLevel === "category" && (
+                <div className="space-y-1">
+                  {REPORT_FILTERS.map((filter) => {
+                    const selected = selectedStatus === filter.value;
+                    const color =
+                      filter.value === "all" ? "#0f172a" : STATUS_META[filter.value].color;
+                    return (
+                      <button
+                        key={filter.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedStatus(filter.value);
+                          setReportFilterLevel("root");
+                        }}
+                        className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                      >
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                          <span
+                            className="size-2.5 rounded-full"
+                            style={{ backgroundColor: color }}
+                          />
+                        </span>
+                        <span className="min-w-0 flex-1 text-left">
+                          <span className="block font-medium text-foreground">
+                            {filter.label}
+                          </span>
+                          <span className="block text-xs text-taupe-400">
+                            {filter.description}
+                          </span>
+                        </span>
+                        {selected && <span className="size-2 rounded-full bg-primary" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {reportFilterLevel === "date" && (
+                <div className="space-y-1">
+                  {DATE_RANGE_FILTERS.map((filter) => {
+                    const selected = dateRangePreset === filter.value;
+                    return (
+                      <button
+                        key={filter.value}
+                        type="button"
+                        onClick={() => {
+                          if (filter.value === "custom") {
+                            setReportFilterLevel("custom");
+                            return;
+                          }
+                          setDateRangePreset(filter.value);
+                          setReportFilterLevel("root");
+                        }}
+                        className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
+                      >
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                          <span className="size-2.5 rounded-full bg-emerald-500" />
+                        </span>
+                        <span className="min-w-0 flex-1 text-left">
+                          <span className="block font-medium text-foreground">
+                            {filter.label}
+                          </span>
+                          <span className="block text-xs text-taupe-400">
+                            {filter.description}
+                          </span>
+                        </span>
+                        {filter.value === "custom" ? (
+                          <ChevronRightIcon className="size-5 text-taupe-400" strokeWidth={2} />
+                        ) : selected ? (
+                          <span className="size-2 rounded-full bg-primary" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {reportFilterLevel === "custom" && (
+                <div className="space-y-4 px-2 pb-1">
+                  <div className="grid grid-cols-1 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCustomDateField("start")}
+                      className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left ring-1 ring-taupe-200 transition-shadow active:bg-taupe-50 focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-foreground">Tanggal Mulai</span>
+                        <span className="mt-0.5 block truncate text-xs text-taupe-400">
+                          {formatDisplayDate(customStartDate)}
+                        </span>
+                      </span>
+                      <ChevronRightIcon className="size-5 shrink-0 text-taupe-400" strokeWidth={2} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveCustomDateField("end")}
+                      className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left ring-1 ring-taupe-200 transition-shadow active:bg-taupe-50 focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-foreground">Tanggal Akhir</span>
+                        <span className="mt-0.5 block truncate text-xs text-taupe-400">
+                          {formatDisplayDate(customEndDate)}
+                        </span>
+                      </span>
+                      <ChevronRightIcon className="size-5 shrink-0 text-taupe-400" strokeWidth={2} />
+                    </button>
+                  </div>
+                  {customStartDate > customEndDate && (
+                    <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+                      Tanggal mulai tidak boleh lebih besar dari tanggal akhir.
+                    </p>
+                  )}
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    className="h-12"
+                    disabled={customStartDate > customEndDate}
+                    onClick={() => {
+                      setDateRangePreset("custom");
+                      setReportFilterLevel("root");
+                    }}
+                  >
+                    Terapkan
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </AutoHeight>
       </BottomSheet>
 
       <MobileDatePicker
