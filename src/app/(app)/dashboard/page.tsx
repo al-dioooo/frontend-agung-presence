@@ -540,7 +540,6 @@ export default function DashboardPage() {
       </BottomSheet>
 
       <MobileDatePicker
-        key={activeCustomDateField ?? "closed"}
         open={activeCustomDateField !== null}
         value={activeCustomDateField === "end" ? customEndDate : customStartDate}
         maxDate={todayIso}
