@@ -14,6 +14,7 @@ import {
   type ReportStatusFilter,
 } from "@/app/components/weekly-chart";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import { MobileDatePicker } from "@/app/components/mobile-date-picker";
 import { ChevronBackIcon, ChevronRightIcon, FilterIcon } from "@/components/icons/outline";
 
 function haversineDistance(
@@ -78,6 +79,15 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
+function formatDisplayDate(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 const REPORT_FILTERS: { value: ReportStatusFilter; label: string; description: string }[] = [
   { value: "all", label: "Semua Status", description: "Tampilkan semua kategori" },
   ...STATUS_KEYS.map((status) => ({
@@ -89,6 +99,7 @@ const REPORT_FILTERS: { value: ReportStatusFilter; label: string; description: s
 
 type DateRangePreset = "today" | "last_7_days" | "last_30_days" | "custom";
 type ReportFilterLevel = "root" | "category" | "date" | "custom";
+type CustomDateField = "start" | "end";
 
 const DATE_RANGE_FILTERS: {
   value: DateRangePreset;
@@ -114,6 +125,7 @@ export default function DashboardPage() {
   const [reportFilterLevel, setReportFilterLevel] = useState<ReportFilterLevel>("root");
   const [selectedStatus, setSelectedStatus] = useState<ReportStatusFilter>("all");
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("last_7_days");
+  const [activeCustomDateField, setActiveCustomDateField] = useState<CustomDateField | null>(null);
 
   const todayIso = toDateKey(new Date());
   const [customStartDate, setCustomStartDate] = useState(todayIso);
@@ -183,6 +195,17 @@ export default function DashboardPage() {
   function closeReportFilter() {
     setReportFilterOpen(false);
     setReportFilterLevel("root");
+    setActiveCustomDateField(null);
+  }
+
+  function handleCustomDateConfirm(date: string) {
+    if (activeCustomDateField === "start") {
+      setCustomStartDate(date);
+    }
+    if (activeCustomDateField === "end") {
+      setCustomEndDate(date);
+    }
+    setActiveCustomDateField(null);
   }
 
   // Offices sorted by distance from user, max 5
@@ -466,24 +489,33 @@ export default function DashboardPage() {
           {reportFilterLevel === "custom" && (
             <div className="space-y-4 px-2 pb-1">
               <div className="grid grid-cols-1 gap-3">
-                <label className="block">
-                  <span className="block text-sm font-medium text-foreground">Tanggal Mulai</span>
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(event) => setCustomStartDate(event.target.value)}
-                    className="mt-1.5 h-12 w-full rounded-2xl bg-white px-4 text-base text-foreground outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-primary"
-                  />
-                </label>
-                <label className="block">
-                  <span className="block text-sm font-medium text-foreground">Tanggal Akhir</span>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(event) => setCustomEndDate(event.target.value)}
-                    className="mt-1.5 h-12 w-full rounded-2xl bg-white px-4 text-base text-foreground outline-none ring-1 ring-taupe-200 transition-shadow focus:ring-2 focus:ring-primary"
-                  />
-                </label>
+                <button
+                  type="button"
+                  onClick={() => setActiveCustomDateField("start")}
+                  className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left ring-1 ring-taupe-200 transition-shadow active:bg-taupe-50 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-foreground">Tanggal Mulai</span>
+                    <span className="mt-0.5 block truncate text-xs text-taupe-400">
+                      {formatDisplayDate(customStartDate)}
+                    </span>
+                  </span>
+                  <ChevronRightIcon className="size-5 shrink-0 text-taupe-400" strokeWidth={2} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveCustomDateField("end")}
+                  className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left ring-1 ring-taupe-200 transition-shadow active:bg-taupe-50 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-foreground">Tanggal Akhir</span>
+                    <span className="mt-0.5 block truncate text-xs text-taupe-400">
+                      {formatDisplayDate(customEndDate)}
+                    </span>
+                  </span>
+                  <ChevronRightIcon className="size-5 shrink-0 text-taupe-400" strokeWidth={2} />
+                </button>
               </div>
               {customStartDate > customEndDate && (
                 <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
@@ -506,6 +538,16 @@ export default function DashboardPage() {
           )}
         </div>
       </BottomSheet>
+
+      <MobileDatePicker
+        key={activeCustomDateField ?? "closed"}
+        open={activeCustomDateField !== null}
+        value={activeCustomDateField === "end" ? customEndDate : customStartDate}
+        maxDate={todayIso}
+        title={activeCustomDateField === "end" ? "Pilih Tanggal Akhir" : "Pilih Tanggal Mulai"}
+        onClose={() => setActiveCustomDateField(null)}
+        onConfirm={handleCustomDateConfirm}
+      />
 
       {/* Nearby Office */}
       <section aria-label="Kantor Terdekat">
