@@ -132,7 +132,7 @@ export default function EmployeeDetailPage() {
         </Button>
         {!isProtected && (
           <Button
-            variant="ghost"
+            variant="secondary"
             size="icon"
             onClick={() => setSheetOpen(true)}
             aria-label="Open actions"

@@ -199,7 +199,7 @@ export default function OfficeDetailPage() {
         </Button>
         {isAdministrator && (
           <Button
-            variant="ghost"
+            variant="secondary"
             size="icon"
             onClick={() => setSheetOpen(true)}
             aria-label="Open actions"
