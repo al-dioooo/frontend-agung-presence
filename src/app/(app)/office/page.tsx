@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useOffices } from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
@@ -32,22 +32,24 @@ function formatDistance(meters: number) {
 export default function OfficePage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const { data: offices = [], isLoading } = useOffices();
+  const isAdministrator = user?.role === "administrator";
+  const { data: offices = [], isLoading } = useOffices(
+    undefined,
+    !isAdministrator,
+  );
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
-  const isAdministrator = user?.role === "administrator";
-
   // Request geolocation once on mount
-  useState(() => {
+  useEffect(() => {
     navigator.geolocation?.getCurrentPosition((pos) => {
       setUserLocation({
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
       });
     });
-  });
+  }, []);
 
   const filtered = (() => {
     const searchTerm = search.toLowerCase();
@@ -104,42 +106,55 @@ export default function OfficePage() {
         </p>
       ) : (
         <div id="office-list" className="space-y-2">
-          {filtered.map((office) => (
-            <Card
-              key={office.id}
-              href={`/office/${office.id}`}
-              id={`office-item-${office.id}`}
-              className="flex items-center justify-between gap-3 px-4 py-3.5"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  {office.name}
-                </p>
-                {office.address && (
-                  <p className="mt-0.5 truncate text-xs text-taupe-400">
-                    {office.address}
-                  </p>
-                )}
-              </div>
-              <div className="ml-3 flex shrink-0 items-center gap-2">
-                {office._distance !== undefined && (
-                  <span
-                    className={`text-xs font-semibold ${
-                      office._distance <= office.radius
-                        ? "text-emerald-600"
-                        : "text-taupe-400"
-                    }`}
-                  >
-                    {formatDistance(office._distance)}
-                  </span>
-                )}
-                <ChevronRightIcon
-                  strokeWidth={2.5}
-                  className="size-4 shrink-0 text-taupe-300"
-                />
-              </div>
-            </Card>
-          ))}
+          {filtered.map((office) => {
+            const inactive = !office.is_active;
+
+            return (
+              <Card
+                key={office.id}
+                href={`/office/${office.id}`}
+                id={`office-item-${office.id}`}
+                className={`flex items-center justify-between gap-3 px-4 py-3.5 ${
+                  inactive ? "opacity-55" : ""
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {office.name}
+                    </p>
+                    {inactive && (
+                      <span className="shrink-0 rounded-full bg-taupe-100 px-2 py-0.5 text-[10px] font-semibold text-taupe-500">
+                        Nonaktif
+                      </span>
+                    )}
+                  </div>
+                  {office.address && (
+                    <p className="mt-0.5 truncate text-xs text-taupe-400">
+                      {office.address}
+                    </p>
+                  )}
+                </div>
+                <div className="ml-3 flex shrink-0 items-center gap-2">
+                  {office._distance !== undefined && (
+                    <span
+                      className={`text-xs font-semibold ${
+                        office._distance <= office.radius
+                          ? "text-emerald-600"
+                          : "text-taupe-400"
+                      }`}
+                    >
+                      {formatDistance(office._distance)}
+                    </span>
+                  )}
+                  <ChevronRightIcon
+                    strokeWidth={2.5}
+                    className="size-4 shrink-0 text-taupe-300"
+                  />
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

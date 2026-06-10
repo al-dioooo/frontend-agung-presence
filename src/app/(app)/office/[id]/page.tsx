@@ -114,9 +114,10 @@ export default function OfficeDetailPage() {
 
   const isWithinRadius =
     office && distance !== null && distance <= office.radius;
+  const canCheckIn = Boolean(office?.is_active && isWithinRadius);
 
   function handlePresence() {
-    if (!token || !office || !userLocation) return;
+    if (!token || !office || !userLocation || !canCheckIn) return;
     setSelfieOpen(true);
   }
 
@@ -440,7 +441,7 @@ export default function OfficeDetailPage() {
               variant="primary"
               className="px-8 py-3"
               onClick={handlePresence}
-              disabled={isChecking || !userLocation}
+              disabled={isChecking || !userLocation || !canCheckIn}
               loading={isChecking}
               loadingText="Memproses..."
             >
@@ -451,6 +452,11 @@ export default function OfficeDetailPage() {
         {!activeCheckIn && !isWithinRadius && distance !== null && (
           <p className="mt-2 text-center text-xs text-taupe-400">
             Anda harus berada dalam radius {office?.radius}m untuk absen
+          </p>
+        )}
+        {!activeCheckIn && !office.is_active && (
+          <p className="mt-2 text-center text-xs text-taupe-400">
+            Kantor nonaktif tidak dapat digunakan untuk absen
           </p>
         )}
       </div>

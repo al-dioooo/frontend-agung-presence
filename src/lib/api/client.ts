@@ -94,7 +94,7 @@ export function logout(token: string) {
 
 export async function updateProfile(
   token: string,
-  data: { username?: string; phone?: string; password?: string },
+  data: { username?: string; email?: string; password?: string },
 ) {
   const response = await apiRequest<ApiEnvelope<User>>("/auth/me", {
     method: "PATCH",
@@ -107,10 +107,17 @@ export async function updateProfile(
 
 // ─── Offices ─────────────────────────────────────────────────────────────────
 
-export async function getOffices(token: string, search?: string) {
-  const query = search ? `?search=${encodeURIComponent(search)}` : "";
+export async function getOffices(
+  token: string,
+  search?: string,
+  activeOnly?: boolean,
+) {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (activeOnly) params.set("active_only", "true");
+  const query = params.toString();
   const response = await apiRequest<PaginatedEnvelope<Office>>(
-    `/offices${query}`,
+    `/offices${query ? `?${query}` : ""}`,
     { token },
   );
 

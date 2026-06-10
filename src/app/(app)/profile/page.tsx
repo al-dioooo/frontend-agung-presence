@@ -55,7 +55,6 @@ export default function ProfilePage() {
           <InfoRow label="Username" value={user.username} />
           <InfoRow label="Email" value={user.email} />
           <InfoRow label="Role" value={user.role} />
-          {user.phone && <InfoRow label="Phone" value={user.phone} />}
         </div>
       </Card>
 

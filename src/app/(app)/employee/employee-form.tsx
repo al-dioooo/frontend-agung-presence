@@ -20,6 +20,9 @@ const ROLE_OPTIONS: { value: "employee" | "administrator"; label: string }[] = [
   { value: "administrator", label: "Administrator" },
 ];
 
+const USERNAME_RULE =
+  "Gunakan huruf, angka, tanda hubung (-), atau underscore (_), maksimal 100 karakter.";
+
 export function EmployeeForm({ mode }: { mode: Mode }) {
   const { token } = useAuth();
   const router = useRouter();
@@ -120,11 +123,12 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
 
         <Input
           label="Username"
-          placeholder="budi.santoso"
+          placeholder="contoh: budi_santoso"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="off"
           required
+          hint={USERNAME_RULE}
           error={fieldErrors.username}
         />
 

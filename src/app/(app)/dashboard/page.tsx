@@ -78,7 +78,11 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const { data: attendances = [], isLoading: loadingAttendances } = useAttendances();
-  const { data: offices = [], isLoading: loadingOffices } = useOffices();
+  const isAdministrator = user?.role === "administrator";
+  const { data: offices = [], isLoading: loadingOffices } = useOffices(
+    undefined,
+    !isAdministrator,
+  );
   const isLoading = loadingAttendances || loadingOffices;
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [reportFilterOpen, setReportFilterOpen] = useState(false);

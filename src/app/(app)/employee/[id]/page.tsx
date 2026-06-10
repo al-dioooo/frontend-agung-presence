@@ -14,7 +14,6 @@ import {
   TrashIcon,
   UserIcon,
   EnterpriseIcon,
-  CommunityIcon,
   MailIcon,
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
@@ -227,13 +226,6 @@ export default function EmployeeDetailPage() {
           label="Email"
           value={employee.email}
         />
-        {employee.phone && (
-          <InfoRow
-            icon={<CommunityIcon className="size-[18px] text-taupe-400" />}
-            label="Phone"
-            value={employee.phone}
-          />
-        )}
         <InfoRow
           icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
           label="Bergabung"

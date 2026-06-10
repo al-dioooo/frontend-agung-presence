@@ -11,9 +11,13 @@ import {
 
 // ─── Key helpers ─────────────────────────────────────────────────────────────
 
-export function officesKey(token: string | null, search?: string) {
+export function officesKey(
+  token: string | null,
+  search?: string,
+  activeOnly?: boolean,
+) {
   if (!token) return null;
-  return ["/offices", token, search ?? ""] as const;
+  return ["/offices", token, search ?? "", activeOnly ? "active" : "all"] as const;
 }
 
 export function officeKey(token: string | null, id: number | string) {
@@ -52,11 +56,11 @@ export function attendanceKey(token: string | null, id: number | string) {
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 
-export function useOffices(search?: string) {
+export function useOffices(search?: string, activeOnly?: boolean) {
   const { token } = useAuth();
 
-  return useSWR(officesKey(token, search), ([, tok, s]) =>
-    getOffices(tok, s || undefined),
+  return useSWR(officesKey(token, search, activeOnly), ([, tok, s, active]) =>
+    getOffices(tok, s || undefined, active === "active"),
   );
 }
 
