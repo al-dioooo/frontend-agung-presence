@@ -5,7 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api/client";
 import { useAttendance } from "@/lib/api/hooks";
+import { mutateCheckOut } from "@/lib/api/mutations";
 import {
   ChevronBackIcon,
   EnterpriseIcon,
@@ -90,11 +92,13 @@ function formatDate(iso: string) {
 
 export default function PresenceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
 
   const { data: attendance, isLoading, error } = useAttendance(id);
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkOutError, setCheckOutError] = useState("");
 
   if (isLoading) {
     return (
@@ -123,6 +127,26 @@ export default function PresenceDetailPage() {
     attendance.in_latitude !== null && attendance.in_longitude !== null;
   const isAdministrator = user?.role === "administrator";
   const isManual = isManualAttendance(attendance.status, attendance.in_at);
+  const canCheckOut = !isManual && attendance.out_at === null;
+  const officeLabel =
+    attendance.office?.name ??
+    (isManual ? "Input Manual" : `Office #${attendance.office_id}`);
+
+  async function handleCheckOut() {
+    if (!token || !attendance || !canCheckOut) return;
+
+    setIsCheckingOut(true);
+    setCheckOutError("");
+    try {
+      await mutateCheckOut(token, attendance.id);
+    } catch (err) {
+      setCheckOutError(
+        err instanceof ApiError ? err.message : "Gagal absen keluar.",
+      );
+    } finally {
+      setIsCheckingOut(false);
+    }
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
@@ -144,7 +168,7 @@ export default function PresenceDetailPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="flex-1 space-y-5 px-5 pb-8"
+        className={`flex-1 space-y-5 px-5 ${canCheckOut ? "pb-32" : "pb-8"}`}
       >
         {/* Proof photo */}
         <div
@@ -249,10 +273,7 @@ export default function PresenceDetailPage() {
             <InfoRow
               icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
               label="Kantor"
-              value={
-                attendance.office?.name ??
-                (isManual ? "Input Manual" : `Office #${attendance.office_id}`)
-              }
+              value={officeLabel}
             />
 
             <InfoRow
@@ -290,6 +311,34 @@ export default function PresenceDetailPage() {
           </Card>
         </div>
       </motion.div>
+
+      {canCheckOut && (
+        <div className="sticky bottom-4 z-10 mx-8 mt-auto rounded-2xl bg-white px-4 pb-2 pt-2 ring-1 ring-taupe-200 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground">Sedang Absen</p>
+              <p className="truncate text-xs text-taupe-400">
+                {officeLabel}
+              </p>
+            </div>
+            <Button
+              id="presence-detail-checkout"
+              variant="primary"
+              className="shrink-0 px-8 py-3"
+              onClick={handleCheckOut}
+              loading={isCheckingOut}
+              loadingText="Memproses..."
+            >
+              Absen Keluar
+            </Button>
+          </div>
+          {checkOutError && (
+            <p className="mt-2 text-center text-xs font-medium text-red-500">
+              {checkOutError}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
