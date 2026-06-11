@@ -403,7 +403,7 @@ export default function OfficeDetailPage() {
       />
 
       {/* Bottom CTA */}
-      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-4 pt-4">
+      <div className="sticky bg-white mx-8 rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm bottom-4 z-10 mt-auto px-4 pb-2 pt-2">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-foreground">Nearby</p>
