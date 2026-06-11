@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api/client";
-import { useAttendances } from "@/lib/api/hooks";
-import { mutateCheckOut } from "@/lib/api/mutations";
-import type { Attendance } from "@/lib/api/types";
+import { useAttendances, useEmployees } from "@/lib/api/hooks";
+import { mutateCheckOut, mutateCreateManualAttendance } from "@/lib/api/mutations";
+import type { Attendance, ManualAttendanceStatus } from "@/lib/api/types";
 import { Button, Card, SearchInput } from "@/components/ui";
 import { BottomSheet } from "@/app/components/bottom-sheet";
-import { ChevronRightIcon, UserIcon } from "@/components/icons/outline";
+import { MobileDatePicker } from "@/app/components/mobile-date-picker";
+import { ChevronRightIcon, PencilIcon, UserIcon } from "@/components/icons/outline";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", {
@@ -24,6 +25,22 @@ function formatTime(iso: string | null) {
   return new Date(iso).toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 }
 
@@ -61,6 +78,22 @@ function statusColor(status: string) {
   }
 }
 
+function isManualAttendance(attendance: Attendance) {
+  return (
+    (attendance.status === "sick" || attendance.status === "leave") &&
+    attendance.in_at === null
+  );
+}
+
+const MANUAL_STATUS_OPTIONS: {
+  value: ManualAttendanceStatus;
+  label: string;
+  description: string;
+}[] = [
+  { value: "sick", label: "Sakit", description: "Tandai karyawan sakit" },
+  { value: "leave", label: "Cuti", description: "Tandai karyawan cuti" },
+];
+
 export default function PresencePage() {
   const { token, user } = useAuth();
   const [search, setSearch] = useState("");
@@ -70,8 +103,19 @@ export default function PresencePage() {
   const [userFilterOpen, setUserFilterOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const isAdministrator = user?.role === "administrator";
+  const today = toDateKey(new Date());
+  const { data: employees = [], isLoading: isLoadingEmployees } = useEmployees(
+    undefined,
+    isAdministrator,
+  );
+  const [manualInputOpen, setManualInputOpen] = useState(false);
+  const [manualDatePickerOpen, setManualDatePickerOpen] = useState(false);
+  const [manualUserId, setManualUserId] = useState<number | null>(null);
+  const [manualDate, setManualDate] = useState(today);
+  const [manualStatus, setManualStatus] = useState<ManualAttendanceStatus>("sick");
+  const [manualError, setManualError] = useState("");
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
   const activeCheckIn = attendances.find(
     (a) => !isAdministrator && a.date === today && a.in_at && !a.out_at,
   ) ?? null;
@@ -86,6 +130,8 @@ export default function PresencePage() {
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   const selectedUser = userOptions.find((option) => option.id === selectedUserId);
+  const employeeOptions = [...employees].sort((a, b) => a.name.localeCompare(b.name));
+  const selectedManualEmployee = employeeOptions.find((employee) => employee.id === manualUserId);
 
   async function handleCheckOut() {
     if (!token || !activeCheckIn) return;
@@ -99,6 +145,32 @@ export default function PresencePage() {
       setCheckOutError(err instanceof ApiError ? err.message : "Gagal absen keluar.");
     } finally {
       setIsCheckingOut(false);
+    }
+  }
+
+  async function handleManualSubmit() {
+    if (!token || manualUserId === null) return;
+
+    setIsSubmittingManual(true);
+    setManualError("");
+    try {
+      await mutateCreateManualAttendance(token, {
+        user_id: manualUserId,
+        date: manualDate,
+        status: manualStatus,
+      });
+      setManualInputOpen(false);
+      setManualUserId(null);
+      setManualStatus("sick");
+      setManualDate(today);
+    } catch (err) {
+      setManualError(
+        err instanceof ApiError
+          ? err.message
+          : "Gagal menyimpan input manual.",
+      );
+    } finally {
+      setIsSubmittingManual(false);
     }
   }
 
@@ -167,14 +239,27 @@ export default function PresencePage() {
           />
         </div>
         {isAdministrator && (
-          <Button
-            variant={selectedUserId ? "primary" : "secondary"}
-            size="icon"
-            onClick={() => setUserFilterOpen(true)}
-            aria-label="Filter karyawan"
-          >
-            <UserIcon className="size-5" />
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={() => {
+                setManualError("");
+                setManualInputOpen(true);
+              }}
+              aria-label="Input manual cuti atau sakit"
+            >
+              <PencilIcon className="size-5" strokeWidth={2} />
+            </Button>
+            <Button
+              variant={selectedUserId ? "primary" : "secondary"}
+              size="icon"
+              onClick={() => setUserFilterOpen(true)}
+              aria-label="Filter karyawan"
+            >
+              <UserIcon className="size-5" />
+            </Button>
+          </>
         )}
       </div>
 
@@ -250,6 +335,146 @@ export default function PresencePage() {
         </div>
       </BottomSheet>
 
+      <BottomSheet
+        open={manualInputOpen}
+        onClose={() => {
+          setManualInputOpen(false);
+          setManualDatePickerOpen(false);
+        }}
+        title="Input Cuti / Sakit"
+      >
+        <div className="space-y-4 px-2 pb-2">
+          <div>
+            <p className="px-2 text-xs font-semibold uppercase text-taupe-400">
+              Karyawan
+            </p>
+            <div className="mt-2 max-h-[32vh] space-y-1 overflow-y-auto">
+              {isLoadingEmployees ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-16 animate-pulse rounded-2xl bg-taupe-100"
+                  />
+                ))
+              ) : employeeOptions.length === 0 ? (
+                <p className="rounded-2xl bg-taupe-50 px-4 py-5 text-center text-sm text-taupe-400">
+                  Belum ada karyawan
+                </p>
+              ) : (
+                employeeOptions.map((employee) => {
+                  const selected = employee.id === manualUserId;
+                  return (
+                    <button
+                      key={employee.id}
+                      type="button"
+                      onClick={() => setManualUserId(employee.id)}
+                      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50 ${
+                        selected ? "bg-taupe-50" : ""
+                      }`}
+                    >
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
+                        <UserIcon className="size-4 text-taupe-400" />
+                      </span>
+                      <span className="min-w-0 flex-1 text-left">
+                        <span className="block truncate font-medium text-foreground">
+                          {employee.name}
+                        </span>
+                        <span className="block truncate text-xs text-taupe-400">
+                          @{employee.username} · {employee.email}
+                        </span>
+                      </span>
+                      {selected && <span className="size-2 rounded-full bg-primary" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setManualDatePickerOpen(true)}
+            className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left ring-1 ring-taupe-200 transition-shadow active:bg-taupe-50 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-foreground">
+                Tanggal
+              </span>
+              <span className="mt-0.5 block truncate text-xs text-taupe-400">
+                {formatDisplayDate(manualDate)}
+              </span>
+            </span>
+            <ChevronRightIcon className="size-5 shrink-0 text-taupe-400" strokeWidth={2} />
+          </button>
+
+          <div>
+            <p className="px-2 text-xs font-semibold uppercase text-taupe-400">
+              Status
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {MANUAL_STATUS_OPTIONS.map((option) => {
+                const selected = manualStatus === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setManualStatus(option.value)}
+                    className={`rounded-2xl px-4 py-3 text-left ring-1 transition-colors active:bg-taupe-50 ${
+                      selected
+                        ? "bg-emerald-50 ring-primary"
+                        : "bg-white ring-taupe-200"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold text-foreground">
+                      {option.label}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-taupe-400">
+                      {option.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {selectedManualEmployee && (
+            <p className="rounded-2xl bg-taupe-50 px-4 py-3 text-xs text-taupe-500">
+              {selectedManualEmployee.name} akan ditandai {statusLabel(manualStatus)} pada {formatDisplayDate(manualDate)}.
+            </p>
+          )}
+
+          {manualError && (
+            <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              {manualError}
+            </p>
+          )}
+
+          <Button
+            variant="primary"
+            fullWidth
+            className="h-12"
+            disabled={manualUserId === null}
+            loading={isSubmittingManual}
+            loadingText="Menyimpan..."
+            onClick={handleManualSubmit}
+          >
+            Simpan
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <MobileDatePicker
+        open={manualDatePickerOpen}
+        value={manualDate}
+        maxDate={today}
+        title="Pilih Tanggal"
+        onClose={() => setManualDatePickerOpen(false)}
+        onConfirm={(date) => {
+          setManualDate(date);
+          setManualDatePickerOpen(false);
+        }}
+      />
+
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -276,14 +501,23 @@ export default function PresencePage() {
                   </p>
                 )}
                 <p className="text-sm font-medium text-foreground">
-                  {attendance.office?.name ?? `Office #${attendance.office_id}`}
+                  {attendance.office?.name ??
+                    (isManualAttendance(attendance)
+                      ? "Input Manual"
+                      : `Office #${attendance.office_id}`)}
                 </p>
                 <p className="mt-0.5 text-xs text-taupe-400">
                   {formatDate(attendance.date)}
                 </p>
                 <div className="mt-1 flex gap-3 text-xs text-taupe-400">
-                  <span>Masuk: {formatTime(attendance.in_at)}</span>
-                  <span>Keluar: {formatTime(attendance.out_at)}</span>
+                  {isManualAttendance(attendance) ? (
+                    <span>Tidak memerlukan waktu absen</span>
+                  ) : (
+                    <>
+                      <span>Masuk: {formatTime(attendance.in_at)}</span>
+                      <span>Keluar: {formatTime(attendance.out_at)}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">

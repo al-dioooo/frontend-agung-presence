@@ -6,6 +6,7 @@ import type {
   AttendanceQueryParams,
   Employee,
   LoginResponse,
+  ManualAttendanceInput,
   Office,
   PaginatedEnvelope,
   User,
@@ -192,6 +193,22 @@ export async function checkOut(token: string, id: number) {
   const response = await apiRequest<ApiEnvelope<Attendance>>(
     `/attendances/${id}/checkout`,
     { method: "POST", token },
+  );
+
+  return response.data;
+}
+
+export async function createManualAttendance(
+  token: string,
+  data: ManualAttendanceInput,
+) {
+  const response = await apiRequest<ApiEnvelope<Attendance>>(
+    "/attendances/manual",
+    {
+      method: "POST",
+      token,
+      body: data,
+    },
   );
 
   return response.data;

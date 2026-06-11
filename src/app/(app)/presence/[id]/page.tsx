@@ -63,6 +63,10 @@ function statusColor(status: string) {
   }
 }
 
+function isManualAttendance(status: string, inAt: string | null) {
+  return (status === "sick" || status === "leave") && inAt === null;
+}
+
 function formatDateTime(iso: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("id-ID", {
@@ -118,6 +122,7 @@ export default function PresenceDetailPage() {
   const hasCoords =
     attendance.in_latitude !== null && attendance.in_longitude !== null;
   const isAdministrator = user?.role === "administrator";
+  const isManual = isManualAttendance(attendance.status, attendance.in_at);
 
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col">
@@ -246,20 +251,26 @@ export default function PresenceDetailPage() {
               label="Kantor"
               value={
                 attendance.office?.name ??
-                `Office #${attendance.office_id}`
+                (isManual ? "Input Manual" : `Office #${attendance.office_id}`)
               }
             />
 
             <InfoRow
               icon={<ClockDownIcon className="size-[18px] text-taupe-400" />}
               label="Waktu Masuk"
-              value={formatDateTime(attendance.in_at)}
+              value={isManual ? "Tidak diperlukan" : formatDateTime(attendance.in_at)}
             />
 
             <InfoRow
               icon={<ClockUpIcon className="size-[18px] text-taupe-400" />}
               label="Waktu Keluar"
-              value={attendance.out_at ? formatDateTime(attendance.out_at) : "Belum absen keluar"}
+              value={
+                isManual
+                  ? "Tidak diperlukan"
+                  : attendance.out_at
+                    ? formatDateTime(attendance.out_at)
+                    : "Belum absen keluar"
+              }
             />
 
             {hasCoords && (

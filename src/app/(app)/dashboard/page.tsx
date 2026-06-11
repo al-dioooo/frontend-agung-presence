@@ -63,6 +63,10 @@ function statusColor(status: string) {
   }
 }
 
+function isManualAttendance(status: string, inAt: string | null) {
+  return (status === "sick" || status === "leave") && inAt === null;
+}
+
 function formatTime(iso: string | null) {
   if (!iso) return "--:--";
   return new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
@@ -163,6 +167,7 @@ export default function DashboardPage() {
   const today =
     todayAttendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
     todayAttendances.find((a) => a.date === todayIso);
+  const isTodayManual = today ? isManualAttendance(today.status, today.in_at) : false;
 
   const reportCounts = useMemo(() => {
     const counts: Record<AttendanceStatusKey, number> = {
@@ -326,20 +331,27 @@ export default function DashboardPage() {
                   <div className="min-w-0 space-y-0.5">
                     <p className="text-xs text-taupe-400">Hari ini</p>
                     <p className="truncate text-sm font-medium text-foreground">
-                      {today.office?.name ?? `Office #${today.office_id}`}
+                      {today.office?.name ??
+                        (isTodayManual ? "Input Manual" : `Office #${today.office_id}`)}
                     </p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-taupe-500">
-                      <span>Masuk: {formatTime(today.in_at)}</span>
-                      <span>
-                        Keluar: {today.out_at ? formatTime(today.out_at) : "Belum absen keluar"}
-                      </span>
+                      {isTodayManual ? (
+                        <span>Tidak memerlukan waktu absen</span>
+                      ) : (
+                        <>
+                          <span>Masuk: {formatTime(today.in_at)}</span>
+                          <span>
+                            Keluar: {today.out_at ? formatTime(today.out_at) : "Belum absen keluar"}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
                     <span className={`text-xs font-semibold ${statusColor(today.status)}`}>
                       {statusLabel(today.status)}
                     </span>
-                    {!today.out_at && (
+                    {!isTodayManual && !today.out_at && (
                       <p className="mt-1 text-[10px] font-semibold text-emerald-600">
                         Sedang absen
                       </p>

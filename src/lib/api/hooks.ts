@@ -73,10 +73,10 @@ export function useOffice(id: number | string) {
   return useSWR(officeKey(token, id), ([, tok, i]) => getOffice(tok, Number(i)));
 }
 
-export function useEmployees(search?: string) {
+export function useEmployees(search?: string, enabled = true) {
   const { token } = useAuth();
 
-  return useSWR(employeesKey(token, search), ([, tok, s]) =>
+  return useSWR(enabled ? employeesKey(token, search) : null, ([, tok, s]) =>
     getEmployees(tok, s || undefined),
   );
 }

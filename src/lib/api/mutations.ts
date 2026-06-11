@@ -8,11 +8,12 @@ import {
   deleteEmployee,
   checkIn,
   checkOut,
+  createManualAttendance,
   type OfficeInput,
   type CreateEmployeeInput,
   type UpdateEmployeeInput,
 } from "./client";
-import type { Office, Employee, Attendance } from "./types";
+import type { Office, Employee, Attendance, ManualAttendanceInput } from "./types";
 import {
   officesKey,
   officeKey,
@@ -218,4 +219,20 @@ export async function mutateCheckOut(
     revalidatePrefix("/attendances");
     throw err;
   }
+}
+
+export async function mutateCreateManualAttendance(
+  token: string,
+  data: ManualAttendanceInput,
+) {
+  const attendance = await createManualAttendance(token, data);
+
+  revalidatePrefix("/attendances");
+
+  const detailKey = attendanceKey(token, attendance.id);
+  if (detailKey) {
+    mutate(detailKey, attendance, { revalidate: false });
+  }
+
+  return attendance;
 }

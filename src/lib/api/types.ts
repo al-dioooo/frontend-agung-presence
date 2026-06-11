@@ -55,7 +55,7 @@ export type Office = {
 export type Attendance = {
   id: number;
   user_id: number;
-  office_id: number;
+  office_id: number | null;
   date: string;
   in_at: string | null;
   out_at: string | null;
@@ -69,6 +69,14 @@ export type Attendance = {
   updated_at: string;
   user?: User;
   office?: Office;
+};
+
+export type ManualAttendanceStatus = "sick" | "leave";
+
+export type ManualAttendanceInput = {
+  user_id: number;
+  date: string;
+  status: ManualAttendanceStatus;
 };
 
 export type AttendanceQueryParams = {
