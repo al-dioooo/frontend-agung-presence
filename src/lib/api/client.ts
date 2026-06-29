@@ -4,6 +4,11 @@ import type {
   ApiStatus,
   Attendance,
   AttendanceQueryParams,
+  AttendanceRequest,
+  AttendanceRequestInput,
+  AttendanceRequestQueryParams,
+  AttendanceRequestReviewInput,
+  AttendanceSummary,
   Employee,
   LoginResponse,
   ManualAttendanceInput,
@@ -155,6 +160,46 @@ export async function getAttendances(
   return response.data;
 }
 
+export async function getAttendanceSummary(token: string) {
+  const response = await apiRequest<ApiEnvelope<AttendanceSummary[]>>(
+    "/attendances/summary",
+    { token },
+  );
+
+  return response.data;
+}
+
+export async function downloadAttendanceExport(token: string) {
+  const response = await fetch(`${apiProxyPath}/attendances/export`, {
+    method: "GET",
+    headers: {
+      Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new ApiError(
+      payload?.message ?? "Gagal mengunduh rekap absensi.",
+      response.status,
+      payload,
+    );
+  }
+
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const filename =
+    disposition.match(/filename="([^"]+)"/)?.[1] ??
+    disposition.match(/filename=([^;]+)/)?.[1]?.trim() ??
+    "attendance-recap.xlsx";
+
+  return {
+    blob: await response.blob(),
+    filename,
+  };
+}
+
 export async function getAttendance(token: string, id: number) {
   const response = await apiRequest<ApiEnvelope<Attendance>>(
     `/attendances/${id}`,
@@ -206,6 +251,65 @@ export async function createManualAttendance(
     "/attendances/manual",
     {
       method: "POST",
+      token,
+      body: data,
+    },
+  );
+
+  return response.data;
+}
+
+export async function getAttendanceRequests(
+  token: string,
+  params?: AttendanceRequestQueryParams,
+) {
+  const q = new URLSearchParams();
+  if (params?.approval_status && params.approval_status !== "all") {
+    q.set("approval_status", params.approval_status);
+  }
+  const qs = q.toString();
+  const response = await apiRequest<ApiEnvelope<AttendanceRequest[]>>(
+    `/attendance-requests${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+
+  return response.data;
+}
+
+export async function getAttendanceRequest(token: string, id: number) {
+  const response = await apiRequest<ApiEnvelope<AttendanceRequest>>(
+    `/attendance-requests/${id}`,
+    { token },
+  );
+
+  return response.data;
+}
+
+export async function createAttendanceRequest(
+  token: string,
+  data: AttendanceRequestInput,
+) {
+  const response = await apiRequest<ApiEnvelope<AttendanceRequest>>(
+    "/attendance-requests",
+    {
+      method: "POST",
+      token,
+      body: data,
+    },
+  );
+
+  return response.data;
+}
+
+export async function reviewAttendanceRequest(
+  token: string,
+  id: number,
+  data: AttendanceRequestReviewInput,
+) {
+  const response = await apiRequest<ApiEnvelope<AttendanceRequest>>(
+    `/attendance-requests/${id}/review`,
+    {
+      method: "PATCH",
       token,
       body: data,
     },

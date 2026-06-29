@@ -2,6 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import type { Attendance } from "@/lib/api/types";
+import {
+  isAttendanceStatusKey,
+  STATUS_KEYS,
+  STATUS_META,
+  type AttendanceStatusKey,
+  type ReportStatusFilter,
+} from "@/lib/attendance-status";
 
 interface Props {
   attendances: Attendance[];
@@ -10,18 +17,8 @@ interface Props {
   endDate?: string;
 }
 
-export const STATUS_KEYS = ["on_time", "late", "absent", "sick", "leave"] as const;
-
-export type AttendanceStatusKey = (typeof STATUS_KEYS)[number];
-export type ReportStatusFilter = "all" | AttendanceStatusKey;
-
-export const STATUS_META: Record<AttendanceStatusKey, { label: string; color: string }> = {
-  on_time: { label: "Tepat Waktu", color: "#10b981" },
-  late: { label: "Terlambat", color: "#f59e0b" },
-  absent: { label: "Tidak Hadir", color: "#ef4444" },
-  sick: { label: "Sakit", color: "#38bdf8" },
-  leave: { label: "Cuti", color: "#8b5cf6" },
-};
+export { STATUS_KEYS, STATUS_META };
+export type { AttendanceStatusKey, ReportStatusFilter };
 
 const DAY_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
@@ -64,10 +61,6 @@ function labelForDate(date: Date, total: number) {
   return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 }
 
-function isStatusKey(status: string): status is AttendanceStatusKey {
-  return (STATUS_KEYS as readonly string[]).includes(status);
-}
-
 export function WeeklyChart({
   attendances,
   selectedStatus = "all",
@@ -94,7 +87,7 @@ export function WeeklyChart({
 
     attendances.forEach((attendance) => {
       const index = dateIndex.get(attendance.date);
-      if (index === undefined || !isStatusKey(attendance.status)) return;
+      if (index === undefined || !isAttendanceStatusKey(attendance.status)) return;
       grouped[attendance.status][index] += 1;
     });
 

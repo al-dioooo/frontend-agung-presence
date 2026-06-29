@@ -55,6 +55,7 @@ export type Office = {
 export type Attendance = {
   id: number;
   user_id: number;
+  attendance_request_id: number | null;
   office_id: number | null;
   date: string;
   in_at: string | null;
@@ -69,9 +70,60 @@ export type Attendance = {
   updated_at: string;
   user?: User;
   office?: Office;
+  attendance_request?: AttendanceRequest | null;
 };
 
-export type ManualAttendanceStatus = "sick" | "leave";
+export type AttendanceStatus =
+  | "on_time"
+  | "late"
+  | "absent"
+  | "sick"
+  | "leave"
+  | "permit"
+  | string;
+
+export type ManualAttendanceStatus = "sick" | "leave" | "permit";
+
+export type AttendanceRequestType = "sick" | "leave" | "permit";
+export type AttendanceRequestApprovalStatus = "pending" | "approved" | "rejected";
+
+export type AttendanceRequest = {
+  id: number;
+  user_id: number;
+  type: AttendanceRequestType;
+  start_date: string;
+  end_date: string;
+  description: string;
+  proof_photo: string;
+  approval_status: AttendanceRequestApprovalStatus;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+  reviewer?: User | null;
+};
+
+export type AttendanceRequestInput = {
+  type: AttendanceRequestType;
+  start_date: string;
+  end_date: string;
+  description: string;
+  proof_photo: string;
+};
+
+export type AttendanceRequestReviewInput =
+  | {
+      approval_status: "approved";
+      rejection_reason?: never;
+    }
+  | {
+      approval_status: "rejected";
+      rejection_reason: string;
+    };
 
 export type ManualAttendanceInput = {
   user_id: number;
@@ -85,6 +137,26 @@ export type AttendanceQueryParams = {
   date?: string;
   start_date?: string;
   end_date?: string;
+};
+
+export type AttendanceRequestQueryParams = {
+  approval_status?: AttendanceRequestApprovalStatus | "all";
+};
+
+export type AttendanceSummary = {
+  user_id: number;
+  name: string;
+  username: string;
+  email: string;
+  on_time_count: number;
+  late_count: number;
+  total_real_check_ins: number;
+  sick_count: number;
+  leave_count: number;
+  permit_count: number;
+  absent_count: number;
+  first_attendance_date: string | null;
+  latest_attendance_date: string | null;
 };
 
 export type Employee = User;

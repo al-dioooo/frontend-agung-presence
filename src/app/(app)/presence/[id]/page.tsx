@@ -9,6 +9,11 @@ import { ApiError } from "@/lib/api/client";
 import { useAttendance } from "@/lib/api/hooks";
 import { mutateCheckOut } from "@/lib/api/mutations";
 import {
+  isManualAttendance,
+  statusBadgeClass,
+  statusLabel,
+} from "@/lib/attendance-status";
+import {
   ChevronBackIcon,
   EnterpriseIcon,
   DatabaseIcon,
@@ -20,6 +25,7 @@ import {
 } from "@/components/icons/outline";
 import { Button, Card } from "@/components/ui";
 import { StaticLocationMap } from "@/app/components/static-location-map";
+import { formatDateKey } from "@/app/components/date-range-fields";
 
 function InfoRow({
   icon,
@@ -41,32 +47,6 @@ function InfoRow({
       </div>
     </div>
   );
-}
-
-function statusLabel(status: string) {
-  switch (status) {
-    case "on_time": return "Tepat Waktu";
-    case "late": return "Terlambat";
-    case "absent": return "Tidak Hadir";
-    case "sick": return "Sakit";
-    case "leave": return "Cuti";
-    default: return status;
-  }
-}
-
-function statusColor(status: string) {
-  switch (status) {
-    case "on_time": return "bg-emerald-50 text-emerald-700";
-    case "late": return "bg-amber-50 text-amber-600";
-    case "absent": return "bg-red-50 text-red-600";
-    case "sick": return "bg-sky-50 text-sky-600";
-    case "leave": return "bg-violet-50 text-violet-600";
-    default: return "bg-taupe-100 text-taupe-500";
-  }
-}
-
-function isManualAttendance(status: string, inAt: string | null) {
-  return (status === "sick" || status === "leave") && inAt === null;
 }
 
 function formatDateTime(iso: string | null) {
@@ -126,11 +106,17 @@ export default function PresenceDetailPage() {
   const hasCoords =
     attendance.in_latitude !== null && attendance.in_longitude !== null;
   const isAdministrator = user?.role === "administrator";
-  const isManual = isManualAttendance(attendance.status, attendance.in_at);
-  const canCheckOut = !isManual && attendance.out_at === null;
+  const isManual = isManualAttendance(attendance);
+  const canCheckOut = !isManual && attendance.in_at !== null && attendance.out_at === null;
   const officeLabel =
     attendance.office?.name ??
     (isManual ? "Input Manual" : `Office #${attendance.office_id}`);
+  const request = attendance.attendance_request;
+  const requestDateRange = request
+    ? request.start_date === request.end_date
+      ? formatDateKey(request.start_date)
+      : `${formatDateKey(request.start_date)} - ${formatDateKey(request.end_date)}`
+    : "";
 
   async function handleCheckOut() {
     if (!token || !attendance || !canCheckOut) return;
@@ -239,7 +225,7 @@ export default function PresenceDetailPage() {
             {formatDate(attendance.date)}
           </p>
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusColor(attendance.status)}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(attendance.status)}`}
           >
             {statusLabel(attendance.status)}
           </span>
@@ -293,6 +279,26 @@ export default function PresenceDetailPage() {
                     : "Belum absen keluar"
               }
             />
+
+            {request && (
+              <>
+                <InfoRow
+                  icon={<DatabaseIcon className="size-[18px] text-taupe-400" />}
+                  label="Pengajuan"
+                  value={`${statusLabel(request.type)} · ${requestDateRange}`}
+                />
+                <InfoRow
+                  icon={<DatabaseIcon className="size-[18px] text-taupe-400" />}
+                  label="Keterangan Pengajuan"
+                  value={request.description}
+                />
+                <InfoRow
+                  icon={<UserIcon className="size-[18px] text-taupe-400" />}
+                  label="Reviewer"
+                  value={request.reviewer?.name ?? "Administrator"}
+                />
+              </>
+            )}
 
             {hasCoords && (
               <>

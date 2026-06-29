@@ -7,8 +7,10 @@ import {
   getEmployee,
   getAttendances,
   getAttendance,
+  getAttendanceRequests,
+  getAttendanceSummary,
 } from "./client";
-import type { AttendanceQueryParams } from "./types";
+import type { AttendanceQueryParams, AttendanceRequestQueryParams } from "./types";
 
 // ─── Key helpers ─────────────────────────────────────────────────────────────
 
@@ -55,6 +57,28 @@ export function attendancesKey(
 export function attendanceKey(token: string | null, id: number | string) {
   if (!token) return null;
   return ["/attendances", token, String(id)] as const;
+}
+
+export function attendanceSummaryKey(token: string | null) {
+  if (!token) return null;
+  return ["/attendances/summary", token] as const;
+}
+
+export function attendanceRequestsKey(
+  token: string | null,
+  params?: AttendanceRequestQueryParams,
+) {
+  if (!token) return null;
+  return [
+    "/attendance-requests",
+    token,
+    params?.approval_status ?? "all",
+  ] as const;
+}
+
+export function attendanceRequestKey(token: string | null, id: number | string) {
+  if (!token) return null;
+  return ["/attendance-requests", token, String(id)] as const;
 }
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
@@ -108,5 +132,26 @@ export function useAttendance(id: number | string) {
 
   return useSWR(attendanceKey(token, id), ([, tok, i]) =>
     getAttendance(tok, Number(i)),
+  );
+}
+
+export function useAttendanceSummary(enabled = true) {
+  const { token } = useAuth();
+
+  return useSWR(enabled ? attendanceSummaryKey(token) : null, ([, tok]) =>
+    getAttendanceSummary(tok),
+  );
+}
+
+export function useAttendanceRequests(params?: AttendanceRequestQueryParams) {
+  const { token } = useAuth();
+
+  return useSWR(attendanceRequestsKey(token, params), ([, tok, approvalStatus]) =>
+    getAttendanceRequests(tok, {
+      approval_status:
+        approvalStatus === "all"
+          ? undefined
+          : (approvalStatus as AttendanceRequestQueryParams["approval_status"]),
+    }),
   );
 }

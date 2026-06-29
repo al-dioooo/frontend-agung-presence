@@ -5,6 +5,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { useAttendances, useOffices } from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
+import {
+  isManualAttendance,
+  statusLabel,
+  statusTextClass,
+} from "@/lib/attendance-status";
 import { Button, Card, SearchInput } from "@/components/ui";
 import { DashboardMap } from "@/app/components/dashboard-map";
 import {
@@ -39,32 +44,6 @@ function haversineDistance(
 function formatDistance(meters: number) {
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(1)}km`;
-}
-
-function statusLabel(status: string) {
-  switch (status) {
-    case "on_time": return "Tepat Waktu";
-    case "late": return "Terlambat";
-    case "absent": return "Tidak Hadir";
-    case "sick": return "Sakit";
-    case "leave": return "Cuti";
-    default: return status;
-  }
-}
-
-function statusColor(status: string) {
-  switch (status) {
-    case "on_time": return "text-emerald-600";
-    case "late": return "text-amber-500";
-    case "absent": return "text-red-500";
-    case "sick": return "text-sky-500";
-    case "leave": return "text-violet-500";
-    default: return "text-taupe-400";
-  }
-}
-
-function isManualAttendance(status: string, inAt: string | null) {
-  return (status === "sick" || status === "leave") && inAt === null;
 }
 
 function formatTime(iso: string | null) {
@@ -167,16 +146,16 @@ export default function DashboardPage() {
   const today =
     todayAttendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
     todayAttendances.find((a) => a.date === todayIso);
-  const isTodayManual = today ? isManualAttendance(today.status, today.in_at) : false;
+  const isTodayManual = today ? isManualAttendance(today) : false;
 
   const reportCounts = useMemo(() => {
-    const counts: Record<AttendanceStatusKey, number> = {
-      on_time: 0,
-      late: 0,
-      absent: 0,
-      sick: 0,
-      leave: 0,
-    };
+    const counts = STATUS_KEYS.reduce(
+      (acc, status) => {
+        acc[status] = 0;
+        return acc;
+      },
+      {} as Record<AttendanceStatusKey, number>,
+    );
 
     attendances.forEach((attendance) => {
       if ((STATUS_KEYS as readonly string[]).includes(attendance.status)) {
@@ -348,7 +327,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <span className={`text-xs font-semibold ${statusColor(today.status)}`}>
+                    <span className={`text-xs font-semibold ${statusTextClass(today.status)}`}>
                       {statusLabel(today.status)}
                     </span>
                     {!isTodayManual && !today.out_at && (

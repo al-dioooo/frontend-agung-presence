@@ -138,6 +138,14 @@ export const UploadIcon = ({ className, strokeWidth = 0 }: Props) => {
     )
 }
 
+export const DownloadIcon = ({ className, strokeWidth = 0 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5 0L12 21m0 0l4.5-4.5M12 21V7.5" />
+        </svg>
+    )
+}
+
 export const PencilIcon = ({ className, strokeWidth = 0 }: Props) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>

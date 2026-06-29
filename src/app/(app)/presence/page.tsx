@@ -3,13 +3,33 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api/client";
-import { useAttendances, useEmployees } from "@/lib/api/hooks";
-import { mutateCheckOut, mutateCreateManualAttendance } from "@/lib/api/mutations";
+import {
+  useAttendanceSummary,
+  useAttendances,
+  useEmployees,
+} from "@/lib/api/hooks";
+import {
+  mutateCheckOut,
+  mutateCreateManualAttendance,
+  mutateDownloadAttendanceExport,
+} from "@/lib/api/mutations";
 import type { Attendance, ManualAttendanceStatus } from "@/lib/api/types";
+import {
+  isManualAttendance,
+  MANUAL_STATUS_OPTIONS,
+  statusLabel,
+  statusTextClass,
+} from "@/lib/attendance-status";
 import { Button, Card, SearchInput } from "@/components/ui";
+import { AttendanceTotals } from "@/app/components/attendance-totals";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { MobileDatePicker } from "@/app/components/mobile-date-picker";
-import { ChevronRightIcon, PencilIcon, UserIcon } from "@/components/icons/outline";
+import {
+  ChevronRightIcon,
+  DownloadIcon,
+  PencilIcon,
+  UserIcon,
+} from "@/components/icons/outline";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", {
@@ -44,56 +64,6 @@ function formatDisplayDate(dateKey: string) {
   });
 }
 
-function statusLabel(status: string) {
-  switch (status) {
-    case "on_time":
-      return "Tepat Waktu";
-    case "late":
-      return "Terlambat";
-    case "absent":
-      return "Tidak Hadir";
-    case "sick":
-      return "Sakit";
-    case "leave":
-      return "Cuti";
-    default:
-      return status;
-  }
-}
-
-function statusColor(status: string) {
-  switch (status) {
-    case "on_time":
-      return "text-emerald-600";
-    case "late":
-      return "text-amber-600";
-    case "absent":
-      return "text-red-500";
-    case "sick":
-      return "text-sky-500";
-    case "leave":
-      return "text-violet-500";
-    default:
-      return "text-taupe-400";
-  }
-}
-
-function isManualAttendance(attendance: Attendance) {
-  return (
-    (attendance.status === "sick" || attendance.status === "leave") &&
-    attendance.in_at === null
-  );
-}
-
-const MANUAL_STATUS_OPTIONS: {
-  value: ManualAttendanceStatus;
-  label: string;
-  description: string;
-}[] = [
-  { value: "sick", label: "Sakit", description: "Tandai karyawan sakit" },
-  { value: "leave", label: "Cuti", description: "Tandai karyawan cuti" },
-];
-
 export default function PresencePage() {
   const { token, user } = useAuth();
   const [search, setSearch] = useState("");
@@ -115,6 +85,12 @@ export default function PresencePage() {
   const [manualStatus, setManualStatus] = useState<ManualAttendanceStatus>("sick");
   const [manualError, setManualError] = useState("");
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const {
+    data: attendanceSummary = [],
+    isLoading: isLoadingSummary,
+  } = useAttendanceSummary(isAdministrator);
 
   const activeCheckIn = attendances.find(
     (a) => !isAdministrator && a.date === today && a.in_at && !a.out_at,
@@ -174,6 +150,30 @@ export default function PresencePage() {
     }
   }
 
+  async function handleExport() {
+    if (!token) return;
+
+    setIsExporting(true);
+    setExportError("");
+    try {
+      const { blob, filename } = await mutateDownloadAttendanceExport(token);
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(
+        err instanceof ApiError ? err.message : "Gagal mengunduh rekap absensi.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   const filtered = attendances.filter((a) => {
     if (isAdministrator && selectedUserId !== null && a.user_id !== selectedUserId) {
       return false;
@@ -192,9 +192,14 @@ export default function PresencePage() {
 
   return (
     <div className="px-5 pt-6">
-      <h1 className="mb-5 text-xl font-bold text-foreground">
-        Presence History
-      </h1>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-foreground">
+          Presence History
+        </h1>
+        <Button href="/presence/requests" variant="primary" size="sm">
+          Pengajuan
+        </Button>
+      </div>
 
       {/* Active check-in banner */}
       {activeCheckIn && (
@@ -247,9 +252,18 @@ export default function PresencePage() {
                 setManualError("");
                 setManualInputOpen(true);
               }}
-              aria-label="Input manual cuti atau sakit"
+              aria-label="Input manual cuti sakit atau izin"
             >
               <PencilIcon className="size-5" strokeWidth={2} />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleExport}
+              loading={isExporting}
+              aria-label="Unduh semua rekapan"
+            >
+              <DownloadIcon className="size-5" strokeWidth={2} />
             </Button>
             <Button
               variant={selectedUserId ? "primary" : "secondary"}
@@ -262,6 +276,12 @@ export default function PresencePage() {
           </>
         )}
       </div>
+
+      {exportError && (
+        <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+          {exportError}
+        </p>
+      )}
 
       {isAdministrator && selectedUser && (
         <div className="mb-4 flex items-center justify-between rounded-2xl bg-taupe-100 px-4 py-2.5">
@@ -341,7 +361,7 @@ export default function PresencePage() {
           setManualInputOpen(false);
           setManualDatePickerOpen(false);
         }}
-        title="Input Cuti / Sakit"
+        title="Input Cuti / Sakit / Izin"
       >
         <div className="space-y-4 px-2 pb-2">
           <div>
@@ -475,6 +495,13 @@ export default function PresencePage() {
         }}
       />
 
+      {isAdministrator && (
+        <AttendanceTotals
+          summaries={attendanceSummary}
+          loading={isLoadingSummary}
+        />
+      )}
+
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -521,7 +548,7 @@ export default function PresencePage() {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className={`text-xs font-semibold ${statusColor(attendance.status)}`}>
+                <span className={`text-xs font-semibold ${statusTextClass(attendance.status)}`}>
                   {statusLabel(attendance.status)}
                 </span>
                 <ChevronRightIcon strokeWidth={2.5} className="size-4 text-taupe-300" />

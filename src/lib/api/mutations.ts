@@ -9,11 +9,21 @@ import {
   checkIn,
   checkOut,
   createManualAttendance,
+  createAttendanceRequest,
+  reviewAttendanceRequest,
+  downloadAttendanceExport,
   type OfficeInput,
   type CreateEmployeeInput,
   type UpdateEmployeeInput,
 } from "./client";
-import type { Office, Employee, Attendance, ManualAttendanceInput } from "./types";
+import type {
+  Office,
+  Employee,
+  Attendance,
+  ManualAttendanceInput,
+  AttendanceRequestInput,
+  AttendanceRequestReviewInput,
+} from "./types";
 import {
   officesKey,
   officeKey,
@@ -21,6 +31,8 @@ import {
   employeeKey,
   attendancesKey,
   attendanceKey,
+  attendanceRequestKey,
+  attendanceSummaryKey,
 } from "./hooks";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -235,4 +247,47 @@ export async function mutateCreateManualAttendance(
   }
 
   return attendance;
+}
+
+export async function mutateCreateAttendanceRequest(
+  token: string,
+  data: AttendanceRequestInput,
+) {
+  const attendanceRequest = await createAttendanceRequest(token, data);
+
+  revalidatePrefix("/attendance-requests");
+
+  const detailKey = attendanceRequestKey(token, attendanceRequest.id);
+  if (detailKey) {
+    mutate(detailKey, attendanceRequest, { revalidate: false });
+  }
+
+  return attendanceRequest;
+}
+
+export async function mutateReviewAttendanceRequest(
+  token: string,
+  id: number,
+  data: AttendanceRequestReviewInput,
+) {
+  const attendanceRequest = await reviewAttendanceRequest(token, id, data);
+
+  const detailKey = attendanceRequestKey(token, id);
+  if (detailKey) {
+    mutate(detailKey, attendanceRequest, { revalidate: false });
+  }
+
+  revalidatePrefix("/attendance-requests");
+  revalidatePrefix("/attendances");
+
+  const summaryKey = attendanceSummaryKey(token);
+  if (summaryKey) {
+    mutate(summaryKey);
+  }
+
+  return attendanceRequest;
+}
+
+export async function mutateDownloadAttendanceExport(token: string) {
+  return downloadAttendanceExport(token);
 }
