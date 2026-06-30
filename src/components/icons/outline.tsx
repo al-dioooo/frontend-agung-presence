@@ -241,3 +241,18 @@ export const CameraIcon = ({ className, strokeWidth = 2 }: Props) => {
         </svg>
     )
 }
+
+export const SwitchCameraIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h1.5a2 2 0 0 0 1.79 -1.11l.42 -.78a2 2 0 0 1 1.79 -1.11h3a2 2 0 0 1 1.79 1.11l.42 .78a2 2 0 0 0 1.79 1.11h1.5a2 2 0 0 1 2 2v7a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-7a2 2 0 0 1 2 -2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 11a5 5 0 0 1 7.5 -3.9" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 7.1h-2.4" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 7.1v-2.4" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 15a5 5 0 0 1 -7.5 3.9" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 18.9h2.4" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 18.9v2.4" />
+        </svg>
+    )
+}

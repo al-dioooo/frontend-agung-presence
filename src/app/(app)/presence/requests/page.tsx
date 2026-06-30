@@ -30,10 +30,20 @@ import {
   DateRangeFields,
   formatDateKey,
 } from "@/app/components/date-range-fields";
+import { CameraCapture } from "@/app/components/camera-capture";
 import { ProofPhotoInput } from "@/app/components/proof-photo-input";
 import { RequestReviewSheet } from "@/app/components/request-review-sheet";
 
 type RequestFilter = AttendanceRequestApprovalStatus | "all";
+type RequestLocation = { latitude: number; longitude: number };
+type LocationFailureReason = "denied" | "unsupported" | "unavailable";
+const GEO_PERMISSION_DENIED = 1;
+
+class LocationLookupError extends Error {
+  constructor(readonly reason: LocationFailureReason) {
+    super(reason);
+  }
+}
 
 const ADMIN_FILTERS: { value: RequestFilter; label: string }[] = [
   { value: "pending", label: "Menunggu" },
@@ -159,6 +169,11 @@ export default function PresenceRequestsPage() {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [isPreparingCamera, setIsPreparingCamera] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [requestLocation, setRequestLocation] =
+    useState<RequestLocation | null>(null);
 
   const [selectedRequest, setSelectedRequest] =
     useState<AttendanceRequest | null>(null);
@@ -176,6 +191,7 @@ export default function PresenceRequestsPage() {
 
     setIsSubmitting(true);
     setSubmitError("");
+    setCameraError("");
     setSubmitSuccess("");
     try {
       await mutateCreateAttendanceRequest(token, {
@@ -197,6 +213,154 @@ export default function PresenceRequestsPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function resolveRequestLocation() {
+    if (!navigator.geolocation) {
+      throw new LocationLookupError("unsupported");
+    }
+
+    try {
+      const permission = await navigator.permissions?.query({
+        name: "geolocation" as PermissionName,
+      });
+
+      if (permission?.state === "denied") {
+        throw new LocationLookupError("denied");
+      }
+    } catch (error) {
+      if (error instanceof LocationLookupError) {
+        throw error;
+      }
+    }
+
+    function getPosition(options: PositionOptions) {
+      return new Promise<RequestLocation>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          },
+          reject,
+          options,
+        );
+      });
+    }
+
+    function watchPositionOnce(options: PositionOptions) {
+      return new Promise<RequestLocation>((resolve, reject) => {
+        let watchId: number | null = null;
+        const timerId = window.setTimeout(() => {
+          if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+          }
+          reject(new LocationLookupError("unavailable"));
+        }, options.timeout ?? 15000);
+
+        watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            window.clearTimeout(timerId);
+            if (watchId !== null) {
+              navigator.geolocation.clearWatch(watchId);
+            }
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          },
+          (error) => {
+            window.clearTimeout(timerId);
+            if (watchId !== null) {
+              navigator.geolocation.clearWatch(watchId);
+            }
+            reject(error);
+          },
+          options,
+        );
+      });
+    }
+
+    try {
+      return await getPosition({
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 120000,
+      });
+    } catch (error) {
+      const positionError = error as GeolocationPositionError;
+
+      if (positionError?.code === GEO_PERMISSION_DENIED) {
+        throw new LocationLookupError("denied");
+      }
+    }
+
+    try {
+      return await getPosition({
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 30000,
+      });
+    } catch (error) {
+      const positionError = error as GeolocationPositionError;
+
+      if (positionError?.code === GEO_PERMISSION_DENIED) {
+        throw new LocationLookupError("denied");
+      }
+    }
+
+    try {
+      return await watchPositionOnce({
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 60000,
+      });
+    } catch (error) {
+      const positionError = error as GeolocationPositionError;
+
+      if (positionError?.code === GEO_PERMISSION_DENIED) {
+        throw new LocationLookupError("denied");
+      }
+
+      throw new LocationLookupError("unavailable");
+    }
+  }
+
+  function locationErrorMessage(error: unknown) {
+    if (
+      error instanceof LocationLookupError &&
+      (error.reason === "denied" || error.reason === "unsupported")
+    ) {
+      return "Lokasi saat ini diperlukan untuk mengambil foto bukti. Izinkan akses lokasi lalu coba lagi.";
+    }
+
+    return "Lokasi belum terbaca. Pastikan GPS atau layanan lokasi aktif, tunggu sebentar, lalu coba lagi.";
+  }
+
+  async function handleOpenCamera() {
+    if (isPreparingCamera) return;
+
+    setIsPreparingCamera(true);
+    setSubmitError("");
+    setSubmitSuccess("");
+    setCameraError("");
+
+    try {
+      const location = await resolveRequestLocation();
+      setRequestLocation(location);
+      setCameraOpen(true);
+    } catch (error) {
+      setCameraError(locationErrorMessage(error));
+    } finally {
+      setIsPreparingCamera(false);
+    }
+  }
+
+  function handleRequestCameraCapture(base64: string) {
+    setProofPhoto(base64);
+    setCameraOpen(false);
+    setCameraError("");
   }
 
   async function handleReview(data: AttendanceRequestReviewInput) {
@@ -339,7 +503,12 @@ export default function PresenceRequestsPage() {
 
             <ProofPhotoInput
               value={proofPhoto}
-              onChange={setProofPhoto}
+              onChange={(value) => {
+                setProofPhoto(value);
+                setCameraError("");
+              }}
+              onCameraClick={handleOpenCamera}
+              cameraLoading={isPreparingCamera}
               error={
                 proofPhoto.trim().length === 0 && submitError
                   ? "Foto bukti wajib diisi."
@@ -347,9 +516,9 @@ export default function PresenceRequestsPage() {
               }
             />
 
-            {submitError && (
+            {(submitError || cameraError) && (
               <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
-                {submitError}
+                {submitError || cameraError}
               </p>
             )}
             {submitSuccess && (
@@ -412,6 +581,18 @@ export default function PresenceRequestsPage() {
         onClose={() => !isReviewing && setSelectedRequest(null)}
         onReview={handleReview}
       />
+
+      {!isAdministrator && requestLocation && (
+        <CameraCapture
+          open={cameraOpen}
+          onClose={() => setCameraOpen(false)}
+          onCapture={handleRequestCameraCapture}
+          initialFacingMode="environment"
+          watermarkLines={[
+            `${requestLocation.latitude.toFixed(6)}, ${requestLocation.longitude.toFixed(6)}`,
+          ]}
+        />
+      )}
     </div>
   );
 }

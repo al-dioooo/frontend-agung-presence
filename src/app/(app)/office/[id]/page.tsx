@@ -21,7 +21,7 @@ import {
   ClockUpIcon,
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
-import { SelfieCapture } from "@/app/components/selfie-capture";
+import { CameraCapture } from "@/app/components/camera-capture";
 import { StaticLocationMap } from "@/app/components/static-location-map";
 import { Button, Card } from "@/components/ui";
 
@@ -117,7 +117,7 @@ export default function OfficeDetailPage() {
     setSelfieOpen(true);
   }
 
-  async function handleSelfieCapture(base64: string) {
+  async function handleCameraCapture(base64: string) {
     if (!token || !office || !userLocation) return;
 
     setSelfieOpen(false);
@@ -392,14 +392,15 @@ export default function OfficeDetailPage() {
         </AnimatePresence>
       </motion.div>
 
-      {/* Selfie capture overlay */}
-      <SelfieCapture
+      <CameraCapture
         open={selfieOpen}
         onClose={() => setSelfieOpen(false)}
-        onCapture={handleSelfieCapture}
-        officeName={office.name}
-        latitude={Number(office.latitude)}
-        longitude={Number(office.longitude)}
+        onCapture={handleCameraCapture}
+        initialFacingMode="user"
+        watermarkLines={[
+          office.name,
+          `${Number(office.latitude).toFixed(6)}, ${Number(office.longitude).toFixed(6)}`,
+        ]}
       />
 
       {/* Bottom CTA */}

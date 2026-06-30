@@ -7,11 +7,18 @@ import { Button } from "@/components/ui";
 type ProofPhotoInputProps = {
   value: string;
   onChange: (value: string) => void;
+  onCameraClick: () => void;
+  cameraLoading?: boolean;
   error?: string;
 };
 
-export function ProofPhotoInput({ value, onChange, error }: ProofPhotoInputProps) {
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+export function ProofPhotoInput({
+  value,
+  onChange,
+  onCameraClick,
+  cameraLoading,
+  error,
+}: ProofPhotoInputProps) {
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState("");
 
@@ -58,7 +65,9 @@ export function ProofPhotoInput({ value, onChange, error }: ProofPhotoInputProps
             variant="secondary"
             fullWidth
             leftIcon={<CameraIcon className="size-4" strokeWidth={2} />}
-            onClick={() => cameraInputRef.current?.click()}
+            loading={cameraLoading}
+            loadingText="Membuka..."
+            onClick={onCameraClick}
           >
             Kamera
           </Button>
@@ -73,14 +82,6 @@ export function ProofPhotoInput({ value, onChange, error }: ProofPhotoInputProps
         </div>
       </div>
 
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(event) => readFile(event.target.files?.[0])}
-      />
       <input
         ref={uploadInputRef}
         type="file"
