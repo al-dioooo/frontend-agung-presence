@@ -51,17 +51,24 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
             onDragEnd={(_, info) => {
               if (info.offset.y > 120 || info.velocity.y > 500) onClose();
             }}
-            className="relative z-10 w-full max-w-md rounded-t-3xl bg-white pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-2xl"
+            className="relative z-10 flex max-h-[calc(100dvh-1rem)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label={title ?? "Menu tindakan"}
           >
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-10 rounded-full bg-taupe-200" />
+            <div className="shrink-0">
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="h-1 w-10 rounded-full bg-taupe-200" />
+              </div>
+              {title && (
+                <h3 className="px-6 pt-3 text-base font-bold text-foreground">
+                  {title}
+                </h3>
+              )}
             </div>
-            {title && (
-              <h3 className="px-6 pt-3 text-base font-bold text-foreground">
-                {title}
-              </h3>
-            )}
-            <div className="px-2 pt-2">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pt-2 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+              {children}
+            </div>
           </motion.div>
         </div>
       )}

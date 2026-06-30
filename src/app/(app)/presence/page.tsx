@@ -308,7 +308,7 @@ export default function PresencePage() {
         onClose={() => setUserFilterOpen(false)}
         title="Filter Karyawan"
       >
-        <div className="max-h-[55vh] overflow-y-auto px-2 pb-2">
+        <div className="px-2 pb-2">
           <button
             type="button"
             onClick={() => {
@@ -368,7 +368,7 @@ export default function PresencePage() {
             <p className="px-2 text-xs font-semibold uppercase text-taupe-400">
               Karyawan
             </p>
-            <div className="mt-2 max-h-[32vh] space-y-1 overflow-y-auto">
+            <div className="mt-2 space-y-1">
               {isLoadingEmployees ? (
                 Array.from({ length: 3 }).map((_, index) => (
                   <div
