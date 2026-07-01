@@ -102,10 +102,9 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const isAdministrator = user?.role === "administrator";
-  const { data: offices = [], isLoading: loadingOffices } = useOffices(
-    undefined,
-    !isAdministrator,
-  );
+  const { data: offices = [], isLoading: loadingOffices } = useOffices({
+    active_only: !isAdministrator,
+  });
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [reportFilterOpen, setReportFilterOpen] = useState(false);
   const [reportFilterLevel, setReportFilterLevel] = useState<ReportFilterLevel>("root");

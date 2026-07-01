@@ -20,6 +20,9 @@ export type ApiStatus = {
 };
 
 export type UserRole = "administrator" | "employee" | string;
+export type EmployeeRoleFilter = "all" | "administrator" | "employee";
+export type OfficeActiveStatusFilter = "all" | "active" | "inactive";
+export type OfficeSort = "name" | "nearest";
 
 export type User = {
   id: number;
@@ -46,6 +49,7 @@ export type Office = {
   work_end_time: string | null;
   photo: string | null;
   is_active: boolean;
+  distance_meters?: number;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
@@ -144,6 +148,22 @@ export type AttendanceQueryParams = {
 
 export type AttendanceRequestQueryParams = {
   approval_status?: AttendanceRequestApprovalStatus | "all";
+};
+
+export type EmployeeQueryParams = {
+  search?: string;
+  role?: EmployeeRoleFilter;
+  limit?: number;
+};
+
+export type OfficeQueryParams = {
+  search?: string;
+  active_only?: boolean;
+  active_status?: OfficeActiveStatusFilter;
+  sort?: OfficeSort;
+  latitude?: number;
+  longitude?: number;
+  limit?: number;
 };
 
 export type AttendanceSummary = {
