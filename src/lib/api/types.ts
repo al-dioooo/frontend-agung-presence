@@ -132,9 +132,19 @@ export type AttendanceRequestReviewInput =
 
 export type ManualAttendanceInput = {
   user_id: number;
-  date: string;
   status: ManualAttendanceStatus;
-};
+} & (
+  | {
+      date: string;
+      start_date?: never;
+      end_date?: never;
+    }
+  | {
+      date?: never;
+      start_date: string;
+      end_date: string;
+    }
+);
 
 export type AttendanceQueryParams = {
   search?: string;

@@ -450,6 +450,35 @@ async function expectAdminFilterAffordances(page) {
   await officeDialog.waitFor({ state: "hidden", timeout: 15000 });
   await filterDialog.getByRole("button", { name: "Terapkan" }).click();
   await filterDialog.waitFor({ state: "hidden", timeout: 15000 });
+
+  await page.getByRole("button", { name: "Input manual cuti sakit atau izin" }).click();
+  const manualDialog = page.getByRole("dialog", { name: "Input Cuti / Sakit / Izin" });
+  await manualDialog.waitFor({ timeout: 15000 });
+  for (const label of ["Karyawan", "Status", "Tanggal"]) {
+    await manualDialog.getByText(label).first().waitFor({ timeout: 15000 });
+  }
+  await manualDialog.getByRole("button", { name: /Karyawan/ }).click();
+  const manualEmployeeDialog = page.getByRole("dialog", { name: "Pilih Karyawan" });
+  await manualEmployeeDialog.waitFor({ timeout: 15000 });
+  await manualEmployeeDialog.getByPlaceholder("Cari karyawan").fill("a");
+  const manualEmployeeOption = manualEmployeeDialog.locator("button").filter({ hasText: "@" }).first();
+  await manualEmployeeOption.waitFor({ timeout: 15000 });
+  await manualEmployeeOption.click();
+  await manualEmployeeDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await manualDialog.getByRole("button", { name: /Status/ }).click();
+  const manualStatusDialog = page.getByRole("dialog", { name: "Pilih Status" });
+  await manualStatusDialog.waitFor({ timeout: 15000 });
+  await manualStatusDialog.getByRole("button", { name: /^Cuti\b/ }).click();
+  await manualStatusDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await manualDialog.getByRole("button", { name: /Tanggal/ }).click();
+  const manualDateDialog = page.getByRole("dialog", { name: "Pilih Tanggal" });
+  await manualDateDialog.waitFor({ timeout: 15000 });
+  await manualDateDialog.getByText("Tanggal Mulai").waitFor({ timeout: 15000 });
+  await manualDateDialog.getByText("Tanggal Akhir").waitFor({ timeout: 15000 });
+  await manualDateDialog.getByRole("button", { name: "Simpan Tanggal" }).click();
+  await manualDateDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await manualDialog.getByRole("button", { name: "Tutup" }).click();
+  await manualDialog.waitFor({ state: "hidden", timeout: 15000 });
 }
 
 async function run() {

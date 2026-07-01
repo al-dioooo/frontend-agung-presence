@@ -240,17 +240,21 @@ export async function mutateCreateManualAttendance(
   token: string,
   data: ManualAttendanceInput,
 ) {
-  const attendance = await createManualAttendance(token, data);
+  const result = await createManualAttendance(token, data);
 
   revalidatePrefix("/attendances");
   revalidatePrefix("/attendances/summary");
 
-  const detailKey = attendanceKey(token, attendance.id);
-  if (detailKey) {
-    mutate(detailKey, attendance, { revalidate: false });
+  const attendances = Array.isArray(result) ? result : [result];
+
+  for (const attendance of attendances) {
+    const detailKey = attendanceKey(token, attendance.id);
+    if (detailKey) {
+      mutate(detailKey, attendance, { revalidate: false });
+    }
   }
 
-  return attendance;
+  return result;
 }
 
 export async function mutateCreateAttendanceRequest(

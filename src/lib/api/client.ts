@@ -279,7 +279,7 @@ export async function createManualAttendance(
   token: string,
   data: ManualAttendanceInput,
 ) {
-  const response = await apiRequest<ApiEnvelope<Attendance>>(
+  const response = await apiRequest<ApiEnvelope<Attendance | Attendance[]>>(
     "/attendances/manual",
     {
       method: "POST",
