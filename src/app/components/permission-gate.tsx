@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MapPinIcon, CameraIcon } from "@/components/icons/outline";
 import { Button } from "@/components/ui";
+import { useToast } from "@/app/components/toast-provider";
 
 type Status = "checking" | "granted" | "needs-prompt" | "denied";
 
@@ -52,6 +53,7 @@ async function requestPermissions(): Promise<"granted" | "denied"> {
 export function PermissionGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("checking");
   const [requesting, setRequesting] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     queryPermissions().then(setStatus);
@@ -87,6 +89,13 @@ export function PermissionGate({ children }: { children: React.ReactNode }) {
     const result = await requestPermissions();
     setStatus(result);
     setRequesting(false);
+    if (result === "granted") {
+      toast.success("Akses kamera dan lokasi diizinkan.");
+    } else {
+      toast.error(
+        "Akses kamera atau lokasi ditolak. Izinkan akses lalu coba lagi.",
+      );
+    }
   }
 
   if (status === "checking") {

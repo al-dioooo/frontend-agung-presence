@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { CameraIcon, DatabaseIcon, UploadIcon } from "@/components/icons/outline";
 import { Button } from "@/components/ui";
+import { useToast } from "@/app/components/toast-provider";
 
 type ProofPhotoInputProps = {
   value: string;
@@ -21,11 +22,14 @@ export function ProofPhotoInput({
 }: ProofPhotoInputProps) {
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState("");
+  const toast = useToast();
 
   function readFile(file: File | undefined) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setFileError("File harus berupa gambar.");
+      const message = "File harus berupa gambar.";
+      setFileError(message);
+      toast.error(message);
       return;
     }
 
@@ -34,7 +38,11 @@ export function ProofPhotoInput({
       setFileError("");
       onChange(String(reader.result));
     };
-    reader.onerror = () => setFileError("Gagal membaca file gambar.");
+    reader.onerror = () => {
+      const message = "Gagal membaca file gambar.";
+      setFileError(message);
+      toast.error(message);
+    };
     reader.readAsDataURL(file);
   }
 

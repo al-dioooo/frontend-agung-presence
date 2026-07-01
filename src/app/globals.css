@@ -61,6 +61,20 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+@keyframes api-progress {
+  0% {
+    transform: translateX(-115%);
+  }
+
+  55% {
+    transform: translateX(65%);
+  }
+
+  100% {
+    transform: translateX(220%);
+  }
+}
+
 html,
 body {
   height: 100%;

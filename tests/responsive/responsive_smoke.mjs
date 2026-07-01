@@ -73,11 +73,57 @@ async function loginAs(page, username, password) {
   await page.locator("#password-input").fill(password);
   await page.locator("#login-submit").click();
   await page.waitForURL("**/dashboard", { timeout: 15000 });
+  await page.getByRole("status").filter({ hasText: "Login successful." }).first().waitFor({
+    timeout: 15000,
+  });
   await page.waitForLoadState("networkidle");
 }
 
 async function loginAsAdmin(page) {
   await loginAs(page, ADMIN_USERNAME, ADMIN_PASSWORD);
+}
+
+async function expectLoginToastFeedback(page) {
+  await page.goto(`${BASE_URL}/login`);
+  await page.waitForLoadState("networkidle");
+  await page.locator("#login-input").fill(ADMIN_USERNAME);
+  await page.locator("#password-input").fill("wrong-password");
+  await page.locator("#login-submit").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: /Login gagal|failed|invalid|The given data|These credentials/i })
+    .first()
+    .waitFor({ timeout: 15000 });
+  await page.locator("#login-error").waitFor({ timeout: 15000 });
+}
+
+async function expectApiProgressForDelayedRequest(page) {
+  let releaseRequest;
+  const releasePromise = new Promise((resolve) => {
+    releaseRequest = resolve;
+  });
+  let delayed = false;
+  const routePattern = "**/api/backend/offices**";
+
+  await page.route(routePattern, async (route) => {
+    if (!delayed && route.request().method() === "GET") {
+      delayed = true;
+      await releasePromise;
+    }
+    await route.continue();
+  });
+
+  const navigation = page.goto(`${BASE_URL}/office`);
+  await page.locator("[data-api-progress='active']").waitFor({ timeout: 15000 });
+  await page.getByRole("progressbar", { name: "Memuat permintaan API" }).waitFor({
+    timeout: 15000,
+  });
+  releaseRequest();
+  await navigation;
+  await page.waitForLoadState("networkidle");
+  await page.locator("[data-api-progress='idle']").waitFor({ timeout: 15000 });
+  await page.unroute(routePattern);
+  await expectDesktopShell(page);
 }
 
 async function passPermissionGate(page) {
@@ -508,8 +554,10 @@ async function run() {
   }
 
   await page.setViewportSize({ width: 1280, height: 800 });
+  await expectLoginToastFeedback(page);
   await loginAsAdmin(page);
   await expectDesktopShell(page);
+  await expectApiProgressForDelayedRequest(page);
 
   await page.goto(`${BASE_URL}/dashboard`);
   await page.waitForLoadState("networkidle");

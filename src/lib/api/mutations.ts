@@ -55,12 +55,12 @@ function revalidatePrefix(prefix: string) {
 // ─── Office mutations ────────────────────────────────────────────────────────
 
 export async function mutateCreateOffice(token: string, data: OfficeInput) {
-  const newOffice = await createOffice(token, data);
+  const result = await createOffice(token, data);
 
   // Revalidate all office list caches
   revalidatePrefix("/offices");
 
-  return newOffice;
+  return result;
 }
 
 export async function mutateUpdateOffice(
@@ -68,18 +68,18 @@ export async function mutateUpdateOffice(
   id: number,
   data: Partial<OfficeInput>,
 ) {
-  const updated = await updateOffice(token, id, data);
+  const result = await updateOffice(token, id, data);
 
   // Optimistically update the detail cache
   const detailKey = officeKey(token, id);
   if (detailKey) {
-    mutate(detailKey, updated, { revalidate: false });
+    mutate(detailKey, result.data, { revalidate: false });
   }
 
   // Revalidate all office list caches
   revalidatePrefix("/offices");
 
-  return updated;
+  return result;
 }
 
 export async function mutateDeleteOffice(
@@ -101,15 +101,15 @@ export async function mutateDeleteOffice(
   }
 
   try {
-    await deleteOffice(token, id);
+    const result = await deleteOffice(token, id);
+    // Revalidate to ensure consistency
+    revalidatePrefix("/offices");
+    return result;
   } catch (err) {
     // Rollback: revalidate everything
     revalidatePrefix("/offices");
     throw err;
   }
-
-  // Revalidate to ensure consistency
-  revalidatePrefix("/offices");
 }
 
 // ─── Employee mutations ──────────────────────────────────────────────────────
@@ -118,12 +118,12 @@ export async function mutateCreateEmployee(
   token: string,
   data: CreateEmployeeInput,
 ) {
-  const newEmployee = await createEmployee(token, data);
+  const result = await createEmployee(token, data);
 
   // Revalidate all employee list caches
   revalidatePrefix("/users");
 
-  return newEmployee;
+  return result;
 }
 
 export async function mutateUpdateEmployee(
@@ -131,18 +131,18 @@ export async function mutateUpdateEmployee(
   id: number,
   data: UpdateEmployeeInput,
 ) {
-  const updated = await updateEmployee(token, id, data);
+  const result = await updateEmployee(token, id, data);
 
   // Optimistically update the detail cache
   const detailKey = employeeKey(token, id);
   if (detailKey) {
-    mutate(detailKey, updated, { revalidate: false });
+    mutate(detailKey, result.data, { revalidate: false });
   }
 
   // Revalidate all employee list caches
   revalidatePrefix("/users");
 
-  return updated;
+  return result;
 }
 
 export async function mutateDeleteEmployee(
@@ -163,15 +163,15 @@ export async function mutateDeleteEmployee(
   }
 
   try {
-    await deleteEmployee(token, id);
+    const result = await deleteEmployee(token, id);
+    // Revalidate to ensure consistency
+    revalidatePrefix("/users");
+    return result;
   } catch (err) {
     // Rollback: revalidate everything
     revalidatePrefix("/users");
     throw err;
   }
-
-  // Revalidate to ensure consistency
-  revalidatePrefix("/users");
 }
 
 // ─── Attendance mutations ────────────────────────────────────────────────────
@@ -186,13 +186,13 @@ export async function mutateCheckIn(
     proof_photo?: string | null;
   },
 ) {
-  const newAttendance = await checkIn(token, data);
+  const result = await checkIn(token, data);
 
   // Revalidate all attendance caches
   revalidatePrefix("/attendances");
   revalidatePrefix("/attendances/summary");
 
-  return newAttendance;
+  return result;
 }
 
 export async function mutateCheckOut(
@@ -221,7 +221,7 @@ export async function mutateCheckOut(
     // Update the detail cache
     const detailKey = attendanceKey(token, id);
     if (detailKey) {
-      mutate(detailKey, result, { revalidate: false });
+      mutate(detailKey, result.data, { revalidate: false });
     }
 
     // Revalidate all attendance caches for consistency
@@ -245,7 +245,7 @@ export async function mutateCreateManualAttendance(
   revalidatePrefix("/attendances");
   revalidatePrefix("/attendances/summary");
 
-  const attendances = Array.isArray(result) ? result : [result];
+  const attendances = Array.isArray(result.data) ? result.data : [result.data];
 
   for (const attendance of attendances) {
     const detailKey = attendanceKey(token, attendance.id);
@@ -261,16 +261,16 @@ export async function mutateCreateAttendanceRequest(
   token: string,
   data: AttendanceRequestInput,
 ) {
-  const attendanceRequest = await createAttendanceRequest(token, data);
+  const result = await createAttendanceRequest(token, data);
 
   revalidatePrefix("/attendance-requests");
 
-  const detailKey = attendanceRequestKey(token, attendanceRequest.id);
+  const detailKey = attendanceRequestKey(token, result.data.id);
   if (detailKey) {
-    mutate(detailKey, attendanceRequest, { revalidate: false });
+    mutate(detailKey, result.data, { revalidate: false });
   }
 
-  return attendanceRequest;
+  return result;
 }
 
 export async function mutateReviewAttendanceRequest(
@@ -278,11 +278,11 @@ export async function mutateReviewAttendanceRequest(
   id: number,
   data: AttendanceRequestReviewInput,
 ) {
-  const attendanceRequest = await reviewAttendanceRequest(token, id, data);
+  const result = await reviewAttendanceRequest(token, id, data);
 
   const detailKey = attendanceRequestKey(token, id);
   if (detailKey) {
-    mutate(detailKey, attendanceRequest, { revalidate: false });
+    mutate(detailKey, result.data, { revalidate: false });
   }
 
   revalidatePrefix("/attendance-requests");
@@ -294,7 +294,7 @@ export async function mutateReviewAttendanceRequest(
     mutate(summaryKey);
   }
 
-  return attendanceRequest;
+  return result;
 }
 
 export async function mutateDownloadAttendanceExport(

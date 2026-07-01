@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api/client";
 import { useEmployee } from "@/lib/api/hooks";
 import { mutateDeleteEmployee } from "@/lib/api/mutations";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import {
   ChevronBackIcon,
   DotsIcon,
@@ -18,6 +18,7 @@ import {
 } from "@/components/icons/outline";
 import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
 import { Button, Card } from "@/components/ui";
+import { useToast } from "@/app/components/toast-provider";
 
 function InfoRow({
   icon,
@@ -45,6 +46,7 @@ export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const isAdministrator = user?.role === "administrator";
 
   const { data: employee, isLoading, error: fetchError } = useEmployee(id);
@@ -71,12 +73,13 @@ export default function EmployeeDetailPage() {
     if (!token || !employee) return;
     setIsDeleting(true);
     try {
-      await mutateDeleteEmployee(token, employee.id);
+      const result = await mutateDeleteEmployee(token, employee.id);
+      toast.success(apiSuccessMessage(result, "Karyawan berhasil dihapus."));
       router.replace("/employee");
     } catch (err) {
-      setErrorMessage(
-        err instanceof ApiError ? err.message : "Gagal menghapus karyawan.",
-      );
+      const message = apiErrorMessage(err, "Gagal menghapus karyawan.");
+      setErrorMessage(message);
+      toast.error(message);
       setConfirmDelete(false);
       setIsDeleting(false);
     }

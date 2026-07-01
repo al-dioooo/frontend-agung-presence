@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { Button, Card } from "@/components/ui";
 import { AppPage } from "@/app/components/responsive-layout";
+import { useToast } from "@/app/components/toast-provider";
 
 function getInitials(name: string) {
   return name
@@ -26,9 +27,11 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const toast = useToast();
 
   async function handleLogout() {
-    await signOut();
+    const message = await signOut();
+    toast.success(message);
     router.replace("/login");
   }
 

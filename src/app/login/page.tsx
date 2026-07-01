@@ -2,17 +2,20 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, login } from "@/lib/api/client";
+import { login } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 
 import { AgungPresenceShapePattern } from "@/components/agung-presence-shape-pattern";
 import { AgungPresenceLogoIcon } from "@/components/icons/agung-presence-logo";
 import { EyeIcon, EyeSlashIcon } from "@/components/icons/outline";
 import { Button } from "@/components/ui";
+import { useToast } from "@/app/components/toast-provider";
 
 export default function LoginPage() {
   const { signIn } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [loginValue, setLoginValue] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,13 +28,14 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const session = await login(loginValue, password);
-      signIn(session.token, session.user);
+      const result = await login(loginValue, password);
+      signIn(result.data.token, result.data.user);
+      toast.success(apiSuccessMessage(result, "Login berhasil."));
       router.replace("/dashboard");
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Login gagal. Coba lagi.",
-      );
+      const message = apiErrorMessage(err, "Login gagal. Coba lagi.");
+      setError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

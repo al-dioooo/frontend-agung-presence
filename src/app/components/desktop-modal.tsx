@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { XIcon } from "@/components/icons/outline";
 
 type DesktopModalProps = {
   open: boolean;
@@ -61,9 +62,9 @@ export function DesktopModal({
             className="absolute inset-0 bg-black/35"
           />
           <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.18 }}
             role="dialog"
             aria-modal="true"
@@ -81,19 +82,7 @@ export function DesktopModal({
                 className="flex size-8 shrink-0 items-center justify-center rounded-full bg-taupe-100 text-taupe-500 transition-opacity active:opacity-70"
                 aria-label="Tutup"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="size-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <XIcon className="size-4" strokeWidth={2.2} />
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">

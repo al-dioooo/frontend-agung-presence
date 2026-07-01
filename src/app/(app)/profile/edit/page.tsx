@@ -4,10 +4,12 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError, updateProfile } from "@/lib/api/client";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { ChevronBackIcon, EyeIcon, EyeSlashIcon } from "@/components/icons/outline";
 import { Button, Card, Input } from "@/components/ui";
 import { DesktopFormPanel } from "@/app/components/desktop-form-panel";
 import { AppPage } from "@/app/components/responsive-layout";
+import { useToast } from "@/app/components/toast-provider";
 
 const USERNAME_RULE =
   "Gunakan huruf, angka, tanda hubung (-), atau underscore (_), maksimal 100 karakter.";
@@ -15,6 +17,7 @@ const USERNAME_RULE =
 export default function EditProfilePage() {
   const { user, token, refreshUser } = useAuth();
   const router = useRouter();
+  const toast = useToast();
 
   const [username, setUsername] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -50,16 +53,18 @@ export default function EditProfilePage() {
     }
 
     try {
-      await updateProfile(token, payload);
+      const result = await updateProfile(token, payload);
       await refreshUser();
       setIsError(false);
-      setMessage("Profil berhasil diperbarui.");
+      const message = apiSuccessMessage(result, "Profil berhasil diperbarui.");
+      setMessage(message);
+      toast.success(message);
       setPassword("");
     } catch (err) {
+      const message = apiErrorMessage(err, "Gagal menyimpan profil.");
       setIsError(true);
-      setMessage(
-        err instanceof ApiError ? err.message : "Gagal menyimpan profil.",
-      );
+      setMessage(message);
+      toast.error(message);
 
       if (err instanceof ApiError) {
         const data = err.data as { errors?: Record<string, string[]> } | null;

@@ -6,6 +6,7 @@ import {
   ChevronBackIcon,
   SwitchCameraIcon,
 } from "@/components/icons/outline";
+import { useToast } from "@/app/components/toast-provider";
 
 type CameraFacingMode = "user" | "environment";
 
@@ -42,6 +43,7 @@ export function CameraCapture({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const toast = useToast();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [facingMode, setFacingMode] =
@@ -111,9 +113,10 @@ export function CameraCapture({
         }
       } catch {
         if (!cancelled) {
-          setError(
-            "Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.",
-          );
+          const message =
+            "Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.";
+          setError(message);
+          toast.error(message);
         }
       }
     })();
@@ -122,7 +125,7 @@ export function CameraCapture({
       cancelled = true;
       stopStream();
     };
-  }, [facingMode, open, stopStream]);
+  }, [facingMode, open, stopStream, toast]);
 
   const liveWatermarkLines = useMemo(
     () => cleanWatermarkLines(watermarkLines, formatTimestamp()),

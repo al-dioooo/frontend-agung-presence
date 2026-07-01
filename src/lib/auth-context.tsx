@@ -25,7 +25,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   signIn: (token: string, user: User) => void;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<string>;
   refreshUser: () => Promise<void>;
 };
 
@@ -74,13 +74,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     const stored = window.localStorage.getItem(TOKEN_KEY);
+    let message = "Logged out successfully.";
 
     if (stored) {
-      await apiLogout(stored).catch(() => null);
+      const result = await apiLogout(stored).catch(() => null);
+      message = result?.message ?? message;
     }
 
     window.localStorage.removeItem(TOKEN_KEY);
     setAuthState({ status: "unauthenticated" });
+    return message;
   }, []);
 
   const refreshUser = useCallback(async () => {

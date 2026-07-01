@@ -5,9 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api/client";
 import { useOffice, useAttendances } from "@/lib/api/hooks";
 import { mutateDeleteOffice, mutateCheckIn } from "@/lib/api/mutations";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import {
   ChevronBackIcon,
   MapPinIcon,
@@ -24,6 +24,7 @@ import { BottomSheet, BottomSheetItem } from "@/app/components/bottom-sheet";
 import { CameraCapture } from "@/app/components/camera-capture";
 import { StaticLocationMap } from "@/app/components/static-location-map";
 import { Button, Card } from "@/components/ui";
+import { useToast } from "@/app/components/toast-provider";
 
 function haversineDistance(
   lat1: number,
@@ -57,6 +58,7 @@ export default function OfficeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const isAdministrator = user?.role === "administrator";
 
   const { data: office, isLoading } = useOffice(id);
@@ -89,10 +91,13 @@ export default function OfficeDetailPage() {
     if (!token || !office) return;
     setIsDeleting(true);
     try {
-      await mutateDeleteOffice(token, office.id);
+      const result = await mutateDeleteOffice(token, office.id);
+      toast.success(apiSuccessMessage(result, "Kantor berhasil dihapus."));
       router.replace("/office");
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "Gagal menghapus kantor.");
+      const message = apiErrorMessage(err, "Gagal menghapus kantor.");
+      setMessage(message);
+      toast.error(message);
       setConfirmDelete(false);
       setIsDeleting(false);
     }
@@ -125,18 +130,20 @@ export default function OfficeDetailPage() {
     setMessage("");
 
     try {
-      await mutateCheckIn(token, {
+      const result = await mutateCheckIn(token, {
         office_id: office.id,
         latitude: userLocation.lat,
         longitude: userLocation.lng,
         proof_photo: base64,
         ...(user?.role === "administrator" ? { user_id: user.id } : {}),
       });
-      setMessage("Absensi berhasil dicatat!");
+      const message = apiSuccessMessage(result, "Absensi berhasil dicatat!");
+      setMessage(message);
+      toast.success(message);
     } catch (err) {
-      setMessage(
-        err instanceof ApiError ? err.message : "Absensi gagal. Coba lagi.",
-      );
+      const message = apiErrorMessage(err, "Absensi gagal. Coba lagi.");
+      setMessage(message);
+      toast.error(message);
     } finally {
       setIsChecking(false);
     }

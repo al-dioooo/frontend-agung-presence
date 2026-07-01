@@ -3,6 +3,11 @@ export type ApiEnvelope<T> = {
   data: T;
 };
 
+export type ApiActionResult<T> = {
+  data: T;
+  message: string;
+};
+
 export type PaginatedEnvelope<T> = {
   message?: string;
   data: T[];

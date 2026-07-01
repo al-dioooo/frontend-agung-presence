@@ -52,6 +52,25 @@ export const SearchIcon = ({ className, strokeWidth = 2 }: Props) => {
     )
 }
 
+export const CheckIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l5 5l10 -10" />
+        </svg>
+    )
+}
+
+export const XIcon = ({ className, strokeWidth = 2 }: Props) => {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 6l-12 12" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12" />
+        </svg>
+    )
+}
+
 export const FilterIcon = ({ className, strokeWidth = 2 }: Props) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" width={24} height={24} strokeWidth={strokeWidth} fill={"none"} stroke={"currentColor"} viewBox={"0 0 24 24"}>
