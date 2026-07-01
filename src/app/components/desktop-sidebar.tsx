@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { AgungPresenceLogoIcon } from "@/components/icons/agung-presence-logo";
 import { navItems } from "@/app/components/navigation-items";
@@ -36,14 +37,19 @@ export function DesktopSidebar() {
               key={item.href}
               href={item.href}
               id={`sidebar-${item.label.toLowerCase()}`}
-              className={`flex h-11 items-center gap-3 rounded-2xl px-3 text-sm font-semibold transition-colors ${
-                isActive
-                  ? "bg-primary-50 text-primary-700"
-                  : "text-taupe-500 hover:bg-taupe-100 hover:text-foreground"
+              className={`relative flex h-11 items-center gap-3 overflow-hidden rounded-2xl px-3 text-sm font-semibold transition-opacity active:opacity-80 ${
+                isActive ? "text-primary" : "text-taupe-400 hover:opacity-80"
               }`}
             >
-              <Icon className="size-5 shrink-0" />
-              <span>{item.label}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="desktop-sidebar-indicator"
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  className="absolute inset-0 rounded-2xl bg-primary-50"
+                />
+              )}
+              <Icon className="relative size-5 shrink-0 transition-colors" />
+              <span className="relative transition-colors">{item.label}</span>
             </Link>
           );
         })}
