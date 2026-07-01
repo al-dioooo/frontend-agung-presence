@@ -7,14 +7,13 @@ import {
   useAttendanceSummary,
   useAttendances,
   useEmployees,
-  useOffices,
 } from "@/lib/api/hooks";
 import {
   mutateCheckOut,
   mutateCreateManualAttendance,
   mutateDownloadAttendanceExport,
 } from "@/lib/api/mutations";
-import type { ManualAttendanceStatus } from "@/lib/api/types";
+import type { Employee, ManualAttendanceStatus, Office } from "@/lib/api/types";
 import type { AttendanceStatusKey } from "@/lib/attendance-status";
 import {
   MANUAL_STATUS_OPTIONS,
@@ -76,8 +75,8 @@ export default function PresencePage() {
   const [view, setView] = useState<PresenceView>("history");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [statusFilter, setStatusFilter] = useState<AttendanceStatusKey | "all">("all");
   const [dateRangeActive, setDateRangeActive] = useState(false);
   const [startDate, setStartDate] = useState(today);
@@ -99,8 +98,8 @@ export default function PresencePage() {
     () =>
       buildPresenceAttendanceParams({
         search,
-        selectedUserId: isAdministrator ? selectedUserId : null,
-        selectedOfficeId: isAdministrator ? selectedOfficeId : null,
+        selectedUserId: isAdministrator ? selectedEmployee?.id ?? null : null,
+        selectedOfficeId: isAdministrator ? selectedOffice?.id ?? null : null,
         status: isAdministrator ? statusFilter : "all",
         dateRangeActive: isAdministrator ? dateRangeActive : false,
         startDate,
@@ -111,8 +110,8 @@ export default function PresencePage() {
       endDate,
       isAdministrator,
       search,
-      selectedOfficeId,
-      selectedUserId,
+      selectedEmployee,
+      selectedOffice,
       startDate,
       statusFilter,
     ],
@@ -120,16 +119,16 @@ export default function PresencePage() {
 
   const hasFilters = hasPresenceFilters({
     search,
-    selectedUserId: isAdministrator ? selectedUserId : null,
-    selectedOfficeId: isAdministrator ? selectedOfficeId : null,
+    selectedUserId: isAdministrator ? selectedEmployee?.id ?? null : null,
+    selectedOfficeId: isAdministrator ? selectedOffice?.id ?? null : null,
     status: isAdministrator ? statusFilter : "all",
     dateRangeActive: isAdministrator ? dateRangeActive : false,
     startDate,
     endDate,
   });
   const adminSheetHasFilters =
-    selectedUserId !== null ||
-    selectedOfficeId !== null ||
+    selectedEmployee !== null ||
+    selectedOffice !== null ||
     statusFilter !== "all" ||
     dateRangeActive;
 
@@ -139,12 +138,8 @@ export default function PresencePage() {
     isLoading: isLoadingSummary,
   } = useAttendanceSummary(isAdministrator, attendanceParams);
   const { data: employees = [], isLoading: isLoadingEmployees } = useEmployees(
-    undefined,
+    { role: "employee" },
     isAdministrator,
-  );
-  const { data: offices = [], isLoading: isLoadingOffices } = useOffices(
-    undefined,
-    false,
   );
 
   const activeCheckIn = attendances.find(
@@ -159,17 +154,11 @@ export default function PresencePage() {
     () => [...employees].sort((a, b) => a.name.localeCompare(b.name)),
     [employees],
   );
-  const officeOptions = useMemo(
-    () => [...offices].sort((a, b) => a.name.localeCompare(b.name)),
-    [offices],
-  );
-  const selectedUser = employeeOptions.find((employee) => employee.id === selectedUserId) ?? null;
-  const selectedOffice = officeOptions.find((office) => office.id === selectedOfficeId) ?? null;
   const selectedManualEmployee = employeeOptions.find((employee) => employee.id === manualUserId);
 
   function resetAdminFilters() {
-    setSelectedUserId(null);
-    setSelectedOfficeId(null);
+    setSelectedEmployee(null);
+    setSelectedOffice(null);
     setStatusFilter("all");
     setDateRangeActive(false);
     setStartDate(today);
@@ -340,14 +329,14 @@ export default function PresencePage() {
         <>
           <PresenceViewToggle value={view} onChange={setView} />
           <PresenceFilterChips
-            selectedEmployee={selectedUser}
+            selectedEmployee={selectedEmployee}
             selectedOffice={selectedOffice}
             status={statusFilter}
             dateRangeActive={dateRangeActive}
             startDate={startDate}
             endDate={endDate}
-            onClearEmployee={() => setSelectedUserId(null)}
-            onClearOffice={() => setSelectedOfficeId(null)}
+            onClearEmployee={() => setSelectedEmployee(null)}
+            onClearOffice={() => setSelectedOffice(null)}
             onClearStatus={() => setStatusFilter("all")}
             onClearDateRange={() => setDateRangeActive(false)}
             onClearAll={resetAdminFilters}
@@ -358,19 +347,15 @@ export default function PresencePage() {
       <PresenceFilterSheet
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
-        employees={employeeOptions}
-        offices={officeOptions}
-        loadingEmployees={isLoadingEmployees}
-        loadingOffices={isLoadingOffices}
-        selectedUserId={selectedUserId}
-        selectedOfficeId={selectedOfficeId}
+        selectedEmployee={selectedEmployee}
+        selectedOffice={selectedOffice}
         status={statusFilter}
         dateRangeActive={dateRangeActive}
         startDate={startDate}
         endDate={endDate}
         maxDate={today}
-        onUserChange={setSelectedUserId}
-        onOfficeChange={setSelectedOfficeId}
+        onEmployeeChange={setSelectedEmployee}
+        onOfficeChange={setSelectedOffice}
         onStatusChange={setStatusFilter}
         onDateRangeActiveChange={setDateRangeActive}
         onStartDateChange={setStartDate}

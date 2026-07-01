@@ -10,17 +10,31 @@ import {
   getAttendanceRequests,
   getAttendanceSummary,
 } from "./client";
-import type { AttendanceQueryParams, AttendanceRequestQueryParams } from "./types";
+import type {
+  AttendanceQueryParams,
+  AttendanceRequestQueryParams,
+  EmployeeQueryParams,
+  EmployeeRoleFilter,
+  OfficeActiveStatusFilter,
+  OfficeQueryParams,
+  OfficeSort,
+} from "./types";
 
 // ─── Key helpers ─────────────────────────────────────────────────────────────
 
-export function officesKey(
-  token: string | null,
-  search?: string,
-  activeOnly?: boolean,
-) {
+export function officesKey(token: string | null, params?: OfficeQueryParams) {
   if (!token) return null;
-  return ["/offices", token, search ?? "", activeOnly ? "active" : "all"] as const;
+  return [
+    "/offices",
+    token,
+    params?.search ?? "",
+    params?.active_only ? "active-only" : "",
+    params?.active_status ?? "",
+    params?.sort ?? "",
+    params?.latitude ?? "",
+    params?.longitude ?? "",
+    params?.limit ?? "",
+  ] as const;
 }
 
 export function officeKey(token: string | null, id: number | string) {
@@ -28,9 +42,15 @@ export function officeKey(token: string | null, id: number | string) {
   return ["/offices", token, String(id)] as const;
 }
 
-export function employeesKey(token: string | null, search?: string) {
+export function employeesKey(token: string | null, params?: EmployeeQueryParams) {
   if (!token) return null;
-  return ["/users", token, search ?? ""] as const;
+  return [
+    "/users",
+    token,
+    params?.search ?? "",
+    params?.role ?? "",
+    params?.limit ?? "",
+  ] as const;
 }
 
 export function employeeKey(token: string | null, id: number | string) {
@@ -103,11 +123,19 @@ export function attendanceRequestKey(token: string | null, id: number | string) 
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 
-export function useOffices(search?: string, activeOnly?: boolean) {
+export function useOffices(params?: OfficeQueryParams, enabled = true) {
   const { token } = useAuth();
 
-  return useSWR(officesKey(token, search, activeOnly), ([, tok, s, active]) =>
-    getOffices(tok, s || undefined, active === "active"),
+  return useSWR(enabled ? officesKey(token, params) : null, ([, tok, search, activeOnly, activeStatus, sort, latitude, longitude, limit]) =>
+    getOffices(tok, {
+      search: search || undefined,
+      active_only: activeOnly === "active-only",
+      active_status: (activeStatus || undefined) as OfficeActiveStatusFilter | undefined,
+      sort: (sort || undefined) as OfficeSort | undefined,
+      latitude: latitude === "" ? undefined : Number(latitude),
+      longitude: longitude === "" ? undefined : Number(longitude),
+      limit: limit === "" ? undefined : Number(limit),
+    }),
   );
 }
 
@@ -117,11 +145,15 @@ export function useOffice(id: number | string) {
   return useSWR(officeKey(token, id), ([, tok, i]) => getOffice(tok, Number(i)));
 }
 
-export function useEmployees(search?: string, enabled = true) {
+export function useEmployees(params?: EmployeeQueryParams, enabled = true) {
   const { token } = useAuth();
 
-  return useSWR(enabled ? employeesKey(token, search) : null, ([, tok, s]) =>
-    getEmployees(tok, s || undefined),
+  return useSWR(enabled ? employeesKey(token, params) : null, ([, tok, search, role, limit]) =>
+    getEmployees(tok, {
+      search: search || undefined,
+      role: (role || undefined) as EmployeeRoleFilter | undefined,
+      limit: limit === "" ? undefined : Number(limit),
+    }),
   );
 }
 

@@ -6,15 +6,21 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { useEmployees } from "@/lib/api/hooks";
 import { mutateDeleteEmployee } from "@/lib/api/mutations";
-import type { Employee } from "@/lib/api/types";
+import type { Employee, EmployeeRoleFilter } from "@/lib/api/types";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { Button, Card, SearchInput } from "@/components/ui";
 import {
   ChevronRightIcon,
   EyeIcon,
+  FilterIcon,
   PencilIcon,
   TrashIcon,
 } from "@/components/icons/outline";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import {
+  SearchableSelectionDialog,
+  type FilterSelectionOption,
+} from "@/app/components/filter-controls";
 import {
   DesktopToolbar,
   ResponsiveDataTable,
@@ -30,11 +36,31 @@ export default function EmployeePage() {
   const { token, user } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<EmployeeRoleFilter>("all");
+  const [roleFilterOpen, setRoleFilterOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const isAdministrator = user?.role === "administrator";
-  const { data: employees = [], isLoading } = useEmployees();
+  const debouncedSearch = useDebouncedValue(search);
+  const { data: employees = [], isLoading } = useEmployees({
+    search: debouncedSearch,
+    role: roleFilter,
+  });
+
+  const roleOptions: FilterSelectionOption[] = [
+    { value: "all", title: "Semua role", subtitle: "Tampilkan semua akun" },
+    { value: "employee", title: "Karyawan", subtitle: "Akun karyawan saja" },
+    {
+      value: "administrator",
+      title: "Administrator",
+      subtitle: "Akun pengelola sistem",
+    },
+  ];
+  const selectedRoleLabel =
+    roleOptions.find((option) => option.value === roleFilter)?.title ??
+    "Semua role";
+  const hasEmployeeFilters = search.trim() !== "" || roleFilter !== "all";
 
   if (user && !isAdministrator) {
     router.replace("/dashboard");
@@ -44,13 +70,6 @@ export default function EmployeePage() {
       </div>
     );
   }
-
-  const filtered = employees.filter(
-    (e: Employee) =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.username.toLowerCase().includes(search.toLowerCase()) ||
-      e.role.toLowerCase().includes(search.toLowerCase()),
-  );
 
   function isProtectedEmployee(employee: Employee) {
     return employee.role === "administrator" || user?.id === employee.id;
@@ -95,13 +114,39 @@ export default function EmployeePage() {
         </Button>
       </div>
 
-      <div className="mb-5 lg:hidden">
-        <SearchInput
-          id="employee-search"
-          value={search}
-          onChange={setSearch}
-          placeholder="Search"
-        />
+      <div className="mb-5 space-y-3 lg:hidden">
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SearchInput
+              id="employee-search"
+              value={search}
+              onChange={setSearch}
+              placeholder="Search"
+            />
+          </div>
+          <Button
+            variant={roleFilter !== "all" ? "primary" : "secondary"}
+            size="icon"
+            onClick={() => setRoleFilterOpen(true)}
+            aria-label="Filter role karyawan"
+          >
+            <FilterIcon className="size-5" />
+          </Button>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
+            {employees.length} karyawan
+          </span>
+          {roleFilter !== "all" && (
+            <button
+              type="button"
+              onClick={() => setRoleFilter("all")}
+              className="rounded-full px-2 py-1 text-xs font-semibold text-taupe-500 active:opacity-70"
+            >
+              Reset filter
+            </button>
+          )}
+        </div>
       </div>
 
       <DesktopToolbar className="mb-5">
@@ -113,8 +158,16 @@ export default function EmployeePage() {
             placeholder="Search"
           />
         </div>
+        <Button
+          variant={roleFilter !== "all" ? "primary" : "secondary"}
+          size="sm"
+          onClick={() => setRoleFilterOpen(true)}
+          leftIcon={<FilterIcon className="size-4" />}
+        >
+          {selectedRoleLabel}
+        </Button>
         <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
-          {filtered.length} karyawan
+          {employees.length} karyawan
         </span>
       </DesktopToolbar>
       {deleteError && (
@@ -196,9 +249,9 @@ export default function EmployeePage() {
             className: "w-[20%]",
           },
         ]}
-        rows={filtered}
+        rows={employees}
         getRowKey={(employee) => employee.id}
-        emptyMessage={search ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
+        emptyMessage={hasEmployeeFilters ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
         loading={isLoading}
       />
 
@@ -208,13 +261,13 @@ export default function EmployeePage() {
             <div key={i} className="h-16 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : employees.length === 0 ? (
         <p className="mt-10 text-center text-sm text-taupe-400 lg:hidden">
-          {search ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
+          {hasEmployeeFilters ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
         </p>
       ) : (
         <div id="employee-list" className="space-y-2 lg:hidden">
-          {filtered.map((employee) => (
+          {employees.map((employee) => (
             <Card
               key={employee.id}
               href={`/employee/${employee.id}`}
@@ -237,6 +290,15 @@ export default function EmployeePage() {
           ))}
         </div>
       )}
+      <SearchableSelectionDialog
+        open={roleFilterOpen}
+        onClose={() => setRoleFilterOpen(false)}
+        title="Filter Role"
+        options={roleOptions}
+        selectedValue={roleFilter}
+        onSelect={(option) => setRoleFilter(option.value as EmployeeRoleFilter)}
+        searchable={false}
+      />
       <BottomSheet
         open={employeeToDelete !== null}
         onClose={closeDeleteConfirmation}

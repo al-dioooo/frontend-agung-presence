@@ -10,9 +10,11 @@ import type {
   AttendanceRequestReviewInput,
   AttendanceSummary,
   Employee,
+  EmployeeQueryParams,
   LoginResponse,
   ManualAttendanceInput,
   Office,
+  OfficeQueryParams,
   PaginatedEnvelope,
   User,
 } from "./types";
@@ -114,15 +116,30 @@ export async function updateProfile(
 
 // ─── Offices ─────────────────────────────────────────────────────────────────
 
-export async function getOffices(
-  token: string,
-  search?: string,
-  activeOnly?: boolean,
+function appendOptionalParam(
+  params: URLSearchParams,
+  key: string,
+  value: string | number | boolean | undefined,
 ) {
-  const params = new URLSearchParams();
-  if (search) params.set("search", search);
-  if (activeOnly) params.set("active_only", "true");
-  const query = params.toString();
+  if (value === undefined || value === "" || value === false) return;
+  params.set(key, String(value));
+}
+
+function officeQueryString(params?: OfficeQueryParams) {
+  const q = new URLSearchParams();
+  appendOptionalParam(q, "search", params?.search?.trim());
+  appendOptionalParam(q, "active_only", params?.active_only);
+  appendOptionalParam(q, "active_status", params?.active_status);
+  appendOptionalParam(q, "sort", params?.sort);
+  appendOptionalParam(q, "latitude", params?.latitude);
+  appendOptionalParam(q, "longitude", params?.longitude);
+  appendOptionalParam(q, "limit", params?.limit);
+
+  return q.toString();
+}
+
+export async function getOffices(token: string, params?: OfficeQueryParams) {
+  const query = officeQueryString(params);
   const response = await apiRequest<PaginatedEnvelope<Office>>(
     `/offices${query ? `?${query}` : ""}`,
     { token },
@@ -378,10 +395,21 @@ export async function deleteOffice(token: string, id: number) {
 
 // ─── Employees ───────────────────────────────────────────────────────────────
 
-export async function getEmployees(token: string, search?: string) {
-  const query = search ? `?search=${encodeURIComponent(search)}` : "";
+function employeeQueryString(params?: EmployeeQueryParams) {
+  const q = new URLSearchParams();
+  appendOptionalParam(q, "search", params?.search?.trim());
+  if (params?.role && params.role !== "all") {
+    q.set("role", params.role);
+  }
+  appendOptionalParam(q, "limit", params?.limit);
+
+  return q.toString();
+}
+
+export async function getEmployees(token: string, params?: EmployeeQueryParams) {
+  const query = employeeQueryString(params);
   const response = await apiRequest<PaginatedEnvelope<Employee>>(
-    `/users${query}`,
+    `/users${query ? `?${query}` : ""}`,
     { token },
   );
 

@@ -1,19 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { useOffices } from "@/lib/api/hooks";
 import { mutateDeleteOffice } from "@/lib/api/mutations";
-import type { Office } from "@/lib/api/types";
+import type {
+  Office,
+  OfficeActiveStatusFilter,
+  OfficeSort,
+} from "@/lib/api/types";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { Button, Card, SearchInput } from "@/components/ui";
 import {
   ChevronRightIcon,
+  CurrentLocationIcon,
   EyeIcon,
+  FilterIcon,
   PencilIcon,
   TrashIcon,
 } from "@/components/icons/outline";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import {
+  SearchableSelectionDialog,
+  type FilterSelectionOption,
+} from "@/app/components/filter-controls";
 import {
   DesktopToolbar,
   ResponsiveDataTable,
@@ -25,23 +36,6 @@ import {
   TableActionLink,
 } from "@/app/components/table-row-actions";
 
-function haversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371000;
-  const phi1 = (lat1 * Math.PI) / 180;
-  const phi2 = (lat2 * Math.PI) / 180;
-  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
-  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(deltaPhi / 2) ** 2 +
-    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 function formatDistance(meters: number) {
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(1)}km`;
@@ -50,51 +44,107 @@ function formatDistance(meters: number) {
 export default function OfficePage() {
   const { token, user } = useAuth();
   const [search, setSearch] = useState("");
-  const isAdministrator = user?.role === "administrator";
-  const { data: offices = [], isLoading } = useOffices(
-    undefined,
-    !isAdministrator,
-  );
-  const [userLocation, setUserLocation] = useState<{
+  const [activeStatus, setActiveStatus] =
+    useState<OfficeActiveStatusFilter>("all");
+  const [sortMode, setSortMode] = useState<OfficeSort>("name");
+  const [activeStatusOpen, setActiveStatusOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [nearestLocation, setNearestLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
+  const [locationError, setLocationError] = useState("");
+  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const isAdministrator = user?.role === "administrator";
+  const debouncedSearch = useDebouncedValue(search);
+  const nearestActive = sortMode === "nearest" && nearestLocation !== null;
+  const { data: offices = [], isLoading } = useOffices({
+    search: debouncedSearch,
+    active_only: !isAdministrator,
+    active_status: isAdministrator ? activeStatus : undefined,
+    sort: nearestActive ? "nearest" : "name",
+    latitude: nearestLocation?.lat,
+    longitude: nearestLocation?.lng,
+  });
   const [officeToDelete, setOfficeToDelete] = useState<Office | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Request geolocation once on mount
-  useEffect(() => {
-    navigator.geolocation?.getCurrentPosition((pos) => {
-      setUserLocation({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-      });
+  const activeStatusOptions: FilterSelectionOption[] = [
+    { value: "all", title: "Semua status", subtitle: "Aktif dan nonaktif" },
+    { value: "active", title: "Aktif", subtitle: "Kantor aktif saja" },
+    { value: "inactive", title: "Nonaktif", subtitle: "Kantor nonaktif saja" },
+  ];
+  const sortOptions: FilterSelectionOption[] = [
+    { value: "name", title: "Nama", subtitle: "Urut berdasarkan nama" },
+    {
+      value: "nearest",
+      title: "Terdekat",
+      subtitle: "Gunakan lokasi perangkat saat ini",
+    },
+  ];
+  const activeStatusLabel =
+    activeStatusOptions.find((option) => option.value === activeStatus)?.title ??
+    "Semua status";
+  const sortLabel =
+    sortOptions.find((option) => option.value === sortMode)?.title ?? "Nama";
+  const hasOfficeFilters =
+    search.trim() !== "" ||
+    (isAdministrator && activeStatus !== "all") ||
+    nearestActive;
+
+  function resolveCurrentLocation() {
+    return new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation unsupported"));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        reject,
+        {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 60000,
+        },
+      );
     });
-  }, []);
+  }
 
-  const filtered = (() => {
-    const searchTerm = search.toLowerCase();
-    const list = offices.filter(
-      (o) =>
-        o.name.toLowerCase().includes(searchTerm) ||
-        (o.address ?? "").toLowerCase().includes(searchTerm),
-    );
+  async function enableNearestSorting() {
+    setIsResolvingLocation(true);
+    setLocationError("");
+    try {
+      const location = await resolveCurrentLocation();
+      setNearestLocation(location);
+      setSortMode("nearest");
+    } catch {
+      setNearestLocation(null);
+      setSortMode("name");
+      setLocationError(
+        "Lokasi saat ini belum tersedia. Izinkan akses lokasi untuk mengurutkan kantor terdekat.",
+      );
+    } finally {
+      setIsResolvingLocation(false);
+    }
+  }
 
-    if (!userLocation) return list;
+  function handleSortSelect(option: FilterSelectionOption) {
+    if (option.value === "nearest") {
+      void enableNearestSorting();
+      return;
+    }
 
-    return list
-      .map((office) => ({
-        ...office,
-        _distance: haversineDistance(
-          userLocation.lat,
-          userLocation.lng,
-          Number(office.latitude),
-          Number(office.longitude),
-        ),
-      }))
-      .sort((a, b) => a._distance - b._distance);
-  })() as (Office & { _distance?: number })[];
+    setSortMode("name");
+    setNearestLocation(null);
+    setLocationError("");
+  }
 
   async function handleDeleteOffice() {
     if (!token || !officeToDelete) return;
@@ -130,13 +180,56 @@ export default function OfficePage() {
         )}
       </div>
 
-      <div className="mb-5 lg:hidden">
-        <SearchInput
-          id="office-search"
-          value={search}
-          onChange={setSearch}
-          placeholder="Search"
-        />
+      <div className="mb-5 space-y-3 lg:hidden">
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SearchInput
+              id="office-search"
+              value={search}
+              onChange={setSearch}
+              placeholder="Search"
+            />
+          </div>
+          {isAdministrator && (
+            <Button
+              variant={activeStatus !== "all" ? "primary" : "secondary"}
+              size="icon"
+              onClick={() => setActiveStatusOpen(true)}
+              aria-label="Filter status kantor"
+            >
+              <FilterIcon className="size-5" />
+            </Button>
+          )}
+          <Button
+            variant={nearestActive ? "primary" : "secondary"}
+            size="icon"
+            onClick={() => setSortOpen(true)}
+            loading={isResolvingLocation}
+            aria-label="Urutkan kantor"
+          >
+            <CurrentLocationIcon className="size-5" />
+          </Button>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
+            {offices.length} kantor
+          </span>
+          {hasOfficeFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setActiveStatus("all");
+                setSortMode("name");
+                setNearestLocation(null);
+                setLocationError("");
+              }}
+              className="rounded-full px-2 py-1 text-xs font-semibold text-taupe-500 active:opacity-70"
+            >
+              Reset filter
+            </button>
+          )}
+        </div>
       </div>
 
       <DesktopToolbar className="mb-5">
@@ -148,10 +241,35 @@ export default function OfficePage() {
             placeholder="Search"
           />
         </div>
+        {isAdministrator && (
+          <Button
+            variant={activeStatus !== "all" ? "primary" : "secondary"}
+            size="sm"
+            onClick={() => setActiveStatusOpen(true)}
+            leftIcon={<FilterIcon className="size-4" />}
+          >
+            {activeStatusLabel}
+          </Button>
+        )}
+        <Button
+          variant={nearestActive ? "primary" : "secondary"}
+          size="sm"
+          onClick={() => setSortOpen(true)}
+          leftIcon={<CurrentLocationIcon className="size-4" />}
+          loading={isResolvingLocation}
+          loadingText="Lokasi..."
+        >
+          {sortLabel}
+        </Button>
         <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
-          {filtered.length} kantor
+          {offices.length} kantor
         </span>
       </DesktopToolbar>
+      {locationError && (
+        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          {locationError}
+        </p>
+      )}
       {deleteError && (
         <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
           {deleteError}
@@ -186,7 +304,9 @@ export default function OfficePage() {
             key: "distance",
             header: "Jarak",
             cell: (office) =>
-              office._distance !== undefined ? formatDistance(office._distance) : "-",
+              office.distance_meters !== undefined
+                ? formatDistance(office.distance_meters)
+                : "-",
             className: "w-[14%] text-taupe-500",
           },
           {
@@ -242,9 +362,9 @@ export default function OfficePage() {
             className: "w-[18%]",
           },
         ]}
-        rows={filtered}
+        rows={offices}
         getRowKey={(office) => office.id}
-        emptyMessage={search ? "Tidak ada kantor ditemukan" : "Belum ada data kantor"}
+        emptyMessage={hasOfficeFilters ? "Tidak ada kantor ditemukan" : "Belum ada data kantor"}
         loading={isLoading}
       />
 
@@ -254,13 +374,13 @@ export default function OfficePage() {
             <div key={i} className="h-16 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : offices.length === 0 ? (
         <p className="mt-10 text-center text-sm text-taupe-400 lg:hidden">
-          {search ? "Tidak ada kantor ditemukan" : "Belum ada data kantor"}
+          {hasOfficeFilters ? "Tidak ada kantor ditemukan" : "Belum ada data kantor"}
         </p>
       ) : (
         <div id="office-list" className="space-y-2 lg:hidden">
-          {filtered.map((office) => {
+          {offices.map((office) => {
             const inactive = !office.is_active;
 
             return (
@@ -290,15 +410,15 @@ export default function OfficePage() {
                   )}
                 </div>
                 <div className="ml-3 flex shrink-0 items-center gap-2">
-                  {office._distance !== undefined && (
+                  {office.distance_meters !== undefined && (
                     <span
                       className={`text-xs font-semibold ${
-                        office._distance <= office.radius
+                        office.distance_meters <= office.radius
                           ? "text-emerald-600"
                           : "text-taupe-400"
                       }`}
                     >
-                      {formatDistance(office._distance)}
+                      {formatDistance(office.distance_meters)}
                     </span>
                   )}
                   <ChevronRightIcon
@@ -311,6 +431,28 @@ export default function OfficePage() {
           })}
         </div>
       )}
+      {isAdministrator && (
+        <SearchableSelectionDialog
+          open={activeStatusOpen}
+          onClose={() => setActiveStatusOpen(false)}
+          title="Filter Status Kantor"
+          options={activeStatusOptions}
+          selectedValue={activeStatus}
+          onSelect={(option) =>
+            setActiveStatus(option.value as OfficeActiveStatusFilter)
+          }
+          searchable={false}
+        />
+      )}
+      <SearchableSelectionDialog
+        open={sortOpen}
+        onClose={() => setSortOpen(false)}
+        title="Urutkan Kantor"
+        options={sortOptions}
+        selectedValue={sortMode}
+        onSelect={handleSortSelect}
+        searchable={false}
+      />
       <BottomSheet
         open={officeToDelete !== null}
         onClose={closeDeleteConfirmation}

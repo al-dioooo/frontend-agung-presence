@@ -400,6 +400,58 @@ async function expectAdminDesktopTableActions(page) {
   );
 }
 
+async function expectAdminFilterAffordances(page) {
+  await page.goto(`${BASE_URL}/employee`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await page.getByRole("button", { name: "Semua role" }).click();
+  const roleDialog = page.getByRole("dialog", { name: "Filter Role" });
+  await roleDialog.waitFor({ timeout: 15000 });
+  await roleDialog.getByRole("button", { name: /^Karyawan\b/ }).click();
+  await roleDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await page.getByRole("button", { name: "Karyawan", exact: true }).waitFor({ timeout: 15000 });
+
+  await page.goto(`${BASE_URL}/office`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await page.getByRole("button", { name: "Semua status" }).click();
+  const statusDialog = page.getByRole("dialog", { name: "Filter Status Kantor" });
+  await statusDialog.waitFor({ timeout: 15000 });
+  await statusDialog.getByRole("button", { name: /^Aktif\b/ }).click();
+  await statusDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await page.getByRole("button", { name: "Aktif", exact: true }).waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "Nama" }).click();
+  const sortDialog = page.getByRole("dialog", { name: "Urutkan Kantor" });
+  await sortDialog.waitFor({ timeout: 15000 });
+  await sortDialog.getByRole("button", { name: /Terdekat/ }).click();
+  await sortDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await page.getByRole("button", { name: /Terdekat|Lokasi/ }).waitFor({ timeout: 15000 });
+
+  await page.goto(`${BASE_URL}/presence`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await page.getByRole("button", { name: "Filter riwayat" }).click();
+  const filterDialog = page.getByRole("dialog", { name: "Filter Riwayat" });
+  await filterDialog.waitFor({ timeout: 15000 });
+  for (const label of ["Karyawan", "Kantor", "Status", "Tanggal"]) {
+    await filterDialog.getByText(label).first().waitFor({ timeout: 15000 });
+  }
+  await filterDialog.getByRole("button", { name: /Karyawan/ }).click();
+  const employeeDialog = page.getByRole("dialog", { name: "Pilih Karyawan" });
+  await employeeDialog.waitFor({ timeout: 15000 });
+  await employeeDialog.getByPlaceholder("Cari karyawan").fill("a");
+  await employeeDialog.getByRole("button", { name: /Semua karyawan/ }).click();
+  await employeeDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await filterDialog.getByRole("button", { name: /Kantor/ }).click();
+  const officeDialog = page.getByRole("dialog", { name: "Pilih Kantor" });
+  await officeDialog.waitFor({ timeout: 15000 });
+  await officeDialog.getByPlaceholder("Cari kantor").fill("kampus");
+  await officeDialog.getByRole("button", { name: /Semua kantor/ }).click();
+  await officeDialog.waitFor({ state: "hidden", timeout: 15000 });
+  await filterDialog.getByRole("button", { name: "Terapkan" }).click();
+  await filterDialog.waitFor({ state: "hidden", timeout: 15000 });
+}
+
 async function run() {
   const browser = await chromium.launch({
     headless: true,
@@ -448,6 +500,7 @@ async function run() {
   }
 
   await expectAdminDesktopTableActions(page);
+  await expectAdminFilterAffordances(page);
   await expectAdminDesktopFormPanels(page);
 
   for (const route of ["/office/create", "/employee/create", "/profile", "/profile/edit"]) {
