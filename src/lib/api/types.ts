@@ -133,6 +133,8 @@ export type ManualAttendanceInput = {
 
 export type AttendanceQueryParams = {
   search?: string;
+  user_id?: number;
+  status?: AttendanceStatus;
   office_id?: number;
   date?: string;
   start_date?: string;

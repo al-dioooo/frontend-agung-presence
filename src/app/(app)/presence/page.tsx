@@ -1,44 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api/client";
 import {
   useAttendanceSummary,
   useAttendances,
   useEmployees,
+  useOffices,
 } from "@/lib/api/hooks";
 import {
   mutateCheckOut,
   mutateCreateManualAttendance,
   mutateDownloadAttendanceExport,
 } from "@/lib/api/mutations";
-import type { Attendance, ManualAttendanceStatus } from "@/lib/api/types";
+import type { ManualAttendanceStatus } from "@/lib/api/types";
+import type { AttendanceStatusKey } from "@/lib/attendance-status";
 import {
-  isManualAttendance,
   MANUAL_STATUS_OPTIONS,
   statusLabel,
-  statusTextClass,
 } from "@/lib/attendance-status";
-import { Button, Card, SearchInput } from "@/components/ui";
+import { Button, SearchInput } from "@/components/ui";
+import { AttendanceHistoryList } from "@/app/components/attendance-history-list";
 import { AttendanceTotals } from "@/app/components/attendance-totals";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { MobileDatePicker } from "@/app/components/mobile-date-picker";
+import { PresenceFilterChips } from "@/app/components/presence-filter-chips";
+import {
+  buildPresenceAttendanceParams,
+  hasPresenceFilters,
+} from "@/app/components/presence-filter-state";
+import { PresenceFilterSheet } from "@/app/components/presence-filter-sheet";
+import {
+  PresenceView,
+  PresenceViewToggle,
+} from "@/app/components/presence-view-toggle";
 import {
   ChevronRightIcon,
   DownloadIcon,
+  FilterIcon,
   PencilIcon,
   UserIcon,
 } from "@/components/icons/outline";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("id-ID", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function formatTime(iso: string | null) {
   if (!iso) return "--:--";
@@ -66,18 +69,21 @@ function formatDisplayDate(dateKey: string) {
 
 export default function PresencePage() {
   const { token, user } = useAuth();
-  const [search, setSearch] = useState("");
-  const { data: attendances = [], isLoading } = useAttendances();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [checkOutError, setCheckOutError] = useState("");
-  const [userFilterOpen, setUserFilterOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const isAdministrator = user?.role === "administrator";
   const today = toDateKey(new Date());
-  const { data: employees = [], isLoading: isLoadingEmployees } = useEmployees(
-    undefined,
-    isAdministrator,
-  );
+
+  const [view, setView] = useState<PresenceView>("history");
+  const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<AttendanceStatusKey | "all">("all");
+  const [dateRangeActive, setDateRangeActive] = useState(false);
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkOutError, setCheckOutError] = useState("");
+
   const [manualInputOpen, setManualInputOpen] = useState(false);
   const [manualDatePickerOpen, setManualDatePickerOpen] = useState(false);
   const [manualUserId, setManualUserId] = useState<number | null>(null);
@@ -87,27 +93,87 @@ export default function PresencePage() {
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+
+  const attendanceParams = useMemo(
+    () =>
+      buildPresenceAttendanceParams({
+        search,
+        selectedUserId: isAdministrator ? selectedUserId : null,
+        selectedOfficeId: isAdministrator ? selectedOfficeId : null,
+        status: isAdministrator ? statusFilter : "all",
+        dateRangeActive: isAdministrator ? dateRangeActive : false,
+        startDate,
+        endDate,
+      }),
+    [
+      dateRangeActive,
+      endDate,
+      isAdministrator,
+      search,
+      selectedOfficeId,
+      selectedUserId,
+      startDate,
+      statusFilter,
+    ],
+  );
+
+  const hasFilters = hasPresenceFilters({
+    search,
+    selectedUserId: isAdministrator ? selectedUserId : null,
+    selectedOfficeId: isAdministrator ? selectedOfficeId : null,
+    status: isAdministrator ? statusFilter : "all",
+    dateRangeActive: isAdministrator ? dateRangeActive : false,
+    startDate,
+    endDate,
+  });
+  const adminSheetHasFilters =
+    selectedUserId !== null ||
+    selectedOfficeId !== null ||
+    statusFilter !== "all" ||
+    dateRangeActive;
+
+  const { data: attendances = [], isLoading } = useAttendances(attendanceParams);
   const {
     data: attendanceSummary = [],
     isLoading: isLoadingSummary,
-  } = useAttendanceSummary(isAdministrator);
+  } = useAttendanceSummary(isAdministrator, attendanceParams);
+  const { data: employees = [], isLoading: isLoadingEmployees } = useEmployees(
+    undefined,
+    isAdministrator,
+  );
+  const { data: offices = [], isLoading: isLoadingOffices } = useOffices(
+    undefined,
+    false,
+  );
 
   const activeCheckIn = attendances.find(
-    (a) => !isAdministrator && a.date === today && a.in_at && !a.out_at,
+    (attendance) =>
+      !isAdministrator &&
+      attendance.date === today &&
+      attendance.in_at &&
+      !attendance.out_at,
   ) ?? null;
 
-  const userOptions = Array.from(
-    attendances.reduce((map, attendance) => {
-      if (attendance.user) {
-        map.set(attendance.user.id, attendance.user);
-      }
-      return map;
-    }, new Map<number, NonNullable<Attendance["user"]>>()).values(),
-  ).sort((a, b) => a.name.localeCompare(b.name));
-
-  const selectedUser = userOptions.find((option) => option.id === selectedUserId);
-  const employeeOptions = [...employees].sort((a, b) => a.name.localeCompare(b.name));
+  const employeeOptions = useMemo(
+    () => [...employees].sort((a, b) => a.name.localeCompare(b.name)),
+    [employees],
+  );
+  const officeOptions = useMemo(
+    () => [...offices].sort((a, b) => a.name.localeCompare(b.name)),
+    [offices],
+  );
+  const selectedUser = employeeOptions.find((employee) => employee.id === selectedUserId) ?? null;
+  const selectedOffice = officeOptions.find((office) => office.id === selectedOfficeId) ?? null;
   const selectedManualEmployee = employeeOptions.find((employee) => employee.id === manualUserId);
+
+  function resetAdminFilters() {
+    setSelectedUserId(null);
+    setSelectedOfficeId(null);
+    setStatusFilter("all");
+    setDateRangeActive(false);
+    setStartDate(today);
+    setEndDate(today);
+  }
 
   async function handleCheckOut() {
     if (!token || !activeCheckIn) return;
@@ -156,7 +222,10 @@ export default function PresencePage() {
     setIsExporting(true);
     setExportError("");
     try {
-      const { blob, filename } = await mutateDownloadAttendanceExport(token);
+      const { blob, filename } = await mutateDownloadAttendanceExport(
+        token,
+        attendanceParams,
+      );
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -174,22 +243,6 @@ export default function PresencePage() {
     }
   }
 
-  const filtered = attendances.filter((a) => {
-    if (isAdministrator && selectedUserId !== null && a.user_id !== selectedUserId) {
-      return false;
-    }
-
-    const searchTerm = search.toLowerCase();
-    return (
-      a.date.includes(searchTerm) ||
-      a.office?.name?.toLowerCase().includes(searchTerm) ||
-      a.user?.name.toLowerCase().includes(searchTerm) ||
-      a.user?.username.toLowerCase().includes(searchTerm) ||
-      a.user?.email.toLowerCase().includes(searchTerm) ||
-      statusLabel(a.status).toLowerCase().includes(searchTerm)
-    );
-  });
-
   return (
     <div className="px-5 pt-6">
       <div className="mb-5 flex items-center justify-between gap-3">
@@ -201,7 +254,6 @@ export default function PresencePage() {
         </Button>
       </div>
 
-      {/* Active check-in banner */}
       {activeCheckIn && (
         <div className="mb-5 overflow-hidden rounded-2xl bg-emerald-50 ring-1 ring-emerald-200">
           <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -234,7 +286,7 @@ export default function PresencePage() {
         </div>
       )}
 
-      <div className="mb-5 flex items-center gap-2">
+      <div className="mb-3 flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <SearchInput
             id="presence-search"
@@ -261,17 +313,17 @@ export default function PresencePage() {
               size="icon"
               onClick={handleExport}
               loading={isExporting}
-              aria-label="Unduh semua rekapan"
+              aria-label="Unduh rekapan sesuai filter"
             >
               <DownloadIcon className="size-5" strokeWidth={2} />
             </Button>
             <Button
-              variant={selectedUserId ? "primary" : "secondary"}
+              variant={adminSheetHasFilters ? "primary" : "secondary"}
               size="icon"
-              onClick={() => setUserFilterOpen(true)}
-              aria-label="Filter karyawan"
+              onClick={() => setFilterOpen(true)}
+              aria-label="Filter riwayat"
             >
-              <UserIcon className="size-5" />
+              <FilterIcon className="size-5" />
             </Button>
           </>
         )}
@@ -283,77 +335,47 @@ export default function PresencePage() {
         </p>
       )}
 
-      {isAdministrator && selectedUser && (
-        <div className="mb-4 flex items-center justify-between rounded-2xl bg-taupe-100 px-4 py-2.5">
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-foreground">
-              {selectedUser.name}
-            </p>
-            <p className="truncate text-[10px] text-taupe-400">
-              @{selectedUser.username}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectedUserId(null)}
-            className="ml-3 text-xs font-semibold text-taupe-500 active:opacity-70"
-          >
-            Reset
-          </button>
-        </div>
+      {isAdministrator && (
+        <>
+          <PresenceViewToggle value={view} onChange={setView} />
+          <PresenceFilterChips
+            selectedEmployee={selectedUser}
+            selectedOffice={selectedOffice}
+            status={statusFilter}
+            dateRangeActive={dateRangeActive}
+            startDate={startDate}
+            endDate={endDate}
+            onClearEmployee={() => setSelectedUserId(null)}
+            onClearOffice={() => setSelectedOfficeId(null)}
+            onClearStatus={() => setStatusFilter("all")}
+            onClearDateRange={() => setDateRangeActive(false)}
+            onClearAll={resetAdminFilters}
+          />
+        </>
       )}
 
-      <BottomSheet
-        open={userFilterOpen}
-        onClose={() => setUserFilterOpen(false)}
-        title="Filter Karyawan"
-      >
-        <div className="px-2 pb-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedUserId(null);
-              setUserFilterOpen(false);
-            }}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
-          >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
-              <UserIcon className="size-4 text-taupe-400" />
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              <p className="font-medium text-foreground">Semua karyawan</p>
-              <p className="text-xs text-taupe-400">Tampilkan semua riwayat</p>
-            </div>
-            {selectedUserId === null && (
-              <span className="size-2 rounded-full bg-primary" />
-            )}
-          </button>
-          {userOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => {
-                setSelectedUserId(option.id);
-                setUserFilterOpen(false);
-              }}
-              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors active:bg-taupe-50"
-            >
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-taupe-100">
-                <UserIcon className="size-4 text-taupe-400" />
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="truncate font-medium text-foreground">{option.name}</p>
-                <p className="truncate text-xs text-taupe-400">
-                  @{option.username} · {option.email}
-                </p>
-              </div>
-              {selectedUserId === option.id && (
-                <span className="size-2 rounded-full bg-primary" />
-              )}
-            </button>
-          ))}
-        </div>
-      </BottomSheet>
+      <PresenceFilterSheet
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        employees={employeeOptions}
+        offices={officeOptions}
+        loadingEmployees={isLoadingEmployees}
+        loadingOffices={isLoadingOffices}
+        selectedUserId={selectedUserId}
+        selectedOfficeId={selectedOfficeId}
+        status={statusFilter}
+        dateRangeActive={dateRangeActive}
+        startDate={startDate}
+        endDate={endDate}
+        maxDate={today}
+        onUserChange={setSelectedUserId}
+        onOfficeChange={setSelectedOfficeId}
+        onStatusChange={setStatusFilter}
+        onDateRangeActiveChange={setDateRangeActive}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onReset={resetAdminFilters}
+      />
 
       <BottomSheet
         open={manualInputOpen}
@@ -495,67 +517,20 @@ export default function PresencePage() {
         }}
       />
 
-      {isAdministrator && (
+      {isAdministrator && view === "summary" ? (
         <AttendanceTotals
           summaries={attendanceSummary}
           loading={isLoadingSummary}
         />
-      )}
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-taupe-400">
-          {search ? "Tidak ada hasil ditemukan" : "Belum ada riwayat absensi"}
-        </p>
       ) : (
-        <div id="presence-list" className="space-y-2">
-          {filtered.map((attendance) => (
-            <Card
-              key={attendance.id}
-              href={`/presence/${attendance.id}`}
-              id={`attendance-${attendance.id}`}
-              className="flex items-center justify-between gap-3 px-4 py-3.5"
-            >
-              <div className="min-w-0 flex-1">
-                {isAdministrator && attendance.user && (
-                  <p className="mb-0.5 truncate text-xs font-semibold text-foreground">
-                    {attendance.user.name}
-                  </p>
-                )}
-                <p className="text-sm font-medium text-foreground">
-                  {attendance.office?.name ??
-                    (isManualAttendance(attendance)
-                      ? "Input Manual"
-                      : `Office #${attendance.office_id}`)}
-                </p>
-                <p className="mt-0.5 text-xs text-taupe-400">
-                  {formatDate(attendance.date)}
-                </p>
-                <div className="mt-1 flex gap-3 text-xs text-taupe-400">
-                  {isManualAttendance(attendance) ? (
-                    <span>Tidak memerlukan waktu absen</span>
-                  ) : (
-                    <>
-                      <span>Masuk: {formatTime(attendance.in_at)}</span>
-                      <span>Keluar: {formatTime(attendance.out_at)}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className={`text-xs font-semibold ${statusTextClass(attendance.status)}`}>
-                  {statusLabel(attendance.status)}
-                </span>
-                <ChevronRightIcon strokeWidth={2.5} className="size-4 text-taupe-300" />
-              </div>
-            </Card>
-          ))}
-        </div>
+        <AttendanceHistoryList
+          attendances={attendances}
+          loading={isLoading}
+          isAdministrator={isAdministrator}
+          emptyMessage={
+            hasFilters ? "Tidak ada hasil ditemukan" : "Belum ada riwayat absensi"
+          }
+        />
       )}
     </div>
   );

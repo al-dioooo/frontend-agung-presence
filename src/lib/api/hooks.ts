@@ -47,6 +47,8 @@ export function attendancesKey(
     "/attendances",
     token,
     params?.search ?? "",
+    params?.user_id ?? "",
+    params?.status ?? "",
     params?.office_id ?? "",
     params?.date ?? "",
     params?.start_date ?? "",
@@ -62,6 +64,24 @@ export function attendanceKey(token: string | null, id: number | string) {
 export function attendanceSummaryKey(token: string | null) {
   if (!token) return null;
   return ["/attendances/summary", token] as const;
+}
+
+export function filteredAttendanceSummaryKey(
+  token: string | null,
+  params?: AttendanceQueryParams,
+) {
+  if (!token) return null;
+  return [
+    "/attendances/summary",
+    token,
+    params?.search ?? "",
+    params?.user_id ?? "",
+    params?.status ?? "",
+    params?.office_id ?? "",
+    params?.date ?? "",
+    params?.start_date ?? "",
+    params?.end_date ?? "",
+  ] as const;
 }
 
 export function attendanceRequestsKey(
@@ -116,9 +136,11 @@ export function useEmployee(id: number | string) {
 export function useAttendances(params?: AttendanceQueryParams) {
   const { token } = useAuth();
 
-  return useSWR(attendancesKey(token, params), ([, tok, search, officeId, date, startDate, endDate]) =>
+  return useSWR(attendancesKey(token, params), ([, tok, search, userId, status, officeId, date, startDate, endDate]) =>
     getAttendances(tok, {
       search: search || undefined,
+      user_id: userId ? Number(userId) : undefined,
+      status: status || undefined,
       office_id: officeId ? Number(officeId) : undefined,
       date: date || undefined,
       start_date: startDate || undefined,
@@ -135,11 +157,22 @@ export function useAttendance(id: number | string) {
   );
 }
 
-export function useAttendanceSummary(enabled = true) {
+export function useAttendanceSummary(
+  enabled = true,
+  params?: AttendanceQueryParams,
+) {
   const { token } = useAuth();
 
-  return useSWR(enabled ? attendanceSummaryKey(token) : null, ([, tok]) =>
-    getAttendanceSummary(tok),
+  return useSWR(enabled ? filteredAttendanceSummaryKey(token, params) : null, ([, tok, search, userId, status, officeId, date, startDate, endDate]) =>
+    getAttendanceSummary(tok, {
+      search: search || undefined,
+      user_id: userId ? Number(userId) : undefined,
+      status: status || undefined,
+      office_id: officeId ? Number(officeId) : undefined,
+      date: date || undefined,
+      start_date: startDate || undefined,
+      end_date: endDate || undefined,
+    }),
   );
 }
 

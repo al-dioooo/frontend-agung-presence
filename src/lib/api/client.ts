@@ -141,17 +141,24 @@ export async function getOffice(token: string, id: number) {
 
 // ─── Attendances ─────────────────────────────────────────────────────────────
 
-export async function getAttendances(
-  token: string,
-  params?: AttendanceQueryParams,
-) {
+function attendanceQueryString(params?: AttendanceQueryParams) {
   const q = new URLSearchParams();
   if (params?.search) q.set("search", params.search);
+  if (params?.user_id) q.set("user_id", String(params.user_id));
+  if (params?.status) q.set("status", params.status);
   if (params?.office_id) q.set("office_id", String(params.office_id));
   if (params?.date) q.set("date", params.date);
   if (params?.start_date) q.set("start_date", params.start_date);
   if (params?.end_date) q.set("end_date", params.end_date);
-  const qs = q.toString();
+
+  return q.toString();
+}
+
+export async function getAttendances(
+  token: string,
+  params?: AttendanceQueryParams,
+) {
+  const qs = attendanceQueryString(params);
   const response = await apiRequest<PaginatedEnvelope<Attendance>>(
     `/attendances${qs ? `?${qs}` : ""}`,
     { token },
@@ -160,17 +167,25 @@ export async function getAttendances(
   return response.data;
 }
 
-export async function getAttendanceSummary(token: string) {
+export async function getAttendanceSummary(
+  token: string,
+  params?: AttendanceQueryParams,
+) {
+  const qs = attendanceQueryString(params);
   const response = await apiRequest<ApiEnvelope<AttendanceSummary[]>>(
-    "/attendances/summary",
+    `/attendances/summary${qs ? `?${qs}` : ""}`,
     { token },
   );
 
   return response.data;
 }
 
-export async function downloadAttendanceExport(token: string) {
-  const response = await fetch(`${apiProxyPath}/attendances/export`, {
+export async function downloadAttendanceExport(
+  token: string,
+  params?: AttendanceQueryParams,
+) {
+  const qs = attendanceQueryString(params);
+  const response = await fetch(`${apiProxyPath}/attendances/export${qs ? `?${qs}` : ""}`, {
     method: "GET",
     headers: {
       Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

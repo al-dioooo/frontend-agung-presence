@@ -20,6 +20,7 @@ import type {
   Office,
   Employee,
   Attendance,
+  AttendanceQueryParams,
   ManualAttendanceInput,
   AttendanceRequestInput,
   AttendanceRequestReviewInput,
@@ -189,6 +190,7 @@ export async function mutateCheckIn(
 
   // Revalidate all attendance caches
   revalidatePrefix("/attendances");
+  revalidatePrefix("/attendances/summary");
 
   return newAttendance;
 }
@@ -224,6 +226,7 @@ export async function mutateCheckOut(
 
     // Revalidate all attendance caches for consistency
     revalidatePrefix("/attendances");
+    revalidatePrefix("/attendances/summary");
 
     return result;
   } catch (err) {
@@ -240,6 +243,7 @@ export async function mutateCreateManualAttendance(
   const attendance = await createManualAttendance(token, data);
 
   revalidatePrefix("/attendances");
+  revalidatePrefix("/attendances/summary");
 
   const detailKey = attendanceKey(token, attendance.id);
   if (detailKey) {
@@ -279,6 +283,7 @@ export async function mutateReviewAttendanceRequest(
 
   revalidatePrefix("/attendance-requests");
   revalidatePrefix("/attendances");
+  revalidatePrefix("/attendances/summary");
 
   const summaryKey = attendanceSummaryKey(token);
   if (summaryKey) {
@@ -288,6 +293,9 @@ export async function mutateReviewAttendanceRequest(
   return attendanceRequest;
 }
 
-export async function mutateDownloadAttendanceExport(token: string) {
-  return downloadAttendanceExport(token);
+export async function mutateDownloadAttendanceExport(
+  token: string,
+  params?: AttendanceQueryParams,
+) {
+  return downloadAttendanceExport(token, params);
 }
