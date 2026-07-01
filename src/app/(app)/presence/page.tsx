@@ -25,6 +25,7 @@ import { AttendanceHistoryList } from "@/app/components/attendance-history-list"
 import { AttendanceTotals } from "@/app/components/attendance-totals";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { MobileDatePicker } from "@/app/components/mobile-date-picker";
+import { AppPage } from "@/app/components/responsive-layout";
 import { PresenceFilterChips } from "@/app/components/presence-filter-chips";
 import {
   buildPresenceAttendanceParams,
@@ -244,9 +245,9 @@ export default function PresencePage() {
   }
 
   return (
-    <div className="px-5 pt-6">
+    <AppPage size="wide">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-foreground">
+        <h1 className="text-xl font-bold text-foreground md:text-2xl">
           Presence History
         </h1>
         <Button href="/presence/requests" variant="primary" size="sm">
@@ -286,7 +287,7 @@ export default function PresencePage() {
         </div>
       )}
 
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex items-center gap-2 lg:rounded-2xl lg:bg-white lg:p-3 lg:ring-1 lg:ring-taupe-200 lg:shadow-sm">
         <div className="min-w-0 flex-1">
           <SearchInput
             id="presence-search"
@@ -532,6 +533,6 @@ export default function PresencePage() {
           }
         />
       )}
-    </div>
+    </AppPage>
   );
 }

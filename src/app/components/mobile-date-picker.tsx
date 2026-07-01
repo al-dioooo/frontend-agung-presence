@@ -114,7 +114,7 @@ export function MobileDatePicker({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[90] flex items-end justify-center">
+        <div className="fixed inset-0 z-[90] flex items-end justify-center lg:items-center lg:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -130,7 +130,7 @@ export function MobileDatePicker({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0.98 }}
             transition={{ type: "spring", stiffness: 360, damping: 36 }}
-            className="relative z-10 w-full max-w-md rounded-t-3xl bg-white pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-2xl"
+            className="relative z-10 w-full max-w-md rounded-t-3xl bg-white pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-2xl lg:rounded-2xl lg:pb-6"
             role="dialog"
             aria-modal="true"
             aria-label={title}
@@ -173,12 +173,12 @@ function DatePickerPanel({
 
   return (
     <>
-      <div className="flex justify-center pt-3 pb-1">
+      <div className="flex justify-center pt-3 pb-1 lg:hidden">
         <div className="h-1 w-10 rounded-full bg-taupe-200" />
       </div>
 
       <div className="flex items-start justify-between gap-3">
-        <h3 className="px-6 pt-3 text-base font-bold text-foreground">{title}</h3>
+        <h3 className="px-6 pt-3 text-base font-bold text-foreground lg:pt-5">{title}</h3>
         <button
           type="button"
           onClick={onClose}
@@ -197,7 +197,7 @@ function DatePickerPanel({
         </button>
       </div>
 
-      <div className="px-5 pt-4">
+      <div className="px-5 pt-4 lg:px-6">
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"

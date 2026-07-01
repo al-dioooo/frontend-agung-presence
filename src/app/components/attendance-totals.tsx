@@ -1,4 +1,5 @@
 import type { AttendanceSummary } from "@/lib/api/types";
+import { ResponsiveDataTable } from "@/app/components/responsive-data-table";
 
 type AttendanceTotalsProps = {
   summaries: AttendanceSummary[];
@@ -32,8 +33,52 @@ export function AttendanceTotals({
         )}
       </div>
 
+      <ResponsiveDataTable
+        aria-label="Total kehadiran karyawan"
+        columns={[
+          {
+            key: "employee",
+            header: "Karyawan",
+            cell: (summary) => (
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{summary.name}</p>
+                <p className="truncate text-xs text-taupe-400">
+                  @{summary.username}
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: "on_time",
+            header: "Tepat",
+            cell: (summary) => summary.on_time_count,
+            align: "center",
+          },
+          {
+            key: "late",
+            header: "Terlambat",
+            cell: (summary) => summary.late_count,
+            align: "center",
+          },
+          {
+            key: "total",
+            header: "Total",
+            cell: (summary) => (
+              <span className="text-base font-bold">
+                {summary.total_real_check_ins}
+              </span>
+            ),
+            align: "right",
+          },
+        ]}
+        rows={summaries}
+        getRowKey={(summary) => summary.user_id}
+        emptyMessage="Belum ada data kehadiran"
+        loading={loading}
+      />
+
       {loading ? (
-        <div className="space-y-2">
+        <div className="space-y-2 lg:hidden">
           {Array.from({ length: 3 }).map((_, index) => (
             <div
               key={index}
@@ -42,11 +87,11 @@ export function AttendanceTotals({
           ))}
         </div>
       ) : summaries.length === 0 ? (
-        <p className="rounded-2xl bg-white px-4 py-6 text-center text-sm text-taupe-400 ring-1 ring-taupe-200 shadow-sm">
+        <p className="rounded-2xl bg-white px-4 py-6 text-center text-sm text-taupe-400 ring-1 ring-taupe-200 shadow-sm lg:hidden">
           Belum ada data kehadiran
         </p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 lg:hidden">
           {summaries.map((summary) => (
             <div
               key={summary.user_id}

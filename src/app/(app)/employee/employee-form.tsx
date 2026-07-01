@@ -91,8 +91,8 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col">
-      <div className="flex items-center gap-2 px-5 pt-5 pb-3">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col lg:px-10 lg:py-8">
+      <div className="flex items-center gap-2 px-5 pt-5 pb-3 lg:px-0 lg:pt-0">
         <Button
           variant="secondary"
           size="icon"
@@ -108,9 +108,9 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
 
       <form
         onSubmit={handleSubmit}
-        className="flex-1 space-y-4 px-5 pb-32 pt-2"
+        className="flex-1 space-y-4 px-5 pb-32 pt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6 lg:space-y-0 lg:px-0 lg:pb-8"
       >
-        <Card className="p-4 space-y-4">
+        <Card className="p-4 space-y-4 lg:p-5">
         <h3 className="text-sm font-bold text-foreground">Informasi Karyawan</h3>
         <Input
           label="Nama Lengkap"
@@ -208,7 +208,7 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
         )}
       </form>
 
-      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3">
+      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3 lg:fixed lg:top-28 lg:right-10 lg:bottom-auto lg:w-[360px] lg:px-0">
         <Button
           variant="primary"
           fullWidth

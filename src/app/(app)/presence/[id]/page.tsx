@@ -135,9 +135,9 @@ export default function PresenceDetailPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col lg:px-10 lg:py-8">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+      <div className="flex items-center justify-between px-5 pt-5 pb-3 lg:px-0 lg:pt-0">
         <Button
           variant="secondary"
           size="icon"
@@ -154,27 +154,41 @@ export default function PresenceDetailPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className={`flex-1 space-y-5 px-5 ${canCheckOut ? "pb-32" : "pb-8"}`}
+        className={`flex-1 space-y-5 px-5 lg:grid lg:grid-cols-[minmax(320px,0.85fr)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0 lg:px-0 ${canCheckOut ? "pb-32 lg:pb-8" : "pb-8"}`}
       >
         {/* Proof photo */}
-        <div
-          className={`relative h-64 overflow-hidden rounded-2xl bg-taupe-100 ${attendance.proof_photo ? "cursor-zoom-in" : ""}`}
-          onClick={() => attendance.proof_photo && setPhotoOpen(true)}
-        >
-          {attendance.proof_photo ? (
-            <Image
-              src={attendance.proof_photo}
-              alt="Bukti absensi"
-              fill
-              unoptimized
-              className="object-cover transition-opacity active:opacity-80"
-            />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2">
-              <DatabaseIcon className="size-10 text-taupe-300" />
-              <p className="text-xs text-taupe-400">Tidak ada foto bukti</p>
-            </div>
-          )}
+        <div className="space-y-5 lg:sticky lg:top-8">
+          <div
+            className={`relative h-64 overflow-hidden rounded-2xl bg-taupe-100 lg:h-[420px] ${attendance.proof_photo ? "cursor-zoom-in" : ""}`}
+            onClick={() => attendance.proof_photo && setPhotoOpen(true)}
+          >
+            {attendance.proof_photo ? (
+              <Image
+                src={attendance.proof_photo}
+                alt="Bukti absensi"
+                fill
+                unoptimized
+                className="object-cover transition-opacity active:opacity-80"
+              />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2">
+                <DatabaseIcon className="size-10 text-taupe-300" />
+                <p className="text-xs text-taupe-400">Tidak ada foto bukti</p>
+              </div>
+            )}
+          </div>
+
+          {/* Status badge */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-taupe-400">
+              {formatDate(attendance.date)}
+            </p>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(attendance.status)}`}
+            >
+              {statusLabel(attendance.status)}
+            </span>
+          </div>
         </div>
 
         {/* Full-image preview modal */}
@@ -218,18 +232,6 @@ export default function PresenceDetailPage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Status badge */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-taupe-400">
-            {formatDate(attendance.date)}
-          </p>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(attendance.status)}`}
-          >
-            {statusLabel(attendance.status)}
-          </span>
-        </div>
 
         {/* Info rows */}
         <div className="space-y-4">
@@ -319,7 +321,7 @@ export default function PresenceDetailPage() {
       </motion.div>
 
       {canCheckOut && (
-        <div className="sticky bottom-4 z-10 mx-8 mt-auto rounded-2xl bg-white px-4 pb-2 pt-2 ring-1 ring-taupe-200 shadow-sm">
+        <div className="sticky bottom-4 z-10 mx-8 mt-auto rounded-2xl bg-white px-4 pb-2 pt-2 ring-1 ring-taupe-200 shadow-sm lg:mx-0 lg:ml-auto lg:w-[380px]">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-bold text-foreground">Sedang Absen</p>

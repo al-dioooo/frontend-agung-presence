@@ -118,9 +118,9 @@ export default function EmployeeDetailPage() {
     employee.role === "administrator" || user?.id === employee.id;
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col lg:px-10 lg:py-8">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+      <div className="flex items-center justify-between px-5 pt-5 pb-3 lg:px-0 lg:pt-0">
         <Button
           variant="secondary"
           size="icon"
@@ -196,42 +196,44 @@ export default function EmployeeDetailPage() {
         </div>
       </BottomSheet>
 
-      {/* Avatar */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="flex flex-col items-center px-5 pt-4 pb-6"
-      >
-        <div className="flex size-20 items-center justify-center rounded-full bg-taupe-100">
-          <UserIcon className="size-10 text-taupe-300" />
-        </div>
-        <h2 className="mt-4 text-lg font-bold text-foreground">{employee.name}</h2>
-        <span className="mt-1 rounded-full bg-taupe-100 px-3 py-1 text-xs font-medium capitalize text-taupe-500">
-          {employee.role}
-        </span>
-      </motion.div>
+      <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        {/* Avatar */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="flex flex-col items-center px-5 pt-4 pb-6 lg:sticky lg:top-8 lg:rounded-2xl lg:bg-white lg:p-6 lg:ring-1 lg:ring-taupe-200 lg:shadow-sm"
+        >
+          <div className="flex size-20 items-center justify-center rounded-full bg-taupe-100">
+            <UserIcon className="size-10 text-taupe-300" />
+          </div>
+          <h2 className="mt-4 text-lg font-bold text-foreground">{employee.name}</h2>
+          <span className="mt-1 rounded-full bg-taupe-100 px-3 py-1 text-xs font-medium capitalize text-taupe-500">
+            {employee.role}
+          </span>
+        </motion.div>
 
-      {/* Info rows */}
-      <div className="flex-1 px-5">
-        <Card className="p-4 space-y-4">
-        <h3 className="text-sm font-bold text-foreground">Informasi Karyawan</h3>
-        <InfoRow
-          icon={<UserIcon className="size-[18px] text-taupe-400" />}
-          label="Username"
-          value={`@${employee.username}`}
-        />
-        <InfoRow
-          icon={<MailIcon className="size-[18px] text-taupe-400" strokeWidth={2} />}
-          label="Email"
-          value={employee.email}
-        />
-        <InfoRow
-          icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
-          label="Bergabung"
-          value={joinedAt}
-        />
-        </Card>
+        {/* Info rows */}
+        <div className="flex-1 px-5 lg:px-0">
+          <Card className="p-4 space-y-4">
+          <h3 className="text-sm font-bold text-foreground">Informasi Karyawan</h3>
+          <InfoRow
+            icon={<UserIcon className="size-[18px] text-taupe-400" />}
+            label="Username"
+            value={`@${employee.username}`}
+          />
+          <InfoRow
+            icon={<MailIcon className="size-[18px] text-taupe-400" strokeWidth={2} />}
+            label="Email"
+            value={employee.email}
+          />
+          <InfoRow
+            icon={<EnterpriseIcon className="size-[18px] text-taupe-400" />}
+            label="Bergabung"
+            value={joinedAt}
+          />
+          </Card>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -251,7 +253,7 @@ export default function EmployeeDetailPage() {
 
       {/* Bottom CTA — hidden for protected accounts */}
       {!isProtected && (
-        <div className="sticky bottom-4 mt-auto px-5 pb-4 pt-4">
+        <div className="sticky bottom-4 mt-auto px-5 pb-4 pt-4 lg:ml-auto lg:w-[320px] lg:px-0">
           <Button
             variant="primary"
             fullWidth

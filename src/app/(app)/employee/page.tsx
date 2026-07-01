@@ -7,6 +7,11 @@ import { useEmployees } from "@/lib/api/hooks";
 import type { Employee } from "@/lib/api/types";
 import { Button, Card, SearchInput } from "@/components/ui";
 import { ChevronRightIcon } from "@/components/icons/outline";
+import {
+  DesktopToolbar,
+  ResponsiveDataTable,
+} from "@/app/components/responsive-data-table";
+import { AppPage } from "@/app/components/responsive-layout";
 
 export default function EmployeePage() {
   const { user } = useAuth();
@@ -37,15 +42,15 @@ export default function EmployeePage() {
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-taupe-200 border-t-foreground" />
       </div>
     ) : (
-    <div className="px-5 pt-6">
+    <AppPage size="wide">
       <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Employee</h1>
+        <h1 className="text-xl font-bold text-foreground md:text-2xl">Employee</h1>
         <Button href="/employee/create" variant="primary" size="sm">
           + Create
         </Button>
       </div>
 
-      <div className="mb-5">
+      <div className="mb-5 lg:hidden">
         <SearchInput
           id="employee-search"
           value={search}
@@ -54,18 +59,86 @@ export default function EmployeePage() {
         />
       </div>
 
+      <DesktopToolbar className="mb-5">
+        <div className="w-full max-w-xl">
+          <SearchInput
+            id="employee-search-desktop"
+            value={search}
+            onChange={setSearch}
+            placeholder="Search"
+          />
+        </div>
+        <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
+          {filtered.length} karyawan
+        </span>
+      </DesktopToolbar>
+
+      <ResponsiveDataTable
+        aria-label="Daftar karyawan"
+        columns={[
+          {
+            key: "name",
+            header: "Nama",
+            cell: (employee) => (
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{employee.name}</p>
+                <p className="truncate text-xs text-taupe-400">
+                  @{employee.username}
+                </p>
+              </div>
+            ),
+            className: "w-[34%]",
+          },
+          {
+            key: "email",
+            header: "Email",
+            cell: (employee) => (
+              <span className="block truncate text-taupe-500">
+                {employee.email}
+              </span>
+            ),
+            className: "w-[30%]",
+          },
+          {
+            key: "role",
+            header: "Role",
+            cell: (employee) => (
+              <span className="rounded-full bg-taupe-100 px-2.5 py-1 text-xs font-semibold capitalize text-taupe-600">
+                {employee.role}
+              </span>
+            ),
+            className: "w-[16%]",
+          },
+          {
+            key: "action",
+            header: "",
+            cell: (employee) => (
+              <Button href={`/employee/${employee.id}`} variant="secondary" size="sm">
+                Detail
+              </Button>
+            ),
+            align: "right",
+            className: "w-[12%]",
+          },
+        ]}
+        rows={filtered}
+        getRowKey={(employee) => employee.id}
+        emptyMessage={search ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
+        loading={isLoading}
+      />
+
       {isLoading ? (
-        <div className="space-y-2">
+        <div className="space-y-2 lg:hidden">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-16 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-taupe-400">
+        <p className="mt-10 text-center text-sm text-taupe-400 lg:hidden">
           {search ? "Tidak ada karyawan ditemukan" : "Belum ada data karyawan"}
         </p>
       ) : (
-        <div id="employee-list" className="space-y-2">
+        <div id="employee-list" className="space-y-2 lg:hidden">
           {filtered.map((employee) => (
             <Card
               key={employee.id}
@@ -89,7 +162,7 @@ export default function EmployeePage() {
           ))}
         </div>
       )}
-    </div>
+    </AppPage>
     )
   );
 }

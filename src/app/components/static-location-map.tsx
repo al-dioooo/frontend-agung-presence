@@ -125,9 +125,20 @@ export function StaticLocationMap({
     };
   }, [coords, label, radius]);
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.resize();
+    });
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
   if (!coords) {
     return (
-      <div className={`flex h-52 w-full items-center justify-center rounded-2xl bg-taupe-100 text-xs text-taupe-400 ring-1 ring-taupe-200 ${className}`}>
+      <div className={`flex h-52 w-full items-center justify-center rounded-2xl bg-taupe-100 text-xs text-taupe-400 ring-1 ring-taupe-200 md:h-64 lg:min-h-72 ${className}`}>
         Koordinat tidak tersedia
       </div>
     );
@@ -135,14 +146,14 @@ export function StaticLocationMap({
 
   if (mapError) {
     return (
-      <div className={`flex h-52 w-full items-center justify-center rounded-2xl bg-taupe-100 text-xs text-taupe-400 ring-1 ring-taupe-200 ${className}`}>
+      <div className={`flex h-52 w-full items-center justify-center rounded-2xl bg-taupe-100 text-xs text-taupe-400 ring-1 ring-taupe-200 md:h-64 lg:min-h-72 ${className}`}>
         Peta tidak dapat dimuat
       </div>
     );
   }
 
   return (
-    <div className={`relative h-52 w-full overflow-hidden rounded-2xl ring-1 ring-taupe-200 ${className}`}>
+    <div className={`relative h-52 w-full overflow-hidden rounded-2xl ring-1 ring-taupe-200 md:h-64 lg:min-h-72 ${className}`}>
       <div ref={containerRef} className="h-full w-full" />
       <div className="pointer-events-none absolute top-2 left-2 rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold text-foreground shadow-sm backdrop-blur">
         {label}

@@ -169,6 +169,17 @@ export function MapPicker({ lat, lng, radius = 50, onChange, flyToRef }: Props) 
     return () => cancelAnimationFrame(id);
   }, [isFullscreen]);
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.resize();
+    });
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className={isFullscreen ? "fixed inset-0 z-50" : "relative"}>
       <div
@@ -176,7 +187,7 @@ export function MapPicker({ lat, lng, radius = 50, onChange, flyToRef }: Props) 
         className={
           isFullscreen
             ? "h-full w-full"
-            : "h-52 w-full overflow-hidden rounded-2xl ring-1 ring-taupe-200"
+            : "h-52 w-full overflow-hidden rounded-2xl ring-1 ring-taupe-200 md:h-72 lg:h-80"
         }
       />
 

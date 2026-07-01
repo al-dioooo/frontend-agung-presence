@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError, updateProfile } from "@/lib/api/client";
 import { ChevronBackIcon, EyeIcon, EyeSlashIcon } from "@/components/icons/outline";
 import { Button, Card, Input } from "@/components/ui";
+import { AppPage } from "@/app/components/responsive-layout";
 
 const USERNAME_RULE =
   "Gunakan huruf, angka, tanda hubung (-), atau underscore (_), maksimal 100 karakter.";
@@ -75,8 +76,8 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+    <AppPage className="flex flex-col">
+      <div className="flex items-center justify-between pb-3">
         <Button
           id="back-button"
           variant="secondary"
@@ -90,13 +91,13 @@ export default function EditProfilePage() {
         <div />
       </div>
 
-      <div className="px-5">
+      <div>
         <p className="mb-5 text-sm font-semibold text-foreground">
           {user?.name}
         </p>
 
-        <form id="edit-profile-form" onSubmit={handleSubmit} className="space-y-3">
-          <Card className="p-4 space-y-3">
+        <form id="edit-profile-form" onSubmit={handleSubmit} className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+          <Card className="p-4 space-y-3 lg:p-5">
             <h3 className="text-sm font-bold text-foreground">Akun</h3>
             <Input
               id="username-input"
@@ -122,7 +123,7 @@ export default function EditProfilePage() {
             />
           </Card>
 
-          <Card className="p-4 space-y-3">
+          <Card className="p-4 space-y-3 lg:p-5">
             <h3 className="text-sm font-bold text-foreground">Keamanan</h3>
             <div className="relative">
               <Input
@@ -155,7 +156,7 @@ export default function EditProfilePage() {
           {message && (
             <p
               id="edit-profile-message"
-              className={`rounded-xl px-4 py-3 text-sm ${
+              className={`rounded-xl px-4 py-3 text-sm lg:col-span-2 ${
                 isError ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
               }`}
             >
@@ -163,7 +164,7 @@ export default function EditProfilePage() {
             </p>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2 lg:col-span-2 lg:justify-end">
             <Button
               id="save-profile-button"
               type="submit"
@@ -185,6 +186,6 @@ export default function EditProfilePage() {
           </div>
         </form>
       </div>
-    </div>
+    </AppPage>
   );
 }

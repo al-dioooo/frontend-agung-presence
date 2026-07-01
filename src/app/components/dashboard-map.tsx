@@ -163,8 +163,20 @@ export function DashboardMap({ offices, userLocation }: Props) {
     updateIndicators();
   }, [offices, updateIndicators]);
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.resize();
+      updateIndicators();
+    });
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, [updateIndicators]);
+
   return (
-    <div className="relative h-48 w-full overflow-hidden rounded-2xl ring-1 ring-taupe-200">
+    <div className="relative h-48 w-full overflow-hidden rounded-2xl ring-1 ring-taupe-200 md:h-64 lg:min-h-72">
       <div ref={containerRef} className="h-full w-full" />
 
       {/* Edge indicators for off-screen offices */}

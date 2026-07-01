@@ -215,7 +215,7 @@ export function CameraCapture({
           <button
             type="button"
             onClick={closeCamera}
-            className="absolute top-4 left-4 z-10 flex size-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-opacity active:opacity-70"
+            className="absolute top-4 left-4 z-10 flex size-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-opacity active:opacity-70 lg:top-6 lg:left-6 lg:size-12"
             aria-label="Tutup kamera"
           >
             <ChevronBackIcon className="size-5" strokeWidth={2} />
@@ -233,12 +233,12 @@ export function CameraCapture({
             </div>
           )}
 
-          <div className="absolute right-5 bottom-[max(env(safe-area-inset-bottom),2rem)] z-10">
+          <div className="absolute right-5 bottom-[max(env(safe-area-inset-bottom),2rem)] z-10 lg:right-8 lg:bottom-8">
             <button
               type="button"
               onClick={toggleFacingMode}
               disabled={!ready}
-              className="flex size-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-opacity disabled:opacity-40 active:opacity-70"
+              className="flex size-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-opacity disabled:opacity-40 active:opacity-70 lg:size-14"
               aria-label="Ganti kamera"
               title="Ganti kamera"
             >
@@ -248,7 +248,7 @@ export function CameraCapture({
 
           <div className="absolute bottom-0 right-0 left-0">
             {ready && (
-              <div className="bg-black/58 px-4 pt-3 pb-28">
+              <div className="bg-black/58 px-4 pt-3 pb-28 lg:px-8 lg:pb-24">
                 {liveWatermarkLines.map((line, index) => (
                   <p
                     key={`${line}-${index}`}
@@ -264,7 +264,7 @@ export function CameraCapture({
               </div>
             )}
 
-            <div className="absolute bottom-[max(env(safe-area-inset-bottom),2rem)] left-1/2 -translate-x-1/2">
+            <div className="absolute bottom-[max(env(safe-area-inset-bottom),2rem)] left-1/2 -translate-x-1/2 lg:bottom-8">
               <button
                 type="button"
                 onClick={capture}

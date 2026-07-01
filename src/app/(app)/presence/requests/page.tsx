@@ -23,6 +23,11 @@ import {
 import { Button, Card, Textarea } from "@/components/ui";
 import { ChevronBackIcon, ChevronRightIcon } from "@/components/icons/outline";
 import {
+  DesktopToolbar,
+  ResponsiveDataTable,
+} from "@/app/components/responsive-data-table";
+import { AppPage } from "@/app/components/responsive-layout";
+import {
   AttendanceStatusBadge,
   RequestStatusBadge,
 } from "@/app/components/attendance-status-badge";
@@ -381,7 +386,7 @@ export default function PresenceRequestsPage() {
   }
 
   return (
-    <div className="px-5 pt-5 pb-6">
+    <AppPage size="wide" className="pb-6">
       <div className="mb-5 flex items-center justify-between">
         <Button
           variant="secondary"
@@ -399,7 +404,7 @@ export default function PresenceRequestsPage() {
 
       {isAdministrator ? (
         <>
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
             {ADMIN_FILTERS.map((filter) => {
               const selected = requestFilter === filter.value;
               return (
@@ -419,8 +424,114 @@ export default function PresenceRequestsPage() {
             })}
           </div>
 
+          <DesktopToolbar className="mb-5">
+            <div className="flex flex-wrap gap-2">
+              {ADMIN_FILTERS.map((filter) => {
+                const selected = requestFilter === filter.value;
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setRequestFilter(filter.value)}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors active:opacity-80 ${
+                      selected
+                        ? "bg-primary text-white"
+                        : "bg-taupe-100 text-taupe-500"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
+              {sortedRequests.length} pengajuan
+            </span>
+          </DesktopToolbar>
+
+          <ResponsiveDataTable
+            aria-label="Daftar pengajuan absensi"
+            columns={[
+              {
+                key: "employee",
+                header: "Karyawan",
+                cell: (request) => (
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">
+                      {request.user?.name ?? `Karyawan #${request.user_id}`}
+                    </p>
+                    {request.user?.email && (
+                      <p className="truncate text-xs text-taupe-400">
+                        {request.user.email}
+                      </p>
+                    )}
+                  </div>
+                ),
+                className: "w-[24%]",
+              },
+              {
+                key: "type",
+                header: "Tipe",
+                cell: (request) => (
+                  <AttendanceStatusBadge status={request.type} />
+                ),
+                className: "w-[14%]",
+              },
+              {
+                key: "date",
+                header: "Tanggal",
+                cell: (request) => formatDateRange(request),
+                className: "w-[20%] text-taupe-500",
+              },
+              {
+                key: "status",
+                header: "Status",
+                cell: (request) => (
+                  <RequestStatusBadge status={request.approval_status} />
+                ),
+                className: "w-[14%]",
+              },
+              {
+                key: "description",
+                header: "Keterangan",
+                cell: (request) => (
+                  <span className="block truncate text-taupe-500">
+                    {request.description}
+                  </span>
+                ),
+                className: "w-[18%]",
+              },
+              {
+                key: "action",
+                header: "",
+                cell: (request) => (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setReviewError("");
+                      setSelectedRequest(request);
+                    }}
+                  >
+                    Review
+                  </Button>
+                ),
+                align: "right",
+                className: "w-[10%]",
+              },
+            ]}
+            rows={sortedRequests}
+            getRowKey={(request) => request.id}
+            emptyMessage={`Tidak ada pengajuan ${
+              requestFilter === "all"
+                ? ""
+                : REQUEST_STATUS_META[requestFilter].label.toLowerCase()
+            }`}
+            loading={isLoading}
+          />
+
           {isLoading ? (
-            <div className="space-y-2">
+            <div className="space-y-2 lg:hidden">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={index}
@@ -429,11 +540,11 @@ export default function PresenceRequestsPage() {
               ))}
             </div>
           ) : sortedRequests.length === 0 ? (
-            <p className="mt-10 text-center text-sm text-taupe-400">
+            <p className="mt-10 text-center text-sm text-taupe-400 lg:hidden">
               Tidak ada pengajuan {requestFilter === "all" ? "" : REQUEST_STATUS_META[requestFilter].label.toLowerCase()}
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 lg:hidden">
               {sortedRequests.map((request) => (
                 <RequestCard
                   key={request.id}
@@ -449,8 +560,8 @@ export default function PresenceRequestsPage() {
           )}
         </>
       ) : (
-        <div className="space-y-5">
-          <section className="space-y-4">
+        <div className="space-y-5 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
+          <section className="space-y-4 lg:rounded-2xl lg:bg-white lg:p-5 lg:ring-1 lg:ring-taupe-200 lg:shadow-sm">
             <div>
               <p className="mb-2 px-2 text-xs font-semibold uppercase text-taupe-400">
                 Tipe
@@ -544,8 +655,49 @@ export default function PresenceRequestsPage() {
             <h2 className="mb-3 text-base font-bold text-foreground">
               Riwayat Pengajuan
             </h2>
+            <ResponsiveDataTable
+              aria-label="Riwayat pengajuan"
+              columns={[
+                {
+                  key: "type",
+                  header: "Tipe",
+                  cell: (request) => (
+                    <AttendanceStatusBadge status={request.type} />
+                  ),
+                  className: "w-[18%]",
+                },
+                {
+                  key: "date",
+                  header: "Tanggal",
+                  cell: (request) => formatDateRange(request),
+                  className: "w-[26%] text-taupe-500",
+                },
+                {
+                  key: "status",
+                  header: "Status",
+                  cell: (request) => (
+                    <RequestStatusBadge status={request.approval_status} />
+                  ),
+                  className: "w-[20%]",
+                },
+                {
+                  key: "description",
+                  header: "Keterangan",
+                  cell: (request) => (
+                    <span className="block truncate text-taupe-500">
+                      {request.description}
+                    </span>
+                  ),
+                  className: "w-[36%]",
+                },
+              ]}
+              rows={sortedRequests}
+              getRowKey={(request) => request.id}
+              emptyMessage="Belum ada pengajuan"
+              loading={isLoading}
+            />
             {isLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-2 lg:hidden">
                 {Array.from({ length: 3 }).map((_, index) => (
                   <div
                     key={index}
@@ -554,11 +706,11 @@ export default function PresenceRequestsPage() {
                 ))}
               </div>
             ) : sortedRequests.length === 0 ? (
-              <p className="rounded-2xl bg-white px-4 py-8 text-center text-sm text-taupe-400 ring-1 ring-taupe-200 shadow-sm">
+              <p className="rounded-2xl bg-white px-4 py-8 text-center text-sm text-taupe-400 ring-1 ring-taupe-200 shadow-sm lg:hidden">
                 Belum ada pengajuan
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 lg:hidden">
                 {sortedRequests.map((request) => (
                   <RequestCard
                     key={request.id}
@@ -593,6 +745,6 @@ export default function PresenceRequestsPage() {
           ]}
         />
       )}
-    </div>
+    </AppPage>
   );
 }

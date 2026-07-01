@@ -6,6 +6,11 @@ import { useOffices } from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
 import { Button, Card, SearchInput } from "@/components/ui";
 import { ChevronRightIcon } from "@/components/icons/outline";
+import {
+  DesktopToolbar,
+  ResponsiveDataTable,
+} from "@/app/components/responsive-data-table";
+import { AppPage } from "@/app/components/responsive-layout";
 
 function haversineDistance(
   lat1: number,
@@ -75,9 +80,9 @@ export default function OfficePage() {
   })() as (Office & { _distance?: number })[];
 
   return (
-    <div className="px-5 pt-6">
+    <AppPage size="wide">
       <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Office</h1>
+        <h1 className="text-xl font-bold text-foreground md:text-2xl">Office</h1>
         {isAdministrator && (
           <Button href="/office/create" variant="primary" size="sm">
             + Create
@@ -85,7 +90,7 @@ export default function OfficePage() {
         )}
       </div>
 
-      <div className="mb-5">
+      <div className="mb-5 lg:hidden">
         <SearchInput
           id="office-search"
           value={search}
@@ -94,18 +99,97 @@ export default function OfficePage() {
         />
       </div>
 
+      <DesktopToolbar className="mb-5">
+        <div className="w-full max-w-xl">
+          <SearchInput
+            id="office-search-desktop"
+            value={search}
+            onChange={setSearch}
+            placeholder="Search"
+          />
+        </div>
+        <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
+          {filtered.length} kantor
+        </span>
+      </DesktopToolbar>
+
+      <ResponsiveDataTable
+        aria-label="Daftar kantor"
+        columns={[
+          {
+            key: "name",
+            header: "Kantor",
+            cell: (office) => (
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{office.name}</p>
+                {office.address && (
+                  <p className="truncate text-xs text-taupe-400">
+                    {office.address}
+                  </p>
+                )}
+              </div>
+            ),
+            className: "w-[34%]",
+          },
+          {
+            key: "radius",
+            header: "Radius",
+            cell: (office) => `${office.radius}m`,
+            className: "w-[12%] text-taupe-500",
+          },
+          {
+            key: "distance",
+            header: "Jarak",
+            cell: (office) =>
+              office._distance !== undefined ? formatDistance(office._distance) : "-",
+            className: "w-[14%] text-taupe-500",
+          },
+          {
+            key: "status",
+            header: "Status",
+            cell: (office) => (
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  office.is_active
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-taupe-100 text-taupe-500"
+                }`}
+              >
+                {office.is_active ? "Aktif" : "Nonaktif"}
+              </span>
+            ),
+            className: "w-[14%]",
+          },
+          {
+            key: "action",
+            header: "",
+            cell: (office) => (
+              <Button href={`/office/${office.id}`} variant="secondary" size="sm">
+                Detail
+              </Button>
+            ),
+            align: "right",
+            className: "w-[12%]",
+          },
+        ]}
+        rows={filtered}
+        getRowKey={(office) => office.id}
+        emptyMessage={search ? "Tidak ada kantor ditemukan" : "Belum ada data kantor"}
+        loading={isLoading}
+      />
+
       {isLoading ? (
-        <div className="space-y-2">
+        <div className="space-y-2 lg:hidden">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-16 animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-taupe-400">
+        <p className="mt-10 text-center text-sm text-taupe-400 lg:hidden">
           {search ? "Tidak ada kantor ditemukan" : "Belum ada data kantor"}
         </p>
       ) : (
-        <div id="office-list" className="space-y-2">
+        <div id="office-list" className="space-y-2 lg:hidden">
           {filtered.map((office) => {
             const inactive = !office.is_active;
 
@@ -157,6 +241,6 @@ export default function OfficePage() {
           })}
         </div>
       )}
-    </div>
+    </AppPage>
   );
 }

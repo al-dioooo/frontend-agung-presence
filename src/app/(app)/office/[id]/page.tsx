@@ -166,9 +166,9 @@ export default function OfficeDetailPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col lg:px-10 lg:py-8">
       {/* Top bar — back chevron + dots */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+      <div className="flex items-center justify-between px-5 pt-5 pb-3 lg:px-0 lg:pt-0">
         <Button
           id="back-button"
           variant="secondary"
@@ -245,8 +245,9 @@ export default function OfficeDetailPage() {
         </div>
       </BottomSheet>
 
+      <div className="lg:grid lg:grid-cols-[minmax(320px,0.8fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
       {/* Photo area */}
-      <div className="relative mx-5 h-48 overflow-hidden rounded-2xl bg-taupe-100">
+      <div className="relative mx-5 h-48 overflow-hidden rounded-2xl bg-taupe-100 lg:sticky lg:top-8 lg:mx-0 lg:h-[420px]">
         {office.photo ? (
           <Image
             src={office.photo}
@@ -266,7 +267,7 @@ export default function OfficeDetailPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="flex-1 px-5 pt-5 pb-2"
+        className="flex-1 px-5 pt-5 pb-2 lg:px-0 lg:pt-0"
       >
         {/* Name + status badge */}
         <div className="mb-5 flex items-start justify-between gap-3">
@@ -391,6 +392,7 @@ export default function OfficeDetailPage() {
           )}
         </AnimatePresence>
       </motion.div>
+      </div>
 
       <CameraCapture
         open={selfieOpen}
@@ -404,7 +406,7 @@ export default function OfficeDetailPage() {
       />
 
       {/* Bottom CTA */}
-      <div className="sticky bg-white mx-8 rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm bottom-4 z-10 mt-auto px-4 pb-2 pt-2">
+      <div className="sticky bottom-4 z-10 mx-8 mt-auto rounded-2xl bg-white px-4 pb-2 pt-2 ring-1 ring-taupe-200 shadow-sm lg:mx-0 lg:ml-auto lg:mt-6 lg:w-[380px]">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-foreground">Nearby</p>

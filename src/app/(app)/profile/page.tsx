@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { Button, Card } from "@/components/ui";
+import { AppPage } from "@/app/components/responsive-layout";
 
 function getInitials(name: string) {
   return name
@@ -34,11 +35,12 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="px-5 pt-6">
-      <h1 className="mb-8 text-xl font-bold text-foreground">Profile</h1>
+    <AppPage>
+      <h1 className="mb-8 text-xl font-bold text-foreground md:text-2xl">Profile</h1>
 
+      <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-6">
       {/* Profile card */}
-      <Card className="mb-8 p-5">
+      <Card className="mb-8 p-5 lg:sticky lg:top-8 lg:mb-0">
         <div className="flex flex-col items-center">
           <div className="flex size-20 items-center justify-center rounded-full bg-primary text-2xl font-semibold text-white">
             {getInitials(user.name)}
@@ -58,25 +60,31 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Actions */}
-      <div className="flex gap-3">
-        <Button
-          id="edit-profile-button"
-          href="/profile/edit"
-          variant="primary"
-          className="h-11 flex-1"
-        >
-          Edit Profile
-        </Button>
-        <Button
-          id="logout-button"
-          variant="secondary"
-          className="h-11 flex-1 bg-white"
-          onClick={handleLogout}
-        >
-          Logout
-        </Button>
+      <Card className="p-5">
+        <h2 className="text-base font-bold text-foreground">Aksi Akun</h2>
+        <p className="mt-1 text-sm text-taupe-500">
+          Kelola profil dan sesi akun yang sedang aktif.
+        </p>
+        <div className="mt-5 flex gap-3">
+          <Button
+            id="edit-profile-button"
+            href="/profile/edit"
+            variant="primary"
+            className="h-11 flex-1"
+          >
+            Edit Profile
+          </Button>
+          <Button
+            id="logout-button"
+            variant="secondary"
+            className="h-11 flex-1 bg-white"
+            onClick={handleLogout}
+          >
+            Logout
+          </Button>
+        </div>
+      </Card>
       </div>
-    </div>
+    </AppPage>
   );
 }

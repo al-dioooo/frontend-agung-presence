@@ -21,6 +21,7 @@ import {
 } from "@/app/components/weekly-chart";
 import { AutoHeight } from "@/app/components/auto-height";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import { AppPage } from "@/app/components/responsive-layout";
 import { MobileDatePicker } from "@/app/components/mobile-date-picker";
 import { ChevronBackIcon, ChevronRightIcon, FilterIcon } from "@/components/icons/outline";
 
@@ -216,7 +217,7 @@ export default function DashboardPage() {
   })() as (Office & { _distance?: number })[];
 
   return (
-    <div className="px-5 pt-6 pb-6">
+    <AppPage size="wide" className="pb-6">
       {/* Greeting */}
       <div className="mb-5">
         <p className="text-sm text-taupe-400">Selamat datang,</p>
@@ -233,9 +234,11 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Report */}
-      {!isSearching && (
-        <section className="mb-6" aria-label="Laporan Absensi">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:items-start lg:gap-6">
+        <div className="min-w-0">
+          {/* Report */}
+          {!isSearching && (
+            <section className="mb-6" aria-label="Laporan Absensi">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold text-foreground">Report</h2>
             <Button
@@ -340,10 +343,10 @@ export default function DashboardPage() {
               )}
             </Card>
           )}
-        </section>
-      )}
+            </section>
+          )}
 
-      <BottomSheet
+          <BottomSheet
         open={reportFilterOpen}
         onClose={closeReportFilter}
         title={
@@ -557,11 +560,12 @@ export default function DashboardPage() {
         title={activeCustomDateField === "end" ? "Pilih Tanggal Akhir" : "Pilih Tanggal Mulai"}
         onClose={() => setActiveCustomDateField(null)}
         onConfirm={handleCustomDateConfirm}
-      />
+          />
 
-      {/* Nearby Office */}
-      <section aria-label="Kantor Terdekat">
-        <h2 className="mb-3 text-base font-bold text-foreground">Nearby Office</h2>
+          {/* Nearby Office */}
+        </div>
+        <section className="min-w-0" aria-label="Kantor Terdekat">
+          <h2 className="mb-3 text-base font-bold text-foreground">Nearby Office</h2>
 
         {/* Map */}
         {isLoading ? (
@@ -619,7 +623,8 @@ export default function DashboardPage() {
             })}
           </div>
         )}
-      </section>
-    </div>
+        </section>
+      </div>
+    </AppPage>
   );
 }
