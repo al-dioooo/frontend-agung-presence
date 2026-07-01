@@ -30,6 +30,7 @@ import {
   DesktopToolbar,
   ResponsiveDataTable,
 } from "@/app/components/responsive-data-table";
+import { DesktopFormPanel } from "@/app/components/desktop-form-panel";
 import { AppPage } from "@/app/components/responsive-layout";
 import {
   TableActionButton,
@@ -569,8 +570,24 @@ export default function PresenceRequestsPage() {
           )}
         </>
       ) : (
-        <div className="space-y-5 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
-          <section className="space-y-4 lg:rounded-2xl lg:bg-white lg:p-5 lg:ring-1 lg:ring-taupe-200 lg:shadow-sm">
+        <div className="space-y-6">
+          <DesktopFormPanel
+            title="Pengajuan Absensi"
+            description="Ajukan sakit, izin, atau cuti dengan rentang tanggal, keterangan, dan foto bukti."
+            actions={
+              <Button
+                variant="primary"
+                fullWidth
+                className="h-12"
+                disabled={!canSubmit}
+                loading={isSubmitting}
+                loadingText="Mengirim..."
+                onClick={handleSubmitRequest}
+              >
+                Kirim Pengajuan
+              </Button>
+            }
+          >
             <div>
               <p className="mb-2 px-2 text-xs font-semibold uppercase text-taupe-400">
                 Tipe
@@ -650,7 +667,7 @@ export default function PresenceRequestsPage() {
             <Button
               variant="primary"
               fullWidth
-              className="h-12"
+              className="h-12 lg:hidden"
               disabled={!canSubmit}
               loading={isSubmitting}
               loadingText="Mengirim..."
@@ -658,7 +675,7 @@ export default function PresenceRequestsPage() {
             >
               Kirim Pengajuan
             </Button>
-          </section>
+          </DesktopFormPanel>
 
           <section>
             <h2 className="mb-3 text-base font-bold text-foreground">

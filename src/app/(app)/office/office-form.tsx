@@ -21,6 +21,7 @@ import {
   ClockUpIcon,
 } from "@/components/icons/outline";
 import { Button, Card, Input, Textarea } from "@/components/ui";
+import { DesktopFormPanel } from "@/app/components/desktop-form-panel";
 import { MapPicker } from "@/app/components/map-picker";
 
 type Mode = { kind: "create" } | { kind: "edit"; office: Office };
@@ -61,6 +62,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapFlyToRef = useRef<((lat: number, lng: number) => void) | null>(null);
 
@@ -105,7 +107,7 @@ export function OfficeForm({ mode }: { mode: Mode }) {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!token) return;
 
@@ -166,9 +168,26 @@ export function OfficeForm({ mode }: { mode: Mode }) {
       </div>
 
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
-        className="flex-1 space-y-4 px-5 pb-32 pt-2 lg:grid lg:grid-cols-[minmax(320px,0.85fr)_minmax(0,1fr)] lg:items-start lg:gap-5 lg:space-y-0 lg:px-0 lg:pb-8 lg:pr-[400px]"
+        className="flex-1 px-5 pb-32 pt-2 lg:px-0 lg:pb-8"
       >
+        <DesktopFormPanel
+          title={mode.kind === "create" ? "Tambah Kantor" : "Edit Kantor"}
+          description="Kelola foto, informasi dasar, lokasi absensi, radius, jam kerja, dan status aktif kantor."
+          actions={
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              className="py-3"
+              loading={submitting}
+              loadingText="Menyimpan..."
+            >
+              {mode.kind === "create" ? "Buat Kantor" : "Simpan Perubahan"}
+            </Button>
+          }
+        >
         {/* Photo picker */}
         <Card className="p-4 lg:p-5">
           <h3 className="mb-1.5 text-sm font-bold text-foreground">Foto Kantor</h3>
@@ -380,14 +399,15 @@ export function OfficeForm({ mode }: { mode: Mode }) {
             {errorMessage}
           </motion.div>
         )}
+        </DesktopFormPanel>
       </form>
 
-      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3 lg:fixed lg:top-28 lg:right-10 lg:bottom-auto lg:w-[360px] lg:px-0">
+      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3 lg:hidden">
         <Button
           variant="primary"
           fullWidth
           className="py-3"
-          onClick={handleSubmit}
+          onClick={() => formRef.current?.requestSubmit()}
           loading={submitting}
           loadingText="Menyimpan..."
         >

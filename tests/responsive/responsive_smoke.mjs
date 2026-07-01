@@ -125,6 +125,105 @@ async function getFirstActiveOffice(page) {
   });
 }
 
+async function getFirstEmployee(page) {
+  return page.evaluate(async () => {
+    const token = window.localStorage.getItem("agung-presence-token");
+    const response = await fetch("/api/backend/users", {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const payload = await response.json();
+    return payload.data?.find((employee) => employee.role !== "administrator") ?? null;
+  });
+}
+
+async function expectDesktopFormPanel(page, submitName) {
+  await expectVisible(
+    page,
+    "[data-desktop-form-layout]",
+    "desktop form layout should be visible",
+  );
+  await expectVisible(
+    page,
+    "[data-desktop-form-rail]",
+    "desktop form rail should be visible",
+  );
+  await expectVisible(
+    page,
+    "[data-desktop-form-panel]",
+    "desktop form panel should be visible",
+  );
+  await expectVisible(
+    page,
+    "[data-desktop-form-actions]",
+    "desktop form actions should be visible",
+  );
+
+  const fixedOrSticky = await page
+    .locator("[data-desktop-form-actions]")
+    .first()
+    .evaluate((element) => {
+      const style = window.getComputedStyle(element);
+      return style.position === "fixed" || style.position === "sticky";
+    });
+  if (fixedOrSticky) {
+    throw new Error("desktop form actions should not be fixed or sticky");
+  }
+
+  const panelBox = await page.locator("[data-desktop-form-panel]").first().boundingBox();
+  const actionBox = await page.locator("[data-desktop-form-actions]").first().boundingBox();
+  if (!panelBox || !actionBox || Math.abs(panelBox.width - actionBox.width) > 2) {
+    throw new Error("desktop form actions should span the form panel width");
+  }
+
+  await expectVisibleAction(
+    page,
+    `[data-desktop-form-actions] button:has-text("${submitName}")`,
+    `desktop form submit ${submitName} should be visible in the panel footer`,
+  );
+}
+
+async function expectNoDesktopFormRailOrActions(page, route) {
+  await page.goto(`${BASE_URL}${route}`);
+  await page.waitForLoadState("networkidle");
+  await expectMobileShell(page);
+
+  if ((await visibleElementCount(page, "[data-desktop-form-rail]")) > 0) {
+    throw new Error(`Desktop form rail visible below desktop width at ${route}`);
+  }
+  if ((await visibleElementCount(page, "[data-desktop-form-actions]")) > 0) {
+    throw new Error(`Desktop form actions visible below desktop width at ${route}`);
+  }
+}
+
+async function expectAdminDesktopFormPanels(page) {
+  const office = await getFirstActiveOffice(page);
+  if (!office) {
+    throw new Error("No office available for desktop form smoke");
+  }
+
+  const employee = await getFirstEmployee(page);
+  if (!employee) {
+    throw new Error("No employee available for desktop form smoke");
+  }
+
+  for (const [route, submitName] of [
+    ["/office/create", "Buat Kantor"],
+    [`/office/${office.id}/edit`, "Simpan Perubahan"],
+    ["/employee/create", "Buat Karyawan"],
+    [`/employee/${employee.id}/edit`, "Simpan Perubahan"],
+    ["/profile/edit", "Save Profile"],
+  ]) {
+    await page.goto(`${BASE_URL}${route}`);
+    await page.waitForLoadState("networkidle");
+    await expectDesktopShell(page);
+    await expectDesktopFormPanel(page, submitName);
+    await assertNoHorizontalOverflow(page);
+  }
+}
+
 async function expectEmployeeDesktopCameraFlows(browser) {
   const context = await browser.newContext({
     geolocation: { latitude: -2.976073, longitude: 104.746872 },
@@ -139,6 +238,7 @@ async function expectEmployeeDesktopCameraFlows(browser) {
   await page.goto(`${BASE_URL}/presence/requests`);
   await page.waitForLoadState("networkidle");
   await expectDesktopShell(page);
+  await expectDesktopFormPanel(page, "Kirim Pengajuan");
   await expectVisible(page, "table[aria-label='Riwayat pengajuan']");
 
   const requestDetailActions = page.locator(
@@ -341,6 +441,7 @@ async function run() {
   }
 
   await expectAdminDesktopTableActions(page);
+  await expectAdminDesktopFormPanels(page);
 
   for (const route of ["/office/create", "/employee/create", "/profile", "/profile/edit"]) {
     await page.goto(`${BASE_URL}${route}`);
@@ -375,6 +476,16 @@ async function run() {
     if (visibleTables !== 0) {
       throw new Error(`Desktop table visible on mobile at ${route}`);
     }
+  }
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expectNoDesktopFormRailOrActions(page, "/office/create");
+    await expectNoDesktopFormRailOrActions(page, "/employee/create");
+    await expectNoDesktopFormRailOrActions(page, "/profile/edit");
   }
 
   await expectEmployeeDesktopCameraFlows(browser);

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError, updateProfile } from "@/lib/api/client";
 import { ChevronBackIcon, EyeIcon, EyeSlashIcon } from "@/components/icons/outline";
 import { Button, Card, Input } from "@/components/ui";
+import { DesktopFormPanel } from "@/app/components/desktop-form-panel";
 import { AppPage } from "@/app/components/responsive-layout";
 
 const USERNAME_RULE =
@@ -96,94 +97,112 @@ export default function EditProfilePage() {
           {user?.name}
         </p>
 
-        <form id="edit-profile-form" onSubmit={handleSubmit} className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-          <Card className="p-4 space-y-3 lg:p-5">
-            <h3 className="text-sm font-bold text-foreground">Akun</h3>
-            <Input
-              id="username-input"
-              label="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              placeholder="contoh: budi_santoso"
-              required
-              hint={USERNAME_RULE}
-              error={fieldErrors.username}
-            />
-            <Input
-              id="email-input"
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              placeholder="budi@example.com"
-              required
-              error={fieldErrors.email}
-            />
-          </Card>
-
-          <Card className="p-4 space-y-3 lg:p-5">
-            <h3 className="text-sm font-bold text-foreground">Keamanan</h3>
-            <div className="relative">
-              <Input
-                id="password-input"
-                label="Password baru"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                placeholder="Kosongkan jika tidak diubah"
-                className="pr-11"
-                error={fieldErrors.password}
-              />
-              <button
-                type="button"
-                id="toggle-password"
-                onClick={() => setShowPassword((current) => !current)}
-                className="absolute bottom-3 right-3.5 flex items-center text-taupe-400"
-                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+        <form id="edit-profile-form" onSubmit={handleSubmit}>
+          <DesktopFormPanel
+            title="Edit Profile"
+            description="Perbarui username, email, dan password akun Anda."
+            actions={
+              <Button
+                id="save-profile-button"
+                type="submit"
+                variant="primary"
+                fullWidth
+                className="h-11"
+                loading={isSaving}
+                loadingText="Menyimpan..."
               >
-                {showPassword ? (
-                  <EyeSlashIcon strokeWidth={1.8} className="size-5" />
-                ) : (
-                  <EyeIcon strokeWidth={1.8} className="size-5" />
-                )}
-              </button>
+                Save Profile
+              </Button>
+            }
+          >
+            <Card className="p-4 space-y-3 lg:p-5">
+              <h3 className="text-sm font-bold text-foreground">Akun</h3>
+              <Input
+                id="username-input"
+                label="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                placeholder="contoh: budi_santoso"
+                required
+                hint={USERNAME_RULE}
+                error={fieldErrors.username}
+              />
+              <Input
+                id="email-input"
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="budi@example.com"
+                required
+                error={fieldErrors.email}
+              />
+            </Card>
+
+            <Card className="p-4 space-y-3 lg:p-5">
+              <h3 className="text-sm font-bold text-foreground">Keamanan</h3>
+              <div className="relative">
+                <Input
+                  id="password-input"
+                  label="Password baru"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Kosongkan jika tidak diubah"
+                  className="pr-11"
+                  error={fieldErrors.password}
+                />
+                <button
+                  type="button"
+                  id="toggle-password"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute bottom-3 right-3.5 flex items-center text-taupe-400"
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon strokeWidth={1.8} className="size-5" />
+                  ) : (
+                    <EyeIcon strokeWidth={1.8} className="size-5" />
+                  )}
+                </button>
+              </div>
+            </Card>
+
+            {message && (
+              <p
+                id="edit-profile-message"
+                className={`rounded-xl px-4 py-3 text-sm ${
+                  isError ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {message}
+              </p>
+            )}
+
+            <div className="flex gap-3 pt-2 lg:hidden">
+              <Button
+                id="save-profile-button-mobile"
+                type="submit"
+                variant="primary"
+                className="h-11 px-6"
+                loading={isSaving}
+                loadingText="Menyimpan..."
+              >
+                Save Profile
+              </Button>
+              <Button
+                id="cancel-button"
+                variant="secondary"
+                className="h-11 px-6 bg-white"
+                onClick={() => router.back()}
+              >
+                Cancel
+              </Button>
             </div>
-          </Card>
-
-          {message && (
-            <p
-              id="edit-profile-message"
-              className={`rounded-xl px-4 py-3 text-sm lg:col-span-2 ${
-                isError ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
-              }`}
-            >
-              {message}
-            </p>
-          )}
-
-          <div className="flex gap-3 pt-2 lg:col-span-2 lg:justify-end">
-            <Button
-              id="save-profile-button"
-              type="submit"
-              variant="primary"
-              className="h-11 px-6"
-              loading={isSaving}
-              loadingText="Menyimpan..."
-            >
-              Save Profile
-            </Button>
-            <Button
-              id="cancel-button"
-              variant="secondary"
-              className="h-11 px-6 bg-white"
-              onClick={() => router.back()}
-            >
-              Cancel
-            </Button>
-          </div>
+          </DesktopFormPanel>
         </form>
       </div>
     </AppPage>

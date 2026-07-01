@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +12,7 @@ import type { Employee } from "@/lib/api/types";
 import { ChevronBackIcon, ChevronDownIcon } from "@/components/icons/outline";
 import { Button, Card, Input } from "@/components/ui";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import { DesktopFormPanel } from "@/app/components/desktop-form-panel";
 
 type Mode = { kind: "create" } | { kind: "edit"; employee: Employee };
 
@@ -43,8 +44,9 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!token) return;
 
@@ -107,9 +109,26 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
       </div>
 
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
-        className="flex-1 space-y-4 px-5 pb-32 pt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6 lg:space-y-0 lg:px-0 lg:pb-8"
+        className="flex-1 px-5 pb-32 pt-2 lg:px-0 lg:pb-8"
       >
+        <DesktopFormPanel
+          title={mode.kind === "create" ? "Tambah Karyawan" : "Edit Karyawan"}
+          description="Atur identitas akun, kredensial masuk, dan peran akses karyawan."
+          actions={
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              className="py-3"
+              loading={submitting}
+              loadingText="Menyimpan..."
+            >
+              {mode.kind === "create" ? "Buat Karyawan" : "Simpan Perubahan"}
+            </Button>
+          }
+        >
         <Card className="p-4 space-y-4 lg:p-5">
         <h3 className="text-sm font-bold text-foreground">Informasi Karyawan</h3>
         <Input
@@ -206,14 +225,15 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
             {errorMessage}
           </motion.div>
         )}
+        </DesktopFormPanel>
       </form>
 
-      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3 lg:fixed lg:top-28 lg:right-10 lg:bottom-auto lg:w-[360px] lg:px-0">
+      <div className="sticky bottom-4 z-10 mt-auto px-5 pb-3 pt-3 lg:hidden">
         <Button
           variant="primary"
           fullWidth
           className="py-3"
-          onClick={handleSubmit}
+          onClick={() => formRef.current?.requestSubmit()}
           loading={submitting}
           loadingText="Menyimpan..."
         >
