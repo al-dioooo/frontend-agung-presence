@@ -3,20 +3,36 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api/client";
 import { useEmployees } from "@/lib/api/hooks";
+import { mutateDeleteEmployee } from "@/lib/api/mutations";
 import type { Employee } from "@/lib/api/types";
 import { Button, Card, SearchInput } from "@/components/ui";
-import { ChevronRightIcon } from "@/components/icons/outline";
+import {
+  ChevronRightIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/icons/outline";
+import { BottomSheet } from "@/app/components/bottom-sheet";
 import {
   DesktopToolbar,
   ResponsiveDataTable,
 } from "@/app/components/responsive-data-table";
 import { AppPage } from "@/app/components/responsive-layout";
+import {
+  TableActionButton,
+  TableActionGroup,
+  TableActionLink,
+} from "@/app/components/table-row-actions";
 
 export default function EmployeePage() {
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const isAdministrator = user?.role === "administrator";
   const { data: employees = [], isLoading } = useEmployees();
 
@@ -35,6 +51,35 @@ export default function EmployeePage() {
       e.username.toLowerCase().includes(search.toLowerCase()) ||
       e.role.toLowerCase().includes(search.toLowerCase()),
   );
+
+  function isProtectedEmployee(employee: Employee) {
+    return employee.role === "administrator" || user?.id === employee.id;
+  }
+
+  async function handleDeleteEmployee() {
+    if (!token || !employeeToDelete) return;
+
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      await mutateDeleteEmployee(token, employeeToDelete.id, {
+        currentList: employees,
+      });
+      setEmployeeToDelete(null);
+    } catch (err) {
+      setDeleteError(
+        err instanceof ApiError ? err.message : "Gagal menghapus karyawan.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  function closeDeleteConfirmation() {
+    if (isDeleting) return;
+    setDeleteError("");
+    setEmployeeToDelete(null);
+  }
 
   return (
     !isAdministrator ? (
@@ -72,6 +117,11 @@ export default function EmployeePage() {
           {filtered.length} karyawan
         </span>
       </DesktopToolbar>
+      {deleteError && (
+        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          {deleteError}
+        </p>
+      )}
 
       <ResponsiveDataTable
         aria-label="Daftar karyawan"
@@ -111,14 +161,39 @@ export default function EmployeePage() {
           },
           {
             key: "action",
-            header: "",
+            header: "Aksi",
             cell: (employee) => (
-              <Button href={`/employee/${employee.id}`} variant="secondary" size="sm">
-                Detail
-              </Button>
+              <TableActionGroup>
+                <TableActionLink
+                  href={`/employee/${employee.id}`}
+                  label={`Lihat detail karyawan ${employee.name}`}
+                >
+                  <EyeIcon className="size-4" />
+                </TableActionLink>
+                {!isProtectedEmployee(employee) && (
+                  <>
+                    <TableActionLink
+                      href={`/employee/${employee.id}/edit`}
+                      label={`Edit karyawan ${employee.name}`}
+                    >
+                      <PencilIcon className="size-4" />
+                    </TableActionLink>
+                    <TableActionButton
+                      label={`Hapus karyawan ${employee.name}`}
+                      tone="danger"
+                      onClick={() => {
+                        setDeleteError("");
+                        setEmployeeToDelete(employee);
+                      }}
+                    >
+                      <TrashIcon className="size-4" />
+                    </TableActionButton>
+                  </>
+                )}
+              </TableActionGroup>
             ),
             align: "right",
-            className: "w-[12%]",
+            className: "w-[20%]",
           },
         ]}
         rows={filtered}
@@ -162,6 +237,43 @@ export default function EmployeePage() {
           ))}
         </div>
       )}
+      <BottomSheet
+        open={employeeToDelete !== null}
+        onClose={closeDeleteConfirmation}
+        title="Hapus Karyawan?"
+      >
+        <div className="px-4 pt-1">
+          <p className="text-sm text-taupe-400">
+            Tindakan ini tidak dapat dibatalkan. Karyawan{" "}
+            {employeeToDelete ? `"${employeeToDelete.name}" ` : ""}
+            akan dihapus secara permanen.
+          </p>
+          {deleteError && (
+            <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              {deleteError}
+            </p>
+          )}
+          <div className="mt-5 flex gap-3">
+            <Button
+              variant="secondary"
+              className="flex-1 py-3"
+              onClick={closeDeleteConfirmation}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1 py-3"
+              onClick={handleDeleteEmployee}
+              loading={isDeleting}
+              loadingText="Menghapus..."
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
     </AppPage>
     )
   );

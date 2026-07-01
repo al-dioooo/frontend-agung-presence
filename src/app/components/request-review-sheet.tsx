@@ -19,6 +19,7 @@ type RequestReviewSheetProps = {
   open: boolean;
   loading?: boolean;
   error?: string;
+  readOnly?: boolean;
   onClose: () => void;
   onReview: (data: AttendanceRequestReviewInput) => void;
 };
@@ -38,17 +39,19 @@ export function RequestReviewSheet({
   open,
   loading = false,
   error,
+  readOnly = false,
   onClose,
   onReview,
 }: RequestReviewSheetProps) {
   const [rejectionReason, setRejectionReason] = useState("");
   const pending = request?.approval_status === "pending";
+  const canReview = pending && !readOnly;
 
   return (
     <BottomSheet
       open={open && request !== null}
       onClose={onClose}
-      title="Review Pengajuan"
+      title={readOnly ? "Detail Pengajuan" : "Review Pengajuan"}
     >
       {request && (
         <div className="space-y-4 px-2 pb-2">
@@ -119,7 +122,7 @@ export function RequestReviewSheet({
             </div>
           )}
 
-          {pending && (
+          {canReview && (
             <>
               <Textarea
                 label="Alasan Penolakan"

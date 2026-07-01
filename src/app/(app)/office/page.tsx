@@ -2,15 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api/client";
 import { useOffices } from "@/lib/api/hooks";
+import { mutateDeleteOffice } from "@/lib/api/mutations";
 import type { Office } from "@/lib/api/types";
 import { Button, Card, SearchInput } from "@/components/ui";
-import { ChevronRightIcon } from "@/components/icons/outline";
+import {
+  ChevronRightIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/icons/outline";
+import { BottomSheet } from "@/app/components/bottom-sheet";
 import {
   DesktopToolbar,
   ResponsiveDataTable,
 } from "@/app/components/responsive-data-table";
 import { AppPage } from "@/app/components/responsive-layout";
+import {
+  TableActionButton,
+  TableActionGroup,
+  TableActionLink,
+} from "@/app/components/table-row-actions";
 
 function haversineDistance(
   lat1: number,
@@ -35,7 +48,7 @@ function formatDistance(meters: number) {
 }
 
 export default function OfficePage() {
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const [search, setSearch] = useState("");
   const isAdministrator = user?.role === "administrator";
   const { data: offices = [], isLoading } = useOffices(
@@ -46,6 +59,10 @@ export default function OfficePage() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [officeToDelete, setOfficeToDelete] = useState<Office | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Request geolocation once on mount
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition((pos) => {
@@ -78,6 +95,29 @@ export default function OfficePage() {
       }))
       .sort((a, b) => a._distance - b._distance);
   })() as (Office & { _distance?: number })[];
+
+  async function handleDeleteOffice() {
+    if (!token || !officeToDelete) return;
+
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      await mutateDeleteOffice(token, officeToDelete.id, { currentList: offices });
+      setOfficeToDelete(null);
+    } catch (err) {
+      setDeleteError(
+        err instanceof ApiError ? err.message : "Gagal menghapus kantor.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  function closeDeleteConfirmation() {
+    if (isDeleting) return;
+    setDeleteError("");
+    setOfficeToDelete(null);
+  }
 
   return (
     <AppPage size="wide">
@@ -112,6 +152,11 @@ export default function OfficePage() {
           {filtered.length} kantor
         </span>
       </DesktopToolbar>
+      {deleteError && (
+        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          {deleteError}
+        </p>
+      )}
 
       <ResponsiveDataTable
         aria-label="Daftar kantor"
@@ -162,14 +207,39 @@ export default function OfficePage() {
           },
           {
             key: "action",
-            header: "",
+            header: "Aksi",
             cell: (office) => (
-              <Button href={`/office/${office.id}`} variant="secondary" size="sm">
-                Detail
-              </Button>
+              <TableActionGroup>
+                <TableActionLink
+                  href={`/office/${office.id}`}
+                  label={`Lihat detail kantor ${office.name}`}
+                >
+                  <EyeIcon className="size-4" />
+                </TableActionLink>
+                {isAdministrator && (
+                  <>
+                    <TableActionLink
+                      href={`/office/${office.id}/edit`}
+                      label={`Edit kantor ${office.name}`}
+                    >
+                      <PencilIcon className="size-4" />
+                    </TableActionLink>
+                    <TableActionButton
+                      label={`Hapus kantor ${office.name}`}
+                      tone="danger"
+                      onClick={() => {
+                        setDeleteError("");
+                        setOfficeToDelete(office);
+                      }}
+                    >
+                      <TrashIcon className="size-4" />
+                    </TableActionButton>
+                  </>
+                )}
+              </TableActionGroup>
             ),
             align: "right",
-            className: "w-[12%]",
+            className: "w-[18%]",
           },
         ]}
         rows={filtered}
@@ -241,6 +311,43 @@ export default function OfficePage() {
           })}
         </div>
       )}
+      <BottomSheet
+        open={officeToDelete !== null}
+        onClose={closeDeleteConfirmation}
+        title="Hapus Kantor?"
+      >
+        <div className="px-4 pt-1">
+          <p className="text-sm text-taupe-400">
+            Tindakan ini tidak dapat dibatalkan. Kantor{" "}
+            {officeToDelete ? `"${officeToDelete.name}" ` : ""}
+            akan dihapus secara permanen.
+          </p>
+          {deleteError && (
+            <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              {deleteError}
+            </p>
+          )}
+          <div className="mt-5 flex gap-3">
+            <Button
+              variant="secondary"
+              className="flex-1 py-3"
+              onClick={closeDeleteConfirmation}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1 py-3"
+              onClick={handleDeleteOffice}
+              loading={isDeleting}
+              loadingText="Menghapus..."
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
     </AppPage>
   );
 }

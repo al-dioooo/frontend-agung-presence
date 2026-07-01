@@ -7,8 +7,12 @@ import {
   statusTextClass,
 } from "@/lib/attendance-status";
 import { Card } from "@/components/ui";
-import { ChevronRightIcon } from "@/components/icons/outline";
+import { ChevronRightIcon, EyeIcon } from "@/components/icons/outline";
 import { ResponsiveDataTable } from "@/app/components/responsive-data-table";
+import {
+  TableActionGroup,
+  TableActionLink,
+} from "@/app/components/table-row-actions";
 
 type AttendanceHistoryListProps = {
   attendances: Attendance[];
@@ -120,6 +124,22 @@ export function AttendanceHistoryList({
           ),
           align: "right" as const,
           className: "w-[14%]",
+        },
+        {
+          key: "action",
+          header: "Aksi",
+          cell: (attendance: Attendance) => (
+            <TableActionGroup>
+              <TableActionLink
+                href={`/presence/${attendance.id}`}
+                label={`Lihat detail absensi #${attendance.id}`}
+              >
+                <EyeIcon className="size-4" />
+              </TableActionLink>
+            </TableActionGroup>
+          ),
+          align: "right" as const,
+          className: "w-[10%]",
         },
       ]}
       rows={attendances}

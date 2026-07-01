@@ -21,12 +21,20 @@ import {
   statusLabel,
 } from "@/lib/attendance-status";
 import { Button, Card, Textarea } from "@/components/ui";
-import { ChevronBackIcon, ChevronRightIcon } from "@/components/icons/outline";
+import {
+  ChevronBackIcon,
+  ChevronRightIcon,
+  EyeIcon,
+} from "@/components/icons/outline";
 import {
   DesktopToolbar,
   ResponsiveDataTable,
 } from "@/app/components/responsive-data-table";
 import { AppPage } from "@/app/components/responsive-layout";
+import {
+  TableActionButton,
+  TableActionGroup,
+} from "@/app/components/table-row-actions";
 import {
   AttendanceStatusBadge,
   RequestStatusBadge,
@@ -503,18 +511,19 @@ export default function PresenceRequestsPage() {
               },
               {
                 key: "action",
-                header: "",
+                header: "Aksi",
                 cell: (request) => (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setReviewError("");
-                      setSelectedRequest(request);
-                    }}
-                  >
-                    Review
-                  </Button>
+                  <TableActionGroup>
+                    <TableActionButton
+                      label={`Review pengajuan #${request.id}`}
+                      onClick={() => {
+                        setReviewError("");
+                        setSelectedRequest(request);
+                      }}
+                    >
+                      <EyeIcon className="size-4" />
+                    </TableActionButton>
+                  </TableActionGroup>
                 ),
                 align: "right",
                 className: "w-[10%]",
@@ -688,7 +697,26 @@ export default function PresenceRequestsPage() {
                       {request.description}
                     </span>
                   ),
-                  className: "w-[36%]",
+                  className: "w-[24%]",
+                },
+                {
+                  key: "action",
+                  header: "Aksi",
+                  cell: (request) => (
+                    <TableActionGroup>
+                      <TableActionButton
+                        label={`Lihat detail pengajuan #${request.id}`}
+                        onClick={() => {
+                          setReviewError("");
+                          setSelectedRequest(request);
+                        }}
+                      >
+                        <EyeIcon className="size-4" />
+                      </TableActionButton>
+                    </TableActionGroup>
+                  ),
+                  align: "right",
+                  className: "w-[12%]",
                 },
               ]}
               rows={sortedRequests}
@@ -732,6 +760,7 @@ export default function PresenceRequestsPage() {
         error={reviewError}
         onClose={() => !isReviewing && setSelectedRequest(null)}
         onReview={handleReview}
+        readOnly={!isAdministrator}
       />
 
       {!isAdministrator && requestLocation && (

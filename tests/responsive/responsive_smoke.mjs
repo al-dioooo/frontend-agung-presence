@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
-const BASE_URL = "http://127.0.0.1:3000";
+const BASE_URL = process.env.BASE_URL ?? "http://127.0.0.1:3000";
 const ADMIN_USERNAME = "angelika";
 const ADMIN_PASSWORD = "angelika";
 const EMPLOYEE_USERNAME = "kartika_sari";
@@ -32,6 +32,25 @@ async function expectVisible(page, selector, message) {
 async function expectHidden(page, selector, message) {
   if (await visible(page, selector)) {
     throw new Error(message ?? `${selector} should be hidden`);
+  }
+}
+
+async function visibleElementCount(page, selector) {
+  return page.locator(selector).evaluateAll((elements) =>
+    elements.filter((element) => {
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    }).length,
+  );
+}
+
+async function expectVisibleAction(page, selector, message) {
+  const action = page.locator(selector).first();
+  try {
+    await action.waitFor({ state: "visible", timeout: 15000 });
+  } catch {
+    throw new Error(message);
   }
 }
 
@@ -120,6 +139,29 @@ async function expectEmployeeDesktopCameraFlows(browser) {
   await page.goto(`${BASE_URL}/presence/requests`);
   await page.waitForLoadState("networkidle");
   await expectDesktopShell(page);
+  await expectVisible(page, "table[aria-label='Riwayat pengajuan']");
+
+  const requestDetailActions = page.locator(
+    "table[aria-label='Riwayat pengajuan'] button[aria-label^='Lihat detail pengajuan']",
+  );
+  if ((await requestDetailActions.count()) > 0) {
+    await requestDetailActions.first().click();
+    const detailDialog = page.getByRole("dialog", { name: "Detail Pengajuan" });
+    await detailDialog.waitFor({ timeout: 15000 });
+    if (await detailDialog.getByRole("button", { name: "Setujui" }).isVisible()) {
+      throw new Error("Employee request detail exposed review controls");
+    }
+    await detailDialog.getByRole("button", { name: "Tutup" }).click();
+    await detailDialog.waitFor({ state: "hidden", timeout: 15000 });
+  } else {
+    const emptyHistory = page
+      .locator("table[aria-label='Riwayat pengajuan']")
+      .getByText("Belum ada pengajuan");
+    if ((await emptyHistory.count()) === 0 || !(await emptyHistory.first().isVisible())) {
+      throw new Error("Employee request history rows are missing detail actions");
+    }
+  }
+
   await page.getByRole("button", { name: "Kamera" }).first().click();
   await page.getByRole("button", { name: "Ambil foto" }).waitFor({ timeout: 15000 });
   await page.getByRole("button", { name: "Ganti kamera" }).click();
@@ -153,6 +195,102 @@ async function expectEmployeeDesktopCameraFlows(browser) {
   });
 
   await context.close();
+}
+
+async function expectDeleteConfirmationCancel(page, actionSelector, dialogName) {
+  const action = page.locator(actionSelector).first();
+  await action.waitFor({ state: "visible", timeout: 15000 });
+  await action.click();
+
+  const dialog = page.getByRole("dialog", { name: dialogName });
+  await dialog.waitFor({ timeout: 15000 });
+  await dialog.getByRole("button", { name: "Batal" }).click();
+  await dialog.waitFor({ state: "hidden", timeout: 15000 });
+}
+
+async function expectAdminDesktopTableActions(page) {
+  await page.goto(`${BASE_URL}/presence`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Riwayat absensi'] a[aria-label^='Lihat detail absensi']",
+    "Presence history should expose Eye detail actions on desktop",
+  );
+  if (
+    (await visibleElementCount(
+      page,
+      "table[aria-label='Riwayat absensi'] a[aria-label^='Edit absensi'], table[aria-label='Riwayat absensi'] button[aria-label^='Hapus absensi']",
+    )) > 0
+  ) {
+    throw new Error("Presence history should not expose edit/delete actions");
+  }
+
+  await page.goto(`${BASE_URL}/presence/requests`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await page.getByRole("button", { name: "Semua" }).click();
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Daftar pengajuan absensi'] button[aria-label^='Review pengajuan']",
+    "Admin request table should expose Eye review actions on desktop",
+  );
+  await page
+    .locator("table[aria-label='Daftar pengajuan absensi'] button[aria-label^='Review pengajuan']")
+    .first()
+    .click();
+  const reviewDialog = page.getByRole("dialog", { name: "Review Pengajuan" });
+  await reviewDialog.waitFor({ timeout: 15000 });
+  await reviewDialog.getByRole("button", { name: "Tutup" }).click();
+  await reviewDialog.waitFor({ state: "hidden", timeout: 15000 });
+
+  await page.goto(`${BASE_URL}/office`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Daftar kantor'] a[aria-label^='Lihat detail kantor']",
+    "Office table should expose Eye detail actions on desktop",
+  );
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Daftar kantor'] a[aria-label^='Edit kantor']",
+    "Office table should expose Pencil edit actions for administrators",
+  );
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Daftar kantor'] button[aria-label^='Hapus kantor']",
+    "Office table should expose Trash delete actions for administrators",
+  );
+  await expectDeleteConfirmationCancel(
+    page,
+    "table[aria-label='Daftar kantor'] button[aria-label^='Hapus kantor']",
+    "Hapus Kantor?",
+  );
+
+  await page.goto(`${BASE_URL}/employee`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Daftar karyawan'] a[aria-label^='Lihat detail karyawan']",
+    "Employee table should expose Eye detail actions on desktop",
+  );
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Daftar karyawan'] a[aria-label^='Edit karyawan']",
+    "Employee table should expose Pencil edit actions for non-protected employees",
+  );
+  await expectVisibleAction(
+    page,
+    "table[aria-label='Daftar karyawan'] button[aria-label^='Hapus karyawan']",
+    "Employee table should expose Trash delete actions for non-protected employees",
+  );
+  await expectDeleteConfirmationCancel(
+    page,
+    "table[aria-label='Daftar karyawan'] button[aria-label^='Hapus karyawan']",
+    "Hapus Karyawan?",
+  );
 }
 
 async function run() {
@@ -201,6 +339,8 @@ async function run() {
     await expectDesktopShell(page);
     await expectVisible(page, tableSelector, `${tableSelector} should be visible`);
   }
+
+  await expectAdminDesktopTableActions(page);
 
   for (const route of ["/office/create", "/employee/create", "/profile", "/profile/edit"]) {
     await page.goto(`${BASE_URL}${route}`);
