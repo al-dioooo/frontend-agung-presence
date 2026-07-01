@@ -14,6 +14,12 @@ import {
   statusLabel,
 } from "@/lib/attendance-status";
 import {
+  formatDateKey,
+  formatRequestDateRange,
+  formatRequestWorkdayTotal,
+  getRequestWorkdayCount,
+} from "@/lib/request-dates";
+import {
   ChevronBackIcon,
   EnterpriseIcon,
   DatabaseIcon,
@@ -25,7 +31,6 @@ import {
 } from "@/components/icons/outline";
 import { Button, Card } from "@/components/ui";
 import { StaticLocationMap } from "@/app/components/static-location-map";
-import { formatDateKey } from "@/app/components/date-range-fields";
 
 function InfoRow({
   icon,
@@ -112,11 +117,7 @@ export default function PresenceDetailPage() {
     attendance.office?.name ??
     (isManual ? "Input Manual" : `Office #${attendance.office_id}`);
   const request = attendance.attendance_request;
-  const requestDateRange = request
-    ? request.start_date === request.end_date
-      ? formatDateKey(request.start_date)
-      : `${formatDateKey(request.start_date)} - ${formatDateKey(request.end_date)}`
-    : "";
+  const requestDateRange = request ? formatRequestDateRange(request) : "";
 
   async function handleCheckOut() {
     if (!token || !attendance || !canCheckOut) return;
@@ -288,6 +289,21 @@ export default function PresenceDetailPage() {
                   icon={<DatabaseIcon className="size-[18px] text-taupe-400" />}
                   label="Pengajuan"
                   value={`${statusLabel(request.type)} · ${requestDateRange}`}
+                />
+                <InfoRow
+                  icon={<DatabaseIcon className="size-[18px] text-taupe-400" />}
+                  label="Tanggal Mulai"
+                  value={formatDateKey(request.start_date)}
+                />
+                <InfoRow
+                  icon={<DatabaseIcon className="size-[18px] text-taupe-400" />}
+                  label="Tanggal Selesai"
+                  value={formatDateKey(request.end_date)}
+                />
+                <InfoRow
+                  icon={<DatabaseIcon className="size-[18px] text-taupe-400" />}
+                  label="Total Hari"
+                  value={formatRequestWorkdayTotal(getRequestWorkdayCount(request))}
                 />
                 <InfoRow
                   icon={<DatabaseIcon className="size-[18px] text-taupe-400" />}

@@ -20,6 +20,13 @@ import {
   REQUEST_TYPE_OPTIONS,
   statusLabel,
 } from "@/lib/attendance-status";
+import {
+  countRequestWorkdays,
+  formatRequestDateRange,
+  formatRequestWorkdayTotal,
+  INVALID_REQUEST_DATE_RANGE_MESSAGE,
+  isInvalidRequestDateRange,
+} from "@/lib/request-dates";
 import { Button, Card, Textarea } from "@/components/ui";
 import {
   ChevronBackIcon,
@@ -40,10 +47,7 @@ import {
   AttendanceStatusBadge,
   RequestStatusBadge,
 } from "@/app/components/attendance-status-badge";
-import {
-  DateRangeFields,
-  formatDateKey,
-} from "@/app/components/date-range-fields";
+import { DateRangeFields } from "@/app/components/date-range-fields";
 import { CameraCapture } from "@/app/components/camera-capture";
 import { ProofPhotoInput } from "@/app/components/proof-photo-input";
 import { RequestReviewSheet } from "@/app/components/request-review-sheet";
@@ -79,16 +83,6 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
-function formatDateRange(request: AttendanceRequest) {
-  if (request.start_date === request.end_date) {
-    return formatDateKey(request.start_date);
-  }
-
-  return `${formatDateKey(request.start_date)} - ${formatDateKey(
-    request.end_date,
-  )}`;
-}
-
 function sortRequests(requests: AttendanceRequest[]) {
   return [...requests].sort(
     (left, right) =>
@@ -121,7 +115,7 @@ function RequestCard({
           <RequestStatusBadge status={request.approval_status} />
         </div>
         <p className="mt-2 text-sm font-medium text-foreground">
-          {formatDateRange(request)}
+          {formatRequestDateRange(request)}
         </p>
         <p className="mt-0.5 line-clamp-2 text-xs text-taupe-400">
           {request.description}
@@ -195,8 +189,10 @@ export default function PresenceRequestsPage() {
   const [isReviewing, setIsReviewing] = useState(false);
 
   const sortedRequests = useMemo(() => sortRequests(requests), [requests]);
+  const invalidDateRange = isInvalidRequestDateRange(startDate, endDate);
+  const workdayCount = countRequestWorkdays(startDate, endDate);
   const canSubmit =
-    startDate <= endDate &&
+    !invalidDateRange &&
     description.trim().length > 0 &&
     proofPhoto.trim().length > 0;
 
@@ -489,7 +485,7 @@ export default function PresenceRequestsPage() {
               {
                 key: "date",
                 header: "Tanggal",
-                cell: (request) => formatDateRange(request),
+                cell: (request) => formatRequestDateRange(request),
                 className: "w-[20%] text-taupe-500",
               },
               {
@@ -624,7 +620,20 @@ export default function PresenceRequestsPage() {
               maxDate={maxRequestDate}
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
+              showInvalidRangeError={false}
             />
+
+            <p
+              className={`rounded-xl px-3 py-2 text-xs font-medium ${
+                invalidDateRange
+                  ? "bg-red-50 text-red-600"
+                  : "bg-emerald-50 text-primary"
+              }`}
+            >
+              {invalidDateRange
+                ? INVALID_REQUEST_DATE_RANGE_MESSAGE
+                : `Total: ${formatRequestWorkdayTotal(workdayCount)}`}
+            </p>
 
             <Textarea
               label="Keterangan"
@@ -695,7 +704,7 @@ export default function PresenceRequestsPage() {
                 {
                   key: "date",
                   header: "Tanggal",
-                  cell: (request) => formatDateRange(request),
+                  cell: (request) => formatRequestDateRange(request),
                   className: "w-[26%] text-taupe-500",
                 },
                 {

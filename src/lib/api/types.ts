@@ -93,6 +93,7 @@ export type AttendanceRequest = {
   type: AttendanceRequestType;
   start_date: string;
   end_date: string;
+  workday_count: number;
   description: string;
   proof_photo: string;
   approval_status: AttendanceRequestApprovalStatus;

@@ -6,9 +6,13 @@ import type {
   AttendanceRequestReviewInput,
 } from "@/lib/api/types";
 import { REQUEST_STATUS_META } from "@/lib/attendance-status";
+import {
+  formatDateKey,
+  formatRequestWorkdayTotal,
+  getRequestWorkdayCount,
+} from "@/lib/request-dates";
 import { Button, Textarea } from "@/components/ui";
 import { BottomSheet } from "@/app/components/bottom-sheet";
-import { formatDateKey } from "@/app/components/date-range-fields";
 import {
   AttendanceStatusBadge,
   RequestStatusBadge,
@@ -23,16 +27,6 @@ type RequestReviewSheetProps = {
   onClose: () => void;
   onReview: (data: AttendanceRequestReviewInput) => void;
 };
-
-function formatDateRange(request: AttendanceRequest) {
-  if (request.start_date === request.end_date) {
-    return formatDateKey(request.start_date);
-  }
-
-  return `${formatDateKey(request.start_date)} - ${formatDateKey(
-    request.end_date,
-  )}`;
-}
 
 export function RequestReviewSheet({
   request,
@@ -69,7 +63,7 @@ export function RequestReviewSheet({
             <RequestStatusBadge status={request.approval_status} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="rounded-2xl bg-taupe-50 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase text-taupe-400">
                 Tipe
@@ -80,10 +74,26 @@ export function RequestReviewSheet({
             </div>
             <div className="rounded-2xl bg-taupe-50 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase text-taupe-400">
-                Tanggal
+                Tanggal Mulai
               </p>
               <p className="mt-1 text-xs font-medium text-foreground">
-                {formatDateRange(request)}
+                {formatDateKey(request.start_date)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-taupe-50 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase text-taupe-400">
+                Tanggal Selesai
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground">
+                {formatDateKey(request.end_date)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-taupe-50 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase text-taupe-400">
+                Total Hari
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground">
+                {formatRequestWorkdayTotal(getRequestWorkdayCount(request))}
               </p>
             </div>
           </div>

@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { ChevronRightIcon } from "@/components/icons/outline";
 import { MobileDatePicker } from "@/app/components/mobile-date-picker";
+import {
+  formatDateKey,
+  INVALID_REQUEST_DATE_RANGE_MESSAGE,
+  isInvalidRequestDateRange,
+} from "@/lib/request-dates";
+
+export { formatDateKey };
 
 type DateField = "start" | "end";
 
@@ -13,16 +20,8 @@ type DateRangeFieldsProps = {
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
   error?: string;
+  showInvalidRangeError?: boolean;
 };
-
-export function formatDateKey(dateKey: string) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 function DateButton({
   label,
@@ -60,13 +59,14 @@ export function DateRangeFields({
   onStartDateChange,
   onEndDateChange,
   error,
+  showInvalidRangeError = true,
 }: DateRangeFieldsProps) {
   const [activeField, setActiveField] = useState<DateField | null>(null);
-  const invalidRange = startDate > endDate;
+  const invalidRange = isInvalidRequestDateRange(startDate, endDate);
   const message =
     error ??
-    (invalidRange
-      ? "Tanggal mulai tidak boleh lebih besar dari tanggal akhir."
+    (invalidRange && showInvalidRangeError
+      ? INVALID_REQUEST_DATE_RANGE_MESSAGE
       : "");
 
   function handleConfirm(date: string) {

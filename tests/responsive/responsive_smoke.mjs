@@ -240,6 +240,7 @@ async function expectEmployeeDesktopCameraFlows(browser) {
   await expectDesktopShell(page);
   await expectDesktopFormPanel(page, "Kirim Pengajuan");
   await expectVisible(page, "table[aria-label='Riwayat pengajuan']");
+  await page.getByText(/^Total: \d+ hari kerja$/).first().waitFor({ timeout: 15000 });
 
   const requestDetailActions = page.locator(
     "table[aria-label='Riwayat pengajuan'] button[aria-label^='Lihat detail pengajuan']",
@@ -248,6 +249,9 @@ async function expectEmployeeDesktopCameraFlows(browser) {
     await requestDetailActions.first().click();
     const detailDialog = page.getByRole("dialog", { name: "Detail Pengajuan" });
     await detailDialog.waitFor({ timeout: 15000 });
+    await detailDialog.getByText("Tanggal Mulai").waitFor({ timeout: 15000 });
+    await detailDialog.getByText("Tanggal Selesai").waitFor({ timeout: 15000 });
+    await detailDialog.getByText("Total Hari").waitFor({ timeout: 15000 });
     if (await detailDialog.getByRole("button", { name: "Setujui" }).isVisible()) {
       throw new Error("Employee request detail exposed review controls");
     }
@@ -341,6 +345,9 @@ async function expectAdminDesktopTableActions(page) {
     .click();
   const reviewDialog = page.getByRole("dialog", { name: "Review Pengajuan" });
   await reviewDialog.waitFor({ timeout: 15000 });
+  await reviewDialog.getByText("Tanggal Mulai").waitFor({ timeout: 15000 });
+  await reviewDialog.getByText("Tanggal Selesai").waitFor({ timeout: 15000 });
+  await reviewDialog.getByText("Total Hari").waitFor({ timeout: 15000 });
   await reviewDialog.getByRole("button", { name: "Tutup" }).click();
   await reviewDialog.waitFor({ state: "hidden", timeout: 15000 });
 
