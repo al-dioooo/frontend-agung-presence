@@ -165,10 +165,10 @@ export function useEmployee(id: number | string) {
   );
 }
 
-export function useAttendances(params?: AttendanceQueryParams) {
+export function useAttendances(params?: AttendanceQueryParams, enabled = true) {
   const { token } = useAuth();
 
-  return useSWR(attendancesKey(token, params), ([, tok, search, userId, status, officeId, date, startDate, endDate]) =>
+  return useSWR(enabled ? attendancesKey(token, params) : null, ([, tok, search, userId, status, officeId, date, startDate, endDate]) =>
     getAttendances(tok, {
       search: search || undefined,
       user_id: userId ? Number(userId) : undefined,
@@ -208,10 +208,13 @@ export function useAttendanceSummary(
   );
 }
 
-export function useAttendanceRequests(params?: AttendanceRequestQueryParams) {
+export function useAttendanceRequests(
+  params?: AttendanceRequestQueryParams,
+  enabled = true,
+) {
   const { token } = useAuth();
 
-  return useSWR(attendanceRequestsKey(token, params), ([, tok, approvalStatus]) =>
+  return useSWR(enabled ? attendanceRequestsKey(token, params) : null, ([, tok, approvalStatus]) =>
     getAttendanceRequests(tok, {
       approval_status:
         approvalStatus === "all"

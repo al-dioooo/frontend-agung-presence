@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Attendance } from "@/lib/api/types";
 import {
   isAttendanceStatusKey,
@@ -70,11 +70,12 @@ export function WeeklyChart({
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
+  const days = useMemo(() => dateWindow(startDate, endDate), [endDate, startDate]);
+  const chartMode = days.length === 1 ? "bar" : "line";
 
   useEffect(() => {
     let disposed = false;
 
-    const days = dateWindow(startDate, endDate);
     const labels = days.map((d) => labelForDate(d, days.length));
     const dateIndex = new Map(days.map((day, index) => [toDateKey(day), index]));
     const grouped = STATUS_KEYS.reduce(
@@ -113,7 +114,7 @@ export function WeeklyChart({
         grid: { top: 16, right: 10, bottom: 56, left: 26, containLabel: false },
         xAxis: {
           type: "category",
-          data: labels,
+          data: chartMode === "bar" ? [labels[0] ?? "Hari Ini"] : labels,
           axisTick: { show: false },
           axisLine: { show: false },
           axisLabel: {
@@ -136,26 +137,41 @@ export function WeeklyChart({
             fontFamily: "system-ui, sans-serif",
           },
         },
-        series: visibleStatuses.map((status) => ({
-          name: STATUS_META[status].label,
-          type: "line",
-          data: grouped[status],
-          smooth: true,
-          symbol: "circle",
-          symbolSize: 6,
-          lineStyle: {
-            width: 3,
-            color: STATUS_META[status].color,
-          },
-          itemStyle: {
-            color: STATUS_META[status].color,
-            borderColor: "#fff",
-            borderWidth: 2,
-          },
-          emphasis: {
-            focus: "series",
-          },
-        })),
+        series:
+          chartMode === "bar"
+            ? visibleStatuses.map((status) => ({
+                name: STATUS_META[status].label,
+                type: "bar",
+                data: [grouped[status][0] ?? 0],
+                barMaxWidth: 24,
+                itemStyle: {
+                  color: STATUS_META[status].color,
+                  borderRadius: [8, 8, 2, 2],
+                },
+                emphasis: {
+                  focus: "series",
+                },
+              }))
+            : visibleStatuses.map((status) => ({
+                name: STATUS_META[status].label,
+                type: "line",
+                data: grouped[status],
+                smooth: true,
+                symbol: "circle",
+                symbolSize: 6,
+                lineStyle: {
+                  width: 3,
+                  color: STATUS_META[status].color,
+                },
+                itemStyle: {
+                  color: STATUS_META[status].color,
+                  borderColor: "#fff",
+                  borderWidth: 2,
+                },
+                emphasis: {
+                  focus: "series",
+                },
+              })),
         legend: {
           show: selectedStatus === "all",
           bottom: 2,
@@ -170,6 +186,7 @@ export function WeeklyChart({
         },
         tooltip: {
           trigger: "axis",
+          axisPointer: chartMode === "bar" ? { type: "shadow" } : undefined,
           backgroundColor: "#0f172a",
           borderWidth: 0,
           textStyle: { color: "#fff", fontSize: 11 },
@@ -184,7 +201,7 @@ export function WeeklyChart({
       chartRef.current?.dispose();
       chartRef.current = null;
     };
-  }, [attendances, selectedStatus, startDate, endDate]);
+  }, [attendances, chartMode, days, selectedStatus]);
 
   useEffect(() => {
     function onResize() {
@@ -194,5 +211,12 @@ export function WeeklyChart({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return (
+    <div
+      ref={containerRef}
+      data-dashboard-chart
+      data-chart-mode={chartMode}
+      className="h-full w-full"
+    />
+  );
 }

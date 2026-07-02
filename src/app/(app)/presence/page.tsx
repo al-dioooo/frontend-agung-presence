@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useAttendances } from "@/lib/api/hooks";
+import {
+  useAttendanceRequests,
+  useAttendances,
+} from "@/lib/api/hooks";
 import {
   mutateCheckOut,
   mutateCreateManualAttendance,
@@ -25,6 +28,8 @@ import {
   PencilIcon,
 } from "@/components/icons/outline";
 import { useToast } from "@/app/components/toast-provider";
+import { TodayPresenceStatusAlert } from "@/app/components/today-presence-status-alert";
+import { resolveTodayPresenceStatus } from "@/lib/today-presence-status";
 
 function formatTime(iso: string | null) {
   if (!iso) return "--:--";
@@ -52,7 +57,7 @@ export default function PresencePage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [statusFilter, setStatusFilter] = useState<AttendanceStatusKey | "all">("all");
-  const [dateRangeActive, setDateRangeActive] = useState(false);
+  const [dateRangeActive, setDateRangeActive] = useState(true);
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -101,8 +106,30 @@ export default function PresencePage() {
     dateRangeActive;
 
   const { data: attendances = [], isLoading } = useAttendances(attendanceParams);
+  const {
+    data: todayAttendances = [],
+    isLoading: isLoadingTodayAttendances,
+  } = useAttendances({ date: today }, !isAdministrator);
+  const {
+    data: pendingRequests = [],
+    isLoading: isLoadingPendingRequests,
+  } = useAttendanceRequests(
+    { approval_status: "pending" },
+    !isAdministrator,
+  );
+  const todayStatus = useMemo(
+    () =>
+      resolveTodayPresenceStatus({
+        attendances: todayAttendances,
+        pendingRequests,
+        today,
+      }),
+    [pendingRequests, today, todayAttendances],
+  );
+  const todayStatusLoading =
+    isLoadingTodayAttendances || isLoadingPendingRequests;
 
-  const activeCheckIn = attendances.find(
+  const activeCheckIn = todayAttendances.find(
     (attendance) =>
       !isAdministrator &&
       attendance.date === today &&
@@ -111,10 +138,11 @@ export default function PresencePage() {
   ) ?? null;
 
   function resetAdminFilters() {
+    setSearch("");
     setSelectedEmployee(null);
     setSelectedOffice(null);
     setStatusFilter("all");
-    setDateRangeActive(false);
+    setDateRangeActive(true);
     setStartDate(today);
     setEndDate(today);
   }
@@ -204,6 +232,14 @@ export default function PresencePage() {
             </p>
           )}
         </div>
+      )}
+
+      {!isAdministrator && (
+        todayStatusLoading ? (
+          <div className="mb-5 h-[88px] animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
+        ) : (
+          <TodayPresenceStatusAlert status={todayStatus} className="mb-5" />
+        )
       )}
 
       <div className="mb-3 flex items-center gap-2 lg:rounded-2xl lg:bg-white lg:p-3 lg:ring-1 lg:ring-taupe-200 lg:shadow-sm">
