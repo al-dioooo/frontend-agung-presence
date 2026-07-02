@@ -11,6 +11,7 @@ import {
 } from "@/lib/api/client";
 import { mutateCreateOffice, mutateUpdateOffice } from "@/lib/api/mutations";
 import type { Office } from "@/lib/api/types";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import {
   ChevronBackIcon,
   MapPinIcon,
@@ -23,12 +24,14 @@ import {
 import { Button, Card, Input, Textarea } from "@/components/ui";
 import { DesktopFormPanel } from "@/app/components/desktop-form-panel";
 import { MapPicker } from "@/app/components/map-picker";
+import { useToast } from "@/app/components/toast-provider";
 
 type Mode = { kind: "create" } | { kind: "edit"; office: Office };
 
 export function OfficeForm({ mode }: { mode: Mode }) {
   const { token } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const initial =
     mode.kind === "edit"
       ? mode.office
@@ -132,10 +135,12 @@ export function OfficeForm({ mode }: { mode: Mode }) {
         mode.kind === "create"
           ? await mutateCreateOffice(token, payload)
           : await mutateUpdateOffice(token, mode.office.id, payload);
-      router.replace(`/office/${result.id}`);
+      toast.success(apiSuccessMessage(result, "Kantor berhasil disimpan."));
+      router.replace(`/office/${result.data.id}`);
     } catch (err) {
+      const message = apiErrorMessage(err, "Terjadi kesalahan. Coba lagi.");
       if (err instanceof ApiError) {
-        setErrorMessage(err.message);
+        setErrorMessage(message);
         const data = err.data as { errors?: Record<string, string[]> } | null;
         if (data?.errors) {
           const flattened: Record<string, string> = {};
@@ -145,8 +150,9 @@ export function OfficeForm({ mode }: { mode: Mode }) {
           setFieldErrors(flattened);
         }
       } else {
-        setErrorMessage("Terjadi kesalahan. Coba lagi.");
+        setErrorMessage(message);
       }
+      toast.error(message);
       setSubmitting(false);
     }
   }

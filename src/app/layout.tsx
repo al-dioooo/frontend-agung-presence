@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { ApiProgressBar } from "@/app/components/api-progress-bar";
+import { ToastProvider } from "@/app/components/toast-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { SWRProvider } from "@/lib/swr-provider";
 
@@ -11,7 +13,7 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: "Agung Presence",
-  description: "Sistem Absensi Karyawan - Universitas Katolik Musi Charitas",
+  description: "Sistem Absensi Karyawan - PT Agung Sumatera Development",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -48,7 +50,10 @@ export default function RootLayout({
     <html lang="id" className={`${geistSans.variable} h-full`}>
       <body className="h-full font-sans antialiased">
         <AuthProvider>
-          <SWRProvider>{children}</SWRProvider>
+          <ToastProvider>
+            <ApiProgressBar />
+            <SWRProvider>{children}</SWRProvider>
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

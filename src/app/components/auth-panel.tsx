@@ -67,7 +67,8 @@ export function AuthPanel() {
     setMessage("");
 
     try {
-      const session = await login(loginValue, password);
+      const result = await login(loginValue, password);
+      const session = result.data;
 
       window.localStorage.setItem(tokenStorageKey, session.token);
       setToken(session.token);

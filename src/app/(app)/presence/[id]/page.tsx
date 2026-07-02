@@ -5,9 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api/client";
 import { useAttendance } from "@/lib/api/hooks";
 import { mutateCheckOut } from "@/lib/api/mutations";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import {
   isManualAttendance,
   statusBadgeClass,
@@ -31,6 +31,7 @@ import {
 } from "@/components/icons/outline";
 import { Button, Card } from "@/components/ui";
 import { StaticLocationMap } from "@/app/components/static-location-map";
+import { useToast } from "@/app/components/toast-provider";
 
 function InfoRow({
   icon,
@@ -79,6 +80,7 @@ export default function PresenceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
 
   const { data: attendance, isLoading, error } = useAttendance(id);
   const [photoOpen, setPhotoOpen] = useState(false);
@@ -125,11 +127,12 @@ export default function PresenceDetailPage() {
     setIsCheckingOut(true);
     setCheckOutError("");
     try {
-      await mutateCheckOut(token, attendance.id);
+      const result = await mutateCheckOut(token, attendance.id);
+      toast.success(apiSuccessMessage(result, "Absen keluar berhasil."));
     } catch (err) {
-      setCheckOutError(
-        err instanceof ApiError ? err.message : "Gagal absen keluar.",
-      );
+      const message = apiErrorMessage(err, "Gagal absen keluar.");
+      setCheckOutError(message);
+      toast.error(message);
     } finally {
       setIsCheckingOut(false);
     }

@@ -22,7 +22,7 @@ export function DesktopSidebar() {
         </div>
         <div className="min-w-0">
           <p className="text-sm font-bold text-foreground">Agung Presence</p>
-          <p className="text-xs text-taupe-400">Presence workspace</p>
+          <p className="text-xs text-taupe-400">Presence Workspace</p>
         </div>
       </div>
 
@@ -37,9 +37,8 @@ export function DesktopSidebar() {
               key={item.href}
               href={item.href}
               id={`sidebar-${item.label.toLowerCase()}`}
-              className={`relative flex h-11 items-center gap-3 overflow-hidden rounded-2xl px-3 text-sm font-semibold transition-opacity active:opacity-80 ${
-                isActive ? "text-primary" : "text-taupe-400 hover:opacity-80"
-              }`}
+              className={`relative flex h-11 items-center gap-3 overflow-hidden rounded-2xl px-3 text-sm font-semibold transition-opacity active:opacity-80 ${isActive ? "text-primary" : "text-taupe-400 hover:opacity-80"
+                }`}
             >
               {isActive && (
                 <motion.div

@@ -1,5 +1,7 @@
 import { apiProxyPath } from "@/lib/env";
+import { beginApiRequest } from "@/lib/api/request-activity";
 import type {
+  ApiActionResult,
   ApiEnvelope,
   ApiStatus,
   Attendance,
@@ -41,6 +43,7 @@ export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
+  const endApiRequest = beginApiRequest();
   const headers = new Headers({
     Accept: "application/json",
   });
@@ -53,24 +56,38 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${options.token}`);
   }
 
-  const response = await fetch(`${apiProxyPath}${path}`, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${apiProxyPath}${path}`, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      cache: "no-store",
+    });
 
-  const payload = await response.json().catch(() => null);
+    const payload = await response.json().catch(() => null);
 
-  if (!response.ok) {
-    throw new ApiError(
-      payload?.message ?? "Request ke API gagal.",
-      response.status,
-      payload,
-    );
+    if (!response.ok) {
+      throw new ApiError(
+        payload?.message ?? "Request ke API gagal.",
+        response.status,
+        payload,
+      );
+    }
+
+    return payload as T;
+  } finally {
+    endApiRequest();
   }
+}
 
-  return payload as T;
+function actionResult<T>(
+  response: ApiEnvelope<T>,
+  fallbackMessage: string,
+): ApiActionResult<T> {
+  return {
+    data: response.data,
+    message: response.message ?? fallbackMessage,
+  };
 }
 
 // ─── Auth ───────────────────────────────────────────────────────────────────
@@ -85,7 +102,7 @@ export async function login(login: string, password: string) {
     body: { login, password },
   });
 
-  return response.data;
+  return actionResult(response, "Login successful.");
 }
 
 export async function getProfile(token: string) {
@@ -94,11 +111,13 @@ export async function getProfile(token: string) {
   return response.data;
 }
 
-export function logout(token: string) {
-  return apiRequest<ApiEnvelope<null>>("/auth/logout", {
+export async function logout(token: string) {
+  const response = await apiRequest<ApiEnvelope<null>>("/auth/logout", {
     method: "POST",
     token,
   });
+
+  return actionResult(response, "Logged out successfully.");
 }
 
 export async function updateProfile(
@@ -111,7 +130,7 @@ export async function updateProfile(
     body: data,
   });
 
-  return response.data;
+  return actionResult(response, "User profile updated.");
 }
 
 // ─── Offices ─────────────────────────────────────────────────────────────────
@@ -202,34 +221,43 @@ export async function downloadAttendanceExport(
   params?: AttendanceQueryParams,
 ) {
   const qs = attendanceQueryString(params);
-  const response = await fetch(`${apiProxyPath}/attendances/export${qs ? `?${qs}` : ""}`, {
-    method: "GET",
-    headers: {
-      Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  const endApiRequest = beginApiRequest();
 
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null);
-    throw new ApiError(
-      payload?.message ?? "Gagal mengunduh rekap absensi.",
-      response.status,
-      payload,
-    );
+  try {
+    const response = await fetch(`${apiProxyPath}/attendances/export${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new ApiError(
+        payload?.message ?? "Gagal mengunduh rekap absensi.",
+        response.status,
+        payload,
+      );
+    }
+
+    const disposition = response.headers.get("Content-Disposition") ?? "";
+    const filename =
+      disposition.match(/filename="([^"]+)"/)?.[1] ??
+      disposition.match(/filename=([^;]+)/)?.[1]?.trim() ??
+      "attendance-recap.xlsx";
+
+    return {
+      data: {
+        blob: await response.blob(),
+        filename,
+      },
+      message: "Rekap absensi berhasil diunduh.",
+    };
+  } finally {
+    endApiRequest();
   }
-
-  const disposition = response.headers.get("Content-Disposition") ?? "";
-  const filename =
-    disposition.match(/filename="([^"]+)"/)?.[1] ??
-    disposition.match(/filename=([^;]+)/)?.[1]?.trim() ??
-    "attendance-recap.xlsx";
-
-  return {
-    blob: await response.blob(),
-    filename,
-  };
 }
 
 export async function getAttendance(token: string, id: number) {
@@ -263,7 +291,7 @@ export async function checkIn(
     },
   });
 
-  return response.data;
+  return actionResult(response, "Attendance created successfully.");
 }
 
 export async function checkOut(token: string, id: number) {
@@ -272,7 +300,7 @@ export async function checkOut(token: string, id: number) {
     { method: "POST", token },
   );
 
-  return response.data;
+  return actionResult(response, "Attendance checked out successfully.");
 }
 
 export async function createManualAttendance(
@@ -288,7 +316,7 @@ export async function createManualAttendance(
     },
   );
 
-  return response.data;
+  return actionResult(response, "Manual attendance stored successfully.");
 }
 
 export async function getAttendanceRequests(
@@ -330,7 +358,7 @@ export async function createAttendanceRequest(
     },
   );
 
-  return response.data;
+  return actionResult(response, "Attendance request created successfully.");
 }
 
 export async function reviewAttendanceRequest(
@@ -347,7 +375,7 @@ export async function reviewAttendanceRequest(
     },
   );
 
-  return response.data;
+  return actionResult(response, "Attendance request reviewed successfully.");
 }
 
 export type OfficeInput = {
@@ -369,7 +397,7 @@ export async function createOffice(token: string, data: OfficeInput) {
     body: data,
   });
 
-  return response.data;
+  return actionResult(response, "Office created successfully.");
 }
 
 export async function updateOffice(
@@ -383,14 +411,16 @@ export async function updateOffice(
     body: data,
   });
 
-  return response.data;
+  return actionResult(response, "Office updated successfully.");
 }
 
 export async function deleteOffice(token: string, id: number) {
-  return apiRequest<ApiEnvelope<null>>(`/offices/${id}`, {
+  const response = await apiRequest<ApiEnvelope<null>>(`/offices/${id}`, {
     method: "DELETE",
     token,
   });
+
+  return actionResult(response, "Office deleted successfully.");
 }
 
 // ─── Employees ───────────────────────────────────────────────────────────────
@@ -442,7 +472,10 @@ export async function createEmployee(token: string, data: CreateEmployeeInput) {
     },
   );
 
-  return response.data.user;
+  return {
+    data: response.data.user,
+    message: response.message ?? "User registered successfully.",
+  };
 }
 
 export type UpdateEmployeeInput = {
@@ -464,12 +497,14 @@ export async function updateEmployee(
     body: data,
   });
 
-  return response.data;
+  return actionResult(response, "User updated successfully.");
 }
 
 export async function deleteEmployee(token: string, id: number) {
-  return apiRequest<ApiEnvelope<null>>(`/users/${id}`, {
+  const response = await apiRequest<ApiEnvelope<null>>(`/users/${id}`, {
     method: "DELETE",
     token,
   });
+
+  return actionResult(response, "User deleted successfully.");
 }

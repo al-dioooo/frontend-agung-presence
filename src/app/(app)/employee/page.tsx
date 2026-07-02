@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api/client";
 import { useEmployees } from "@/lib/api/hooks";
 import { mutateDeleteEmployee } from "@/lib/api/mutations";
 import type { Employee, EmployeeRoleFilter } from "@/lib/api/types";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, Card, SearchInput } from "@/components/ui";
 import {
   ChevronRightIcon,
@@ -31,10 +31,12 @@ import {
   TableActionGroup,
   TableActionLink,
 } from "@/app/components/table-row-actions";
+import { useToast } from "@/app/components/toast-provider";
 
 export default function EmployeePage() {
   const { token, user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<EmployeeRoleFilter>("all");
   const [roleFilterOpen, setRoleFilterOpen] = useState(false);
@@ -81,14 +83,15 @@ export default function EmployeePage() {
     setIsDeleting(true);
     setDeleteError("");
     try {
-      await mutateDeleteEmployee(token, employeeToDelete.id, {
+      const result = await mutateDeleteEmployee(token, employeeToDelete.id, {
         currentList: employees,
       });
+      toast.success(apiSuccessMessage(result, "Karyawan berhasil dihapus."));
       setEmployeeToDelete(null);
     } catch (err) {
-      setDeleteError(
-        err instanceof ApiError ? err.message : "Gagal menghapus karyawan.",
-      );
+      const message = apiErrorMessage(err, "Gagal menghapus karyawan.");
+      setDeleteError(message);
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }

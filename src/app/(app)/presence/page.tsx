@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api/client";
 import {
   useAttendanceSummary,
   useAttendances,
@@ -14,6 +13,7 @@ import {
 } from "@/lib/api/mutations";
 import type { Employee, ManualAttendanceInput, Office } from "@/lib/api/types";
 import type { AttendanceStatusKey } from "@/lib/attendance-status";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, SearchInput } from "@/components/ui";
 import { AttendanceHistoryList } from "@/app/components/attendance-history-list";
 import { AttendanceTotals } from "@/app/components/attendance-totals";
@@ -34,6 +34,7 @@ import {
   FilterIcon,
   PencilIcon,
 } from "@/components/icons/outline";
+import { useToast } from "@/app/components/toast-provider";
 
 function formatTime(iso: string | null) {
   if (!iso) return "--:--";
@@ -52,6 +53,7 @@ function toDateKey(date: Date) {
 
 export default function PresencePage() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const isAdministrator = user?.role === "administrator";
   const today = toDateKey(new Date());
 
@@ -139,11 +141,14 @@ export default function PresencePage() {
     setIsCheckingOut(true);
     setCheckOutError("");
     try {
-      await mutateCheckOut(token, activeCheckIn.id, {
+      const result = await mutateCheckOut(token, activeCheckIn.id, {
         currentList: attendances,
       });
+      toast.success(apiSuccessMessage(result, "Absen keluar berhasil."));
     } catch (err) {
-      setCheckOutError(err instanceof ApiError ? err.message : "Gagal absen keluar.");
+      const message = apiErrorMessage(err, "Gagal absen keluar.");
+      setCheckOutError(message);
+      toast.error(message);
     } finally {
       setIsCheckingOut(false);
     }
@@ -155,14 +160,13 @@ export default function PresencePage() {
     setIsSubmittingManual(true);
     setManualError("");
     try {
-      await mutateCreateManualAttendance(token, input);
+      const result = await mutateCreateManualAttendance(token, input);
+      toast.success(apiSuccessMessage(result, "Input manual berhasil disimpan."));
       return true;
     } catch (err) {
-      setManualError(
-        err instanceof ApiError
-          ? err.message
-          : "Gagal menyimpan input manual.",
-      );
+      const message = apiErrorMessage(err, "Gagal menyimpan input manual.");
+      setManualError(message);
+      toast.error(message);
       return false;
     } finally {
       setIsSubmittingManual(false);
@@ -175,10 +179,11 @@ export default function PresencePage() {
     setIsExporting(true);
     setExportError("");
     try {
-      const { blob, filename } = await mutateDownloadAttendanceExport(
+      const result = await mutateDownloadAttendanceExport(
         token,
         attendanceParams,
       );
+      const { blob, filename } = result.data;
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -187,10 +192,11 @@ export default function PresencePage() {
       anchor.click();
       anchor.remove();
       window.URL.revokeObjectURL(url);
+      toast.success(apiSuccessMessage(result, "Rekap absensi berhasil diunduh."));
     } catch (err) {
-      setExportError(
-        err instanceof ApiError ? err.message : "Gagal mengunduh rekap absensi.",
-      );
+      const message = apiErrorMessage(err, "Gagal mengunduh rekap absensi.");
+      setExportError(message);
+      toast.error(message);
     } finally {
       setIsExporting(false);
     }

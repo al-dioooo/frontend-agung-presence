@@ -3,12 +3,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api/client";
 import { useAttendanceRequests } from "@/lib/api/hooks";
 import {
   mutateCreateAttendanceRequest,
   mutateReviewAttendanceRequest,
 } from "@/lib/api/mutations";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import type {
   AttendanceRequest,
   AttendanceRequestApprovalStatus,
@@ -51,6 +51,7 @@ import { DateRangeFields } from "@/app/components/date-range-fields";
 import { CameraCapture } from "@/app/components/camera-capture";
 import { ProofPhotoInput } from "@/app/components/proof-photo-input";
 import { RequestReviewSheet } from "@/app/components/request-review-sheet";
+import { useToast } from "@/app/components/toast-provider";
 
 type RequestFilter = AttendanceRequestApprovalStatus | "all";
 type RequestLocation = { latitude: number; longitude: number };
@@ -157,6 +158,7 @@ function RequestCard({
 export default function PresenceRequestsPage() {
   const { token, user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const isAdministrator = user?.role === "administrator";
   const today = toDateKey(new Date());
   const maxRequestDate = toDateKey(addDays(new Date(), 365));
@@ -204,7 +206,7 @@ export default function PresenceRequestsPage() {
     setCameraError("");
     setSubmitSuccess("");
     try {
-      await mutateCreateAttendanceRequest(token, {
+      const result = await mutateCreateAttendanceRequest(token, {
         type: selectedType,
         start_date: startDate,
         end_date: endDate,
@@ -215,11 +217,13 @@ export default function PresenceRequestsPage() {
       setProofPhoto("");
       setStartDate(today);
       setEndDate(today);
-      setSubmitSuccess("Pengajuan berhasil dikirim.");
+      const message = apiSuccessMessage(result, "Pengajuan berhasil dikirim.");
+      setSubmitSuccess(message);
+      toast.success(message);
     } catch (err) {
-      setSubmitError(
-        err instanceof ApiError ? err.message : "Gagal mengirim pengajuan.",
-      );
+      const message = apiErrorMessage(err, "Gagal mengirim pengajuan.");
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -361,7 +365,9 @@ export default function PresenceRequestsPage() {
       setRequestLocation(location);
       setCameraOpen(true);
     } catch (error) {
-      setCameraError(locationErrorMessage(error));
+      const message = locationErrorMessage(error);
+      setCameraError(message);
+      toast.error(message);
     } finally {
       setIsPreparingCamera(false);
     }
@@ -379,12 +385,13 @@ export default function PresenceRequestsPage() {
     setIsReviewing(true);
     setReviewError("");
     try {
-      await mutateReviewAttendanceRequest(token, selectedRequest.id, data);
+      const result = await mutateReviewAttendanceRequest(token, selectedRequest.id, data);
+      toast.success(apiSuccessMessage(result, "Review pengajuan berhasil disimpan."));
       setSelectedRequest(null);
     } catch (err) {
-      setReviewError(
-        err instanceof ApiError ? err.message : "Gagal mereview pengajuan.",
-      );
+      const message = apiErrorMessage(err, "Gagal mereview pengajuan.");
+      setReviewError(message);
+      toast.error(message);
     } finally {
       setIsReviewing(false);
     }

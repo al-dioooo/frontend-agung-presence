@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api/client";
 import { useOffices } from "@/lib/api/hooks";
 import { mutateDeleteOffice } from "@/lib/api/mutations";
 import type {
@@ -11,6 +10,7 @@ import type {
   OfficeSort,
 } from "@/lib/api/types";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, Card, SearchInput } from "@/components/ui";
 import {
   ChevronRightIcon,
@@ -35,6 +35,7 @@ import {
   TableActionGroup,
   TableActionLink,
 } from "@/app/components/table-row-actions";
+import { useToast } from "@/app/components/toast-provider";
 
 function formatDistance(meters: number) {
   if (meters < 1000) return `${Math.round(meters)}m`;
@@ -43,6 +44,7 @@ function formatDistance(meters: number) {
 
 export default function OfficePage() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [activeStatus, setActiveStatus] =
     useState<OfficeActiveStatusFilter>("all");
@@ -125,11 +127,12 @@ export default function OfficePage() {
       setNearestLocation(location);
       setSortMode("nearest");
     } catch {
+      const message =
+        "Lokasi saat ini belum tersedia. Izinkan akses lokasi untuk mengurutkan kantor terdekat.";
       setNearestLocation(null);
       setSortMode("name");
-      setLocationError(
-        "Lokasi saat ini belum tersedia. Izinkan akses lokasi untuk mengurutkan kantor terdekat.",
-      );
+      setLocationError(message);
+      toast.error(message);
     } finally {
       setIsResolvingLocation(false);
     }
@@ -152,12 +155,13 @@ export default function OfficePage() {
     setIsDeleting(true);
     setDeleteError("");
     try {
-      await mutateDeleteOffice(token, officeToDelete.id, { currentList: offices });
+      const result = await mutateDeleteOffice(token, officeToDelete.id, { currentList: offices });
+      toast.success(apiSuccessMessage(result, "Kantor berhasil dihapus."));
       setOfficeToDelete(null);
     } catch (err) {
-      setDeleteError(
-        err instanceof ApiError ? err.message : "Gagal menghapus kantor.",
-      );
+      const message = apiErrorMessage(err, "Gagal menghapus kantor.");
+      setDeleteError(message);
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }

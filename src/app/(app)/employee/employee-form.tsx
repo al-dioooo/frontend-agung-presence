@@ -9,10 +9,12 @@ import {
 } from "@/lib/api/client";
 import { mutateCreateEmployee, mutateUpdateEmployee } from "@/lib/api/mutations";
 import type { Employee } from "@/lib/api/types";
+import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { ChevronBackIcon, ChevronDownIcon } from "@/components/icons/outline";
 import { Button, Card, Input } from "@/components/ui";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { DesktopFormPanel } from "@/app/components/desktop-form-panel";
+import { useToast } from "@/app/components/toast-provider";
 
 type Mode = { kind: "create" } | { kind: "edit"; employee: Employee };
 
@@ -27,6 +29,7 @@ const USERNAME_RULE =
 export function EmployeeForm({ mode }: { mode: Mode }) {
   const { token } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const initial =
     mode.kind === "edit"
       ? mode.employee
@@ -56,27 +59,30 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
 
     try {
       if (mode.kind === "create") {
-        const user = await mutateCreateEmployee(token, {
+        const result = await mutateCreateEmployee(token, {
           name: name.trim(),
           username: username.trim(),
           email: email.trim(),
           password,
           role,
         });
-        router.replace(`/employee/${user.id}`);
+        toast.success(apiSuccessMessage(result, "Karyawan berhasil dibuat."));
+        router.replace(`/employee/${result.data.id}`);
       } else {
-        const updated = await mutateUpdateEmployee(token, mode.employee.id, {
+        const result = await mutateUpdateEmployee(token, mode.employee.id, {
           name: name.trim(),
           username: username.trim(),
           email: email.trim(),
           role,
           ...(password ? { password } : {}),
         });
-        router.replace(`/employee/${updated.id}`);
+        toast.success(apiSuccessMessage(result, "Karyawan berhasil diperbarui."));
+        router.replace(`/employee/${result.data.id}`);
       }
     } catch (err) {
+      const message = apiErrorMessage(err, "Terjadi kesalahan. Coba lagi.");
       if (err instanceof ApiError) {
-        setErrorMessage(err.message);
+        setErrorMessage(message);
         const data = err.data as { errors?: Record<string, string[]> } | null;
         if (data?.errors) {
           const flattened: Record<string, string> = {};
@@ -86,8 +92,9 @@ export function EmployeeForm({ mode }: { mode: Mode }) {
           setFieldErrors(flattened);
         }
       } else {
-        setErrorMessage("Terjadi kesalahan. Coba lagi.");
+        setErrorMessage(message);
       }
+      toast.error(message);
       setSubmitting(false);
     }
   }

@@ -1,7 +1,7 @@
 {
   "name": "Agung Presence",
   "short_name": "AgungPresence",
-  "description": "Sistem Absensi Karyawan - Universitas Katolik Musi Charitas",
+  "description": "Sistem Absensi Karyawan - PT Agung Sumatera Development",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
