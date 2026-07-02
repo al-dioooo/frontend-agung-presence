@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
-import { useAttendances, useOffices } from "@/lib/api/hooks";
+import {
+  useAttendanceRequests,
+  useAttendances,
+  useOffices,
+} from "@/lib/api/hooks";
 import type { Office } from "@/lib/api/types";
 import {
   isManualAttendance,
@@ -24,6 +28,11 @@ import { BottomSheet } from "@/app/components/bottom-sheet";
 import { AppPage } from "@/app/components/responsive-layout";
 import { MobileDatePicker } from "@/app/components/mobile-date-picker";
 import { ChevronBackIcon, ChevronRightIcon, FilterIcon } from "@/components/icons/outline";
+import { TodayPresenceStatusAlert } from "@/app/components/today-presence-status-alert";
+import {
+  resolveTodayPresenceStatus,
+  selectTodayAttendance,
+} from "@/lib/today-presence-status";
 
 function haversineDistance(
   lat1: number,
@@ -134,6 +143,13 @@ export default function DashboardPage() {
   const { data: todayAttendances = [], isLoading: loadingTodayAttendances } = useAttendances({
     date: todayIso,
   });
+  const {
+    data: pendingRequests = [],
+    isLoading: loadingPendingRequests,
+  } = useAttendanceRequests(
+    { approval_status: "pending" },
+    !isAdministrator,
+  );
   const isLoading = loadingAttendances || loadingTodayAttendances || loadingOffices;
   const isSearching = search.trim().length > 0;
 
@@ -143,9 +159,17 @@ export default function DashboardPage() {
     });
   }, []);
 
-  const today =
-    todayAttendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
-    todayAttendances.find((a) => a.date === todayIso);
+  const today = selectTodayAttendance(todayAttendances, todayIso);
+  const todayStatus = useMemo(
+    () =>
+      resolveTodayPresenceStatus({
+        attendances: todayAttendances,
+        pendingRequests,
+        today: todayIso,
+      }),
+    [pendingRequests, todayAttendances, todayIso],
+  );
+  const todayStatusLoading = loadingTodayAttendances || loadingPendingRequests;
   const isTodayManual = today ? isManualAttendance(today) : false;
   const isTodayAbsentWithoutCheckIn =
     today?.status === "absent" && today.in_at === null;
@@ -224,6 +248,14 @@ export default function DashboardPage() {
         <p className="text-sm text-taupe-400">Selamat datang,</p>
         <h1 className="text-xl font-bold text-foreground">{user?.name ?? "—"}</h1>
       </div>
+
+      {!isAdministrator && (
+        todayStatusLoading ? (
+          <div className="mb-5 h-[88px] animate-pulse rounded-2xl bg-white ring-1 ring-taupe-200 shadow-sm" />
+        ) : (
+          <TodayPresenceStatusAlert status={todayStatus} className="mb-5" />
+        )
+      )}
 
       {/* Search */}
       <div className="mb-5">

@@ -126,6 +126,82 @@ async function expectApiProgressForDelayedRequest(page) {
   await expectDesktopShell(page);
 }
 
+function todayLabel() {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+}
+
+async function clearPresenceDateFilterIfNeeded(page, actionSelector) {
+  if ((await visibleElementCount(page, actionSelector)) > 0) return;
+
+  const todayChip = page.getByRole("button", { name: new RegExp(todayLabel()) }).first();
+  if ((await todayChip.count()) === 0) return;
+
+  await todayChip.click();
+  await page.waitForLoadState("networkidle");
+  await page.locator("[data-api-progress='idle']").waitFor({ timeout: 15000 });
+}
+
+async function expectDashboardReportChartModes(page) {
+  await expectHidden(
+    page,
+    "[data-today-status-alert]",
+    "administrator dashboard should not show employee today-status alert",
+  );
+  await page
+    .locator("[data-dashboard-chart][data-chart-mode='bar'] canvas")
+    .first()
+    .waitFor({ state: "visible", timeout: 15000 });
+
+  await page.locator("#dashboard-report-filter").click();
+  const reportDialog = page.getByRole("dialog", { name: "Filter Laporan" });
+  await reportDialog.waitFor({ timeout: 15000 });
+  await reportDialog.getByRole("button", { name: /Rentang Tanggal/ }).click();
+  const dateDialog = page.getByRole("dialog", { name: "Rentang Tanggal" });
+  await dateDialog.waitFor({ timeout: 15000 });
+  await dateDialog.getByRole("button", { name: /7 Hari Terakhir/ }).click();
+  await page
+    .locator("[data-dashboard-chart][data-chart-mode='line'] canvas")
+    .first()
+    .waitFor({ state: "visible", timeout: 15000 });
+  await page.keyboard.press("Escape");
+  await reportDialog.waitFor({ state: "hidden", timeout: 15000 });
+}
+
+async function expectAdminPresenceTodayFilter(page) {
+  const label = todayLabel();
+  await page.goto(`${BASE_URL}/presence`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await page.getByRole("button", { name: new RegExp(label) }).first().waitFor({
+    timeout: 15000,
+  });
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await page.getByRole("button", { name: new RegExp(label) }).first().waitFor({
+    timeout: 15000,
+  });
+  await expectHidden(
+    page,
+    "[data-today-status-alert]",
+    "administrator presence should not show employee today-status alert",
+  );
+}
+
+async function expectEmployeeTodayStatusAlert(page, route) {
+  await page.goto(`${BASE_URL}${route}`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  const alert = page.locator("[data-today-status-alert]").first();
+  await alert.waitFor({ state: "visible", timeout: 15000 });
+  const buttons = await alert.locator("button, a").count();
+  if (buttons !== 0) {
+    throw new Error(`Today status alert should be informational only at ${route}`);
+  }
+}
+
 async function passPermissionGate(page) {
   const allowButton = page.getByRole("button", { name: "Izinkan Akses" }).first();
   if ((await allowButton.count()) > 0 && (await allowButton.isVisible())) {
@@ -277,9 +353,13 @@ async function expectEmployeeDesktopCameraFlows(browser) {
   });
   await context.grantPermissions(["camera", "geolocation"], { origin: BASE_URL });
   const page = await context.newPage();
+  page.setDefaultNavigationTimeout(60000);
+  page.setDefaultTimeout(30000);
   await page.setViewportSize({ width: 1280, height: 800 });
   await loginAs(page, EMPLOYEE_USERNAME, EMPLOYEE_PASSWORD);
   await expectDesktopShell(page);
+  await expectEmployeeTodayStatusAlert(page, "/dashboard");
+  await expectEmployeeTodayStatusAlert(page, "/presence");
 
   await page.goto(`${BASE_URL}/presence/requests`);
   await page.waitForLoadState("networkidle");
@@ -362,9 +442,12 @@ async function expectAdminDesktopTableActions(page) {
   await page.goto(`${BASE_URL}/presence`);
   await page.waitForLoadState("networkidle");
   await expectDesktopShell(page);
+  const presenceDetailSelector =
+    "table[aria-label='Riwayat absensi'] a[aria-label^='Lihat detail absensi']";
+  await clearPresenceDateFilterIfNeeded(page, presenceDetailSelector);
   await expectVisibleAction(
     page,
-    "table[aria-label='Riwayat absensi'] a[aria-label^='Lihat detail absensi']",
+    presenceDetailSelector,
     "Presence history should expose Eye detail actions on desktop",
   );
   if (
@@ -558,6 +641,8 @@ async function run() {
   });
   await context.grantPermissions(["camera", "geolocation"], { origin: BASE_URL });
   const page = await context.newPage();
+  page.setDefaultNavigationTimeout(60000);
+  page.setDefaultTimeout(30000);
 
   for (const viewport of [
     { width: 390, height: 844 },
@@ -582,6 +667,8 @@ async function run() {
   await page.waitForLoadState("networkidle");
   await expectDesktopShell(page);
   await expectVisible(page, "section[aria-label='Kantor Terdekat']");
+  await expectDashboardReportChartModes(page);
+  await expectAdminPresenceTodayFilter(page);
 
   for (const [route, tableSelector] of [
     ["/presence", "table[aria-label='Riwayat absensi']"],
