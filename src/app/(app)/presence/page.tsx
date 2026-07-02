@@ -259,17 +259,6 @@ export default function PresencePage() {
             <Button
               variant="secondary"
               size="icon"
-              onClick={() => {
-                setManualError("");
-                setManualInputOpen(true);
-              }}
-              aria-label="Input manual cuti sakit atau izin"
-            >
-              <PencilIcon className="size-5" strokeWidth={2} />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
               onClick={handleExport}
               loading={isExporting}
               aria-label="Unduh rekapan sesuai filter"
