@@ -192,11 +192,20 @@ export default function PresenceRequestsPage() {
 
   const sortedRequests = useMemo(() => sortRequests(requests), [requests]);
   const invalidDateRange = isInvalidRequestDateRange(startDate, endDate);
+  const sickStartDateInFuture = selectedType === "sick" && startDate > today;
   const workdayCount = countRequestWorkdays(startDate, endDate);
   const canSubmit =
     !invalidDateRange &&
+    !sickStartDateInFuture &&
     description.trim().length > 0 &&
     proofPhoto.trim().length > 0;
+
+  function handleTypeChange(type: AttendanceRequestType) {
+    setSelectedType(type);
+    if (type === "sick" && startDate > today) {
+      setStartDate(today);
+    }
+  }
 
   async function handleSubmitRequest() {
     if (!token || !canSubmit) return;
@@ -602,7 +611,7 @@ export default function PresenceRequestsPage() {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setSelectedType(option.value)}
+                      onClick={() => handleTypeChange(option.value)}
                       className={`rounded-2xl px-4 py-3 text-left ring-1 transition-colors active:bg-taupe-50 ${
                         selected
                           ? "bg-emerald-50 ring-primary"
@@ -625,8 +634,15 @@ export default function PresenceRequestsPage() {
               startDate={startDate}
               endDate={endDate}
               maxDate={maxRequestDate}
+              startMaxDate={selectedType === "sick" ? today : maxRequestDate}
+              endMaxDate={maxRequestDate}
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
+              error={
+                sickStartDateInFuture
+                  ? "Tanggal mulai sakit tidak boleh lebih dari hari ini."
+                  : undefined
+              }
               showInvalidRangeError={false}
             />
 
@@ -639,6 +655,8 @@ export default function PresenceRequestsPage() {
             >
               {invalidDateRange
                 ? INVALID_REQUEST_DATE_RANGE_MESSAGE
+                : sickStartDateInFuture
+                  ? "Tanggal mulai sakit tidak boleh lebih dari hari ini."
                 : `Total: ${formatRequestWorkdayTotal(workdayCount)}`}
             </p>
 

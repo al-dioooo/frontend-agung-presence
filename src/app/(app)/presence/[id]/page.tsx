@@ -117,12 +117,18 @@ export default function PresenceDetailPage() {
   const canCheckOut = !isManual && attendance.in_at !== null && attendance.out_at === null;
   const officeLabel =
     attendance.office?.name ??
-    (isManual ? "Input Manual" : `Office #${attendance.office_id}`);
+    (isManual
+      ? "Input Manual"
+      : attendance.status === "absent" && attendance.office_id === null
+        ? "Tidak Hadir"
+        : attendance.office_id
+          ? `Office #${attendance.office_id}`
+          : "-");
   const request = attendance.attendance_request;
   const requestDateRange = request ? formatRequestDateRange(request) : "";
 
   async function handleCheckOut() {
-    if (!token || !attendance || !canCheckOut) return;
+    if (!token || !attendance || attendance.id === null || !canCheckOut) return;
 
     setIsCheckingOut(true);
     setCheckOutError("");

@@ -38,6 +38,40 @@ function formatTime(iso: string | null) {
   });
 }
 
+function attendanceKey(attendance: Attendance) {
+  return (
+    attendance.id ??
+    attendance.virtual_key ??
+    `${attendance.user_id}-${attendance.date}-${attendance.status}`
+  );
+}
+
+function canOpenDetail(attendance: Attendance) {
+  return attendance.id !== null && !attendance.is_virtual;
+}
+
+function officeLabel(attendance: Attendance) {
+  if (attendance.office?.name) return attendance.office.name;
+  if (isManualAttendance(attendance)) return "Input Manual";
+  if (attendance.status === "absent" && attendance.office_id === null) {
+    return attendance.is_virtual ? "Belum check-in" : "Tidak Hadir";
+  }
+
+  return attendance.office_id ? `Office #${attendance.office_id}` : "-";
+}
+
+function timeLabel(attendance: Attendance) {
+  if (attendance.status === "absent" && attendance.in_at === null) {
+    return "Belum check-in";
+  }
+
+  if (isManualAttendance(attendance)) {
+    return "Tidak diperlukan";
+  }
+
+  return null;
+}
+
 export function AttendanceHistoryList({
   attendances,
   loading = false,
@@ -73,12 +107,7 @@ export function AttendanceHistoryList({
           key: "office",
           header: "Kantor",
           cell: (attendance: Attendance) => (
-            <span className="block truncate">
-              {attendance.office?.name ??
-                (isManualAttendance(attendance)
-                  ? "Input Manual"
-                  : `Office #${attendance.office_id}`)}
-            </span>
+            <span className="block truncate">{officeLabel(attendance)}</span>
           ),
           className: "w-[20%]",
         },
@@ -91,16 +120,19 @@ export function AttendanceHistoryList({
         {
           key: "time",
           header: "Waktu",
-          cell: (attendance: Attendance) =>
-            isManualAttendance(attendance) ? (
-              <span className="text-taupe-400">Tidak diperlukan</span>
+          cell: (attendance: Attendance) => {
+            const label = timeLabel(attendance);
+
+            return label ? (
+              <span className="text-taupe-400">{label}</span>
             ) : (
               <span className="block text-xs leading-5 text-taupe-500">
                 Masuk {formatTime(attendance.in_at)}
                 <br />
                 Keluar {formatTime(attendance.out_at)}
               </span>
-            ),
+            );
+          },
           className: "w-[18%]",
         },
         {
@@ -128,22 +160,27 @@ export function AttendanceHistoryList({
         {
           key: "action",
           header: "Aksi",
-          cell: (attendance: Attendance) => (
-            <TableActionGroup>
-              <TableActionLink
-                href={`/presence/${attendance.id}`}
-                label={`Lihat detail absensi #${attendance.id}`}
-              >
-                <EyeIcon className="size-4" />
-              </TableActionLink>
-            </TableActionGroup>
-          ),
+          cell: (attendance: Attendance) =>
+            canOpenDetail(attendance) ? (
+              <TableActionGroup>
+                <TableActionLink
+                  href={`/presence/${attendance.id}`}
+                  label={`Lihat detail absensi #${attendance.id}`}
+                >
+                  <EyeIcon className="size-4" />
+                </TableActionLink>
+              </TableActionGroup>
+            ) : (
+              <span className="text-xs font-semibold text-taupe-400">
+                Proyeksi
+              </span>
+            ),
           align: "right" as const,
           className: "w-[10%]",
         },
       ]}
       rows={attendances}
-      getRowKey={(attendance) => attendance.id}
+      getRowKey={attendanceKey}
       emptyMessage={emptyMessage}
       loading={loading}
     />
@@ -180,47 +217,57 @@ export function AttendanceHistoryList({
     <>
       {table}
       <div id="presence-list" className="space-y-2 lg:hidden">
-        {attendances.map((attendance) => (
-          <Card
-            key={attendance.id}
-            href={`/presence/${attendance.id}`}
-            id={`attendance-${attendance.id}`}
-            className="flex items-center justify-between gap-3 px-4 py-3.5"
-          >
-            <div className="min-w-0 flex-1">
-              {isAdministrator && attendance.user && (
-                <p className="mb-0.5 truncate text-xs font-semibold text-foreground">
-                  {attendance.user.name}
+        {attendances.map((attendance) => {
+          const detailHref = canOpenDetail(attendance)
+            ? `/presence/${attendance.id}`
+            : undefined;
+          const label = timeLabel(attendance);
+
+          return (
+            <Card
+              key={attendanceKey(attendance)}
+              href={detailHref}
+              id={`attendance-${attendanceKey(attendance)}`}
+              className="flex items-center justify-between gap-3 px-4 py-3.5"
+            >
+              <div className="min-w-0 flex-1">
+                {isAdministrator && attendance.user && (
+                  <p className="mb-0.5 truncate text-xs font-semibold text-foreground">
+                    {attendance.user.name}
+                  </p>
+                )}
+                <p className="text-sm font-medium text-foreground">
+                  {officeLabel(attendance)}
                 </p>
-              )}
-              <p className="text-sm font-medium text-foreground">
-                {attendance.office?.name ??
-                  (isManualAttendance(attendance)
-                    ? "Input Manual"
-                    : `Office #${attendance.office_id}`)}
-              </p>
-              <p className="mt-0.5 text-xs text-taupe-400">
-                {formatDate(attendance.date)}
-              </p>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-taupe-400">
-                {isManualAttendance(attendance) ? (
-                  <span>Tidak memerlukan waktu absen</span>
+                <p className="mt-0.5 text-xs text-taupe-400">
+                  {formatDate(attendance.date)}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-taupe-400">
+                  {label ? (
+                    <span>{label}</span>
+                  ) : (
+                    <>
+                      <span>Masuk: {formatTime(attendance.in_at)}</span>
+                      <span>Keluar: {formatTime(attendance.out_at)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className={`text-xs font-semibold ${statusTextClass(attendance.status)}`}>
+                  {statusLabel(attendance.status)}
+                </span>
+                {detailHref ? (
+                  <ChevronRightIcon strokeWidth={2.5} className="size-4 text-taupe-300" />
                 ) : (
-                  <>
-                    <span>Masuk: {formatTime(attendance.in_at)}</span>
-                    <span>Keluar: {formatTime(attendance.out_at)}</span>
-                  </>
+                  <span className="rounded-full bg-taupe-100 px-2 py-1 text-[10px] font-semibold text-taupe-500">
+                    Proyeksi
+                  </span>
                 )}
               </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <span className={`text-xs font-semibold ${statusTextClass(attendance.status)}`}>
-                {statusLabel(attendance.status)}
-              </span>
-              <ChevronRightIcon strokeWidth={2.5} className="size-4 text-taupe-300" />
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     </>
   );

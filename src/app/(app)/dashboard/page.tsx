@@ -109,7 +109,7 @@ export default function DashboardPage() {
   const [reportFilterOpen, setReportFilterOpen] = useState(false);
   const [reportFilterLevel, setReportFilterLevel] = useState<ReportFilterLevel>("root");
   const [selectedStatus, setSelectedStatus] = useState<ReportStatusFilter>("all");
-  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("last_7_days");
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("today");
   const [activeCustomDateField, setActiveCustomDateField] = useState<CustomDateField | null>(null);
 
   const todayIso = toDateKey(new Date());
@@ -147,6 +147,8 @@ export default function DashboardPage() {
     todayAttendances.find((a) => a.date === todayIso && a.in_at && !a.out_at) ??
     todayAttendances.find((a) => a.date === todayIso);
   const isTodayManual = today ? isManualAttendance(today) : false;
+  const isTodayAbsentWithoutCheckIn =
+    today?.status === "absent" && today.in_at === null;
 
   const reportCounts = useMemo(() => {
     const counts = STATUS_KEYS.reduce(
@@ -170,13 +172,13 @@ export default function DashboardPage() {
     selectedStatus === "all" ? "Semua Status" : STATUS_META[selectedStatus].label;
   const selectedRangeLabel =
     DATE_RANGE_FILTERS.find((filter) => filter.value === dateRangePreset)?.label ??
-    "7 Hari Terakhir";
+    "Hari Ini";
   const chartAttendances =
     selectedStatus === "all"
       ? attendances
       : attendances.filter((attendance) => attendance.status === selectedStatus);
   const reportFilterActive =
-    selectedStatus !== "all" || dateRangePreset !== "last_7_days";
+    selectedStatus !== "all" || dateRangePreset !== "today";
 
   function closeReportFilter() {
     setReportFilterOpen(false);
@@ -240,18 +242,25 @@ export default function DashboardPage() {
             <section className="mb-6" aria-label="Laporan Absensi">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold text-foreground">Report</h2>
-            <Button
-              id="dashboard-report-filter"
-              variant={reportFilterActive ? "primary" : "secondary"}
-              size="icon"
-              onClick={() => {
-                setReportFilterLevel("root");
-                setReportFilterOpen(true);
-              }}
-              aria-label="Filter laporan"
-            >
-              <FilterIcon className="size-5" strokeWidth={2} />
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              {isAdministrator && (
+                <Button href="/presence/report" variant="secondary" size="sm">
+                  Report
+                </Button>
+              )}
+              <Button
+                id="dashboard-report-filter"
+                variant={reportFilterActive ? "primary" : "secondary"}
+                size="icon"
+                onClick={() => {
+                  setReportFilterLevel("root");
+                  setReportFilterOpen(true);
+                }}
+                aria-label="Filter laporan"
+              >
+                <FilterIcon className="size-5" strokeWidth={2} />
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -313,10 +322,18 @@ export default function DashboardPage() {
                     <p className="text-xs text-taupe-400">Hari ini</p>
                     <p className="truncate text-sm font-medium text-foreground">
                       {today.office?.name ??
-                        (isTodayManual ? "Input Manual" : `Office #${today.office_id}`)}
+                        (isTodayManual
+                          ? "Input Manual"
+                          : isTodayAbsentWithoutCheckIn
+                            ? "Belum check-in"
+                            : today.office_id
+                              ? `Office #${today.office_id}`
+                              : "-")}
                     </p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-taupe-500">
-                      {isTodayManual ? (
+                      {isTodayAbsentWithoutCheckIn ? (
+                        <span>Belum melakukan absen masuk</span>
+                      ) : isTodayManual ? (
                         <span>Tidak memerlukan waktu absen</span>
                       ) : (
                         <>
@@ -332,7 +349,7 @@ export default function DashboardPage() {
                     <span className={`text-xs font-semibold ${statusTextClass(today.status)}`}>
                       {statusLabel(today.status)}
                     </span>
-                    {!isTodayManual && !today.out_at && (
+                    {!isTodayAbsentWithoutCheckIn && !isTodayManual && !today.out_at && (
                       <p className="mt-1 text-[10px] font-semibold text-emerald-600">
                         Sedang absen
                       </p>
