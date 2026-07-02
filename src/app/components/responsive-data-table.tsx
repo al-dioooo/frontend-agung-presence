@@ -1,7 +1,7 @@
 type DataTableColumn<T> = {
   key: string;
   header: React.ReactNode;
-  cell: (row: T) => React.ReactNode;
+  cell: (row: T, index: number) => React.ReactNode;
   className?: string;
   headerClassName?: string;
   align?: "left" | "center" | "right";
@@ -65,7 +65,7 @@ export function ResponsiveDataTable<T>({
                     ))}
                   </tr>
                 ))
-              : rows.map((row) => (
+              : rows.map((row, rowIndex) => (
                   <tr
                     key={getRowKey(row)}
                     className={`transition-colors hover:bg-taupe-50/70 ${rowClassName?.(row) ?? ""}`}
@@ -75,7 +75,7 @@ export function ResponsiveDataTable<T>({
                         key={column.key}
                         className={`px-4 py-3 text-sm text-foreground ${alignClass[column.align ?? "left"]} ${column.className ?? ""}`}
                       >
-                        {column.cell(row)}
+                        {column.cell(row, rowIndex)}
                       </td>
                     ))}
                   </tr>

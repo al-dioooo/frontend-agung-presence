@@ -202,6 +202,85 @@ async function expectEmployeeTodayStatusAlert(page, route) {
   }
 }
 
+async function expectDesktopListNumbering(page) {
+  for (const [route, tableName] of [
+    ["/employee", "Daftar karyawan"],
+    ["/office", "Daftar kantor"],
+  ]) {
+    await page.goto(`${BASE_URL}${route}`);
+    await page.waitForLoadState("networkidle");
+    await expectDesktopShell(page);
+    const table = page.getByRole("table", { name: tableName });
+    await table.getByRole("columnheader", { name: "No" }).waitFor({ timeout: 15000 });
+    const firstNumber = table.locator("tbody tr").first().locator("td").first();
+    await firstNumber.getByLabel("Nomor 1").waitFor({ timeout: 15000 });
+  }
+}
+
+async function expectMobileListNumbering(page) {
+  for (const [route, selector] of [
+    ["/employee", "#employee-list [aria-label='Nomor 1']"],
+    ["/office", "#office-list [aria-label='Nomor 1']"],
+  ]) {
+    await page.goto(`${BASE_URL}${route}`);
+    await page.waitForLoadState("networkidle");
+    await expectMobileShell(page);
+    await page.locator(selector).first().waitFor({ state: "visible", timeout: 15000 });
+  }
+}
+
+async function expectPresenceStatusPills(page, shellExpectation = expectDesktopShell) {
+  await page.goto(`${BASE_URL}/presence`);
+  await page.waitForLoadState("networkidle");
+  await shellExpectation(page);
+
+  const group = page.getByRole("group", { name: "Filter status presensi" });
+  await group.waitFor({ timeout: 15000 });
+  await group.evaluate((element) => {
+    if (element.getAttribute("data-mobile-scrollable") !== "true") {
+      throw new Error("status pills should be mobile-scrollable");
+    }
+    if (element.getAttribute("data-desktop-scrollable") !== "true") {
+      throw new Error("status pills should be desktop-scrollable");
+    }
+  });
+
+  for (const label of ["Semua", "Tepat Waktu", "Terlambat", "Tidak Hadir", "Sakit", "Cuti", "Izin"]) {
+    await group.getByRole("button", { name: label, exact: true }).waitFor({ timeout: 15000 });
+  }
+
+  const lateRequest = page.waitForRequest((request) => {
+    if (!request.url().includes("/api/backend/attendances")) return false;
+    return new URL(request.url()).searchParams.get("status") === "late";
+  }, { timeout: 15000 });
+  await group.getByRole("button", { name: "Terlambat", exact: true }).click();
+  await lateRequest;
+  await group.getByRole("button", { name: "Terlambat", exact: true }).evaluate((button) => {
+    if (button.getAttribute("aria-pressed") !== "true") {
+      throw new Error("Terlambat status pill should be selected");
+    }
+  });
+}
+
+async function expectReportTogglePills(page) {
+  await page.goto(`${BASE_URL}/presence/report`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+
+  const group = page.getByRole("group", { name: "Tampilan laporan presensi" });
+  await group.waitFor({ timeout: 15000 });
+  await group.evaluate((element) => {
+    if (element.getAttribute("data-mobile-scrollable") !== "false") {
+      throw new Error("report toggle should not be mobile-scrollable");
+    }
+    if (element.getAttribute("data-desktop-scrollable") !== "false") {
+      throw new Error("report toggle should not be desktop-scrollable");
+    }
+  });
+  await group.getByRole("button", { name: "Detail", exact: true }).click();
+  await expectVisible(page, "table[aria-label='Riwayat absensi']");
+}
+
 async function passPermissionGate(page) {
   const allowButton = page.getByRole("button", { name: "Izinkan Akses" }).first();
   if ((await allowButton.count()) > 0 && (await allowButton.isVisible())) {
@@ -360,6 +439,7 @@ async function expectEmployeeDesktopCameraFlows(browser) {
   await expectDesktopShell(page);
   await expectEmployeeTodayStatusAlert(page, "/dashboard");
   await expectEmployeeTodayStatusAlert(page, "/presence");
+  await expectPresenceStatusPills(page);
 
   await page.goto(`${BASE_URL}/presence/requests`);
   await page.waitForLoadState("networkidle");
@@ -562,8 +642,11 @@ async function expectAdminFilterAffordances(page) {
   await page.getByRole("button", { name: "Filter riwayat" }).click();
   const filterDialog = page.getByRole("dialog", { name: "Filter Riwayat" });
   await filterDialog.waitFor({ timeout: 15000 });
-  for (const label of ["Karyawan", "Kantor", "Status", "Tanggal"]) {
+  for (const label of ["Karyawan", "Kantor", "Tanggal"]) {
     await filterDialog.getByText(label).first().waitFor({ timeout: 15000 });
+  }
+  if ((await filterDialog.getByText("Status", { exact: true }).count()) > 0) {
+    throw new Error("Presence history filter sheet should not expose the status selector");
   }
   await filterDialog.getByRole("button", { name: /Karyawan/ }).click();
   const employeeDialog = page.getByRole("dialog", { name: "Pilih Karyawan" });
@@ -669,6 +752,9 @@ async function run() {
   await expectVisible(page, "section[aria-label='Kantor Terdekat']");
   await expectDashboardReportChartModes(page);
   await expectAdminPresenceTodayFilter(page);
+  await expectPresenceStatusPills(page);
+  await expectReportTogglePills(page);
+  await expectDesktopListNumbering(page);
 
   for (const [route, tableSelector] of [
     ["/presence", "table[aria-label='Riwayat absensi']"],
@@ -721,6 +807,7 @@ async function run() {
       throw new Error(`Desktop table visible on mobile at ${route}`);
     }
   }
+  await expectMobileListNumbering(page);
 
   for (const viewport of [
     { width: 390, height: 844 },

@@ -15,6 +15,7 @@ import type { AttendanceStatusKey } from "@/lib/attendance-status";
 import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, SearchInput } from "@/components/ui";
 import { AttendanceHistoryList } from "@/app/components/attendance-history-list";
+import { AttendanceStatusPillFilter } from "@/app/components/attendance-status-pill-filter";
 import { ManualAttendanceSheet } from "@/app/components/manual-attendance-sheet";
 import { AppPage } from "@/app/components/responsive-layout";
 import { PresenceFilterChips } from "@/app/components/presence-filter-chips";
@@ -73,7 +74,7 @@ export default function PresencePage() {
         search,
         selectedUserId: isAdministrator ? selectedEmployee?.id ?? null : null,
         selectedOfficeId: isAdministrator ? selectedOffice?.id ?? null : null,
-        status: isAdministrator ? statusFilter : "all",
+        status: statusFilter,
         dateRangeActive: isAdministrator ? dateRangeActive : false,
         startDate,
         endDate,
@@ -94,7 +95,7 @@ export default function PresencePage() {
     search,
     selectedUserId: isAdministrator ? selectedEmployee?.id ?? null : null,
     selectedOfficeId: isAdministrator ? selectedOffice?.id ?? null : null,
-    status: isAdministrator ? statusFilter : "all",
+    status: statusFilter,
     dateRangeActive: isAdministrator ? dateRangeActive : false,
     startDate,
     endDate,
@@ -102,7 +103,6 @@ export default function PresencePage() {
   const adminSheetHasFilters =
     selectedEmployee !== null ||
     selectedOffice !== null ||
-    statusFilter !== "all" ||
     dateRangeActive;
 
   const { data: attendances = [], isLoading } = useAttendances(attendanceParams);
@@ -287,9 +287,16 @@ export default function PresencePage() {
             onClearStatus={() => setStatusFilter("all")}
             onClearDateRange={() => setDateRangeActive(false)}
             onClearAll={resetAdminFilters}
+            showStatus={false}
           />
         </>
       )}
+
+      <AttendanceStatusPillFilter
+        value={statusFilter}
+        onChange={setStatusFilter}
+        className="mb-4"
+      />
 
       <PresenceFilterSheet
         open={filterOpen}
@@ -308,6 +315,7 @@ export default function PresencePage() {
         onStartDateChange={setStartDate}
         onEndDateChange={setEndDate}
         onReset={resetAdminFilters}
+        showStatusFilter={false}
       />
 
       <ManualAttendanceSheet
