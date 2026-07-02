@@ -16,6 +16,7 @@ import { AttendanceTotals } from "@/app/components/attendance-totals";
 import { AdminOnly } from "@/app/components/admin-only";
 import { AppPage } from "@/app/components/responsive-layout";
 import { PresenceFilterChips } from "@/app/components/presence-filter-chips";
+import { ScrollablePillGroup } from "@/app/components/scrollable-pill-group";
 import {
   buildPresenceAttendanceParams,
   hasPresenceFilters,
@@ -36,38 +37,6 @@ function toDateKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function ReportViewToggle({
-  value,
-  onChange,
-}: {
-  value: ReportView;
-  onChange: (value: ReportView) => void;
-}) {
-  return (
-    <div className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-taupe-100 p-1">
-      {REPORT_VIEWS.map((view) => {
-        const selected = value === view.value;
-
-        return (
-          <button
-            key={view.value}
-            type="button"
-            onClick={() => onChange(view.value)}
-            className={`min-h-10 rounded-full px-4 text-sm font-semibold transition-colors ${
-              selected
-                ? "bg-white text-foreground shadow-sm"
-                : "text-taupe-500 active:bg-white/60"
-            }`}
-            aria-pressed={selected}
-          >
-            {view.label}
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function PresenceReportContent() {
@@ -253,7 +222,13 @@ function PresenceReportContent() {
         onReset={resetFilters}
       />
 
-      <ReportViewToggle value={view} onChange={setView} />
+      <ScrollablePillGroup
+        options={REPORT_VIEWS}
+        value={view}
+        onChange={setView}
+        aria-label="Tampilan laporan presensi"
+        className="mb-4"
+      />
 
       {view === "summary" ? (
         <AttendanceTotals

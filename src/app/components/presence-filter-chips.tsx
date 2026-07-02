@@ -17,6 +17,7 @@ type PresenceFilterChipsProps = {
   onClearStatus: () => void;
   onClearDateRange: () => void;
   onClearAll: () => void;
+  showStatus?: boolean;
 };
 
 function Chip({
@@ -50,11 +51,12 @@ export function PresenceFilterChips({
   onClearStatus,
   onClearDateRange,
   onClearAll,
+  showStatus = true,
 }: PresenceFilterChipsProps) {
   const hasFilters =
     !!selectedEmployee ||
     !!selectedOffice ||
-    status !== "all" ||
+    (showStatus && status !== "all") ||
     dateRangeActive;
 
   if (!hasFilters) return null;
@@ -72,7 +74,7 @@ export function PresenceFilterChips({
       {selectedOffice && (
         <Chip label={selectedOffice.name} onClear={onClearOffice} />
       )}
-      {status !== "all" && (
+      {showStatus && status !== "all" && (
         <Chip label={statusLabel(status)} onClear={onClearStatus} />
       )}
       {dateRangeActive && (

@@ -17,6 +17,7 @@ import {
   TrashIcon,
 } from "@/components/icons/outline";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import { ListNumberBadge } from "@/app/components/list-number-badge";
 import {
   SearchableSelectionDialog,
   type FilterSelectionOption,
@@ -183,6 +184,15 @@ export default function EmployeePage() {
         aria-label="Daftar karyawan"
         columns={[
           {
+            key: "number",
+            header: "No",
+            cell: (_employee, index) => (
+              <ListNumberBadge value={index + 1} className="mx-auto size-7" />
+            ),
+            align: "center",
+            className: "w-[8%]",
+          },
+          {
             key: "name",
             header: "Nama",
             cell: (employee) => (
@@ -193,7 +203,7 @@ export default function EmployeePage() {
                 </p>
               </div>
             ),
-            className: "w-[34%]",
+            className: "w-[30%]",
           },
           {
             key: "email",
@@ -203,7 +213,7 @@ export default function EmployeePage() {
                 {employee.email}
               </span>
             ),
-            className: "w-[30%]",
+            className: "w-[28%]",
           },
           {
             key: "role",
@@ -213,7 +223,7 @@ export default function EmployeePage() {
                 {employee.role}
               </span>
             ),
-            className: "w-[16%]",
+            className: "w-[14%]",
           },
           {
             key: "action",
@@ -270,14 +280,15 @@ export default function EmployeePage() {
         </p>
       ) : (
         <div id="employee-list" className="space-y-2 lg:hidden">
-          {employees.map((employee) => (
+          {employees.map((employee, index) => (
             <Card
               key={employee.id}
               href={`/employee/${employee.id}`}
               id={`employee-${employee.id}`}
               className="flex items-center justify-between gap-3 px-4 py-3.5"
             >
-              <div className="min-w-0">
+              <ListNumberBadge value={index + 1} />
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground">
                   {employee.name}
                 </p>

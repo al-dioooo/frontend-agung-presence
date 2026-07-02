@@ -21,6 +21,7 @@ import {
   TrashIcon,
 } from "@/components/icons/outline";
 import { BottomSheet } from "@/app/components/bottom-sheet";
+import { ListNumberBadge } from "@/app/components/list-number-badge";
 import {
   SearchableSelectionDialog,
   type FilterSelectionOption,
@@ -284,6 +285,15 @@ export default function OfficePage() {
         aria-label="Daftar kantor"
         columns={[
           {
+            key: "number",
+            header: "No",
+            cell: (_office, index) => (
+              <ListNumberBadge value={index + 1} className="mx-auto size-7" />
+            ),
+            align: "center",
+            className: "w-[8%]",
+          },
+          {
             key: "name",
             header: "Kantor",
             cell: (office) => (
@@ -384,7 +394,7 @@ export default function OfficePage() {
         </p>
       ) : (
         <div id="office-list" className="space-y-2 lg:hidden">
-          {offices.map((office) => {
+          {offices.map((office, index) => {
             const inactive = !office.is_active;
 
             return (
@@ -396,7 +406,8 @@ export default function OfficePage() {
                   inactive ? "opacity-55" : ""
                 }`}
               >
-                <div className="min-w-0">
+                <ListNumberBadge value={index + 1} />
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-medium text-foreground">
                       {office.name}

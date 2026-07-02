@@ -40,6 +40,7 @@ type PresenceFilterSheetProps = {
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
   onReset: () => void;
+  showStatusFilter?: boolean;
 };
 
 function dateRangeLabel(active: boolean, startDate: string, endDate: string) {
@@ -68,6 +69,7 @@ export function PresenceFilterSheet({
   onStartDateChange,
   onEndDateChange,
   onReset,
+  showStatusFilter = true,
 }: PresenceFilterSheetProps) {
   const [employeeSelectorOpen, setEmployeeSelectorOpen] = useState(false);
   const [officeSelectorOpen, setOfficeSelectorOpen] = useState(false);
@@ -137,7 +139,7 @@ export function PresenceFilterSheet({
   const hasFilters =
     selectedEmployee !== null ||
     selectedOffice !== null ||
-    status !== "all" ||
+    (showStatusFilter && status !== "all") ||
     dateRangeActive;
 
   return (
@@ -172,15 +174,17 @@ export function PresenceFilterSheet({
             onClick={() => setOfficeSelectorOpen(true)}
             onClear={() => onOfficeChange(null)}
           />
-          <FilterFieldButton
-            label="Status"
-            value={status === "all" ? null : statusLabel(status)}
-            placeholder="Semua status"
-            active={status !== "all"}
-            icon={<FilterIcon className="size-4 text-taupe-400" />}
-            onClick={() => setStatusSelectorOpen(true)}
-            onClear={() => onStatusChange("all")}
-          />
+          {showStatusFilter && (
+            <FilterFieldButton
+              label="Status"
+              value={status === "all" ? null : statusLabel(status)}
+              placeholder="Semua status"
+              active={status !== "all"}
+              icon={<FilterIcon className="size-4 text-taupe-400" />}
+              onClick={() => setStatusSelectorOpen(true)}
+              onClear={() => onStatusChange("all")}
+            />
+          )}
           <FilterFieldButton
             label="Tanggal"
             value={dateRangeLabel(dateRangeActive, startDate, endDate)}
@@ -250,15 +254,17 @@ export function PresenceFilterSheet({
         emptyMessage="Tidak ada kantor ditemukan"
       />
 
-      <SearchableSelectionDialog
-        open={statusSelectorOpen}
-        onClose={() => setStatusSelectorOpen(false)}
-        title="Pilih Status"
-        options={statusOptions}
-        selectedValue={status}
-        onSelect={(option) => onStatusChange(option.value as AttendanceStatusKey | "all")}
-        searchable={false}
-      />
+      {showStatusFilter && (
+        <SearchableSelectionDialog
+          open={statusSelectorOpen}
+          onClose={() => setStatusSelectorOpen(false)}
+          title="Pilih Status"
+          options={statusOptions}
+          selectedValue={status}
+          onSelect={(option) => onStatusChange(option.value as AttendanceStatusKey | "all")}
+          searchable={false}
+        />
+      )}
 
       <BottomSheet
         open={dateSelectorOpen}
