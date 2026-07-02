@@ -62,7 +62,9 @@ export type Office = {
 };
 
 export type Attendance = {
-  id: number;
+  id: number | null;
+  virtual_key: string | null;
+  is_virtual: boolean;
   user_id: number;
   attendance_request_id: number | null;
   office_id: number | null;

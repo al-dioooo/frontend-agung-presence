@@ -497,6 +497,25 @@ async function expectAdminFilterAffordances(page) {
   await filterDialog.getByRole("button", { name: "Terapkan" }).click();
   await filterDialog.waitFor({ state: "hidden", timeout: 15000 });
 
+  await page.goto(`${BASE_URL}/presence/report`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
+  await expectHidden(page, "#presence-search", "Report page should not expose the history search box");
+  await expectVisible(page, "table[aria-label='Total kehadiran karyawan']");
+  await page.getByRole("button", { name: "Detail" }).click();
+  await expectVisible(page, "table[aria-label='Riwayat absensi']");
+  await page.getByRole("button", { name: "Filter laporan" }).click();
+  const reportFilterDialog = page.getByRole("dialog", { name: "Filter Laporan" });
+  await reportFilterDialog.waitFor({ timeout: 15000 });
+  for (const label of ["Karyawan", "Kantor", "Status", "Tanggal"]) {
+    await reportFilterDialog.getByText(label).first().waitFor({ timeout: 15000 });
+  }
+  await reportFilterDialog.getByRole("button", { name: "Terapkan" }).click();
+  await reportFilterDialog.waitFor({ state: "hidden", timeout: 15000 });
+
+  await page.goto(`${BASE_URL}/presence`);
+  await page.waitForLoadState("networkidle");
+  await expectDesktopShell(page);
   await page.getByRole("button", { name: "Input manual cuti sakit atau izin" }).click();
   const manualDialog = page.getByRole("dialog", { name: "Input Cuti / Sakit / Izin" });
   await manualDialog.waitFor({ timeout: 15000 });
@@ -566,6 +585,7 @@ async function run() {
 
   for (const [route, tableSelector] of [
     ["/presence", "table[aria-label='Riwayat absensi']"],
+    ["/presence/report", "table[aria-label='Total kehadiran karyawan']"],
     ["/presence/requests", "table[aria-label='Daftar pengajuan absensi']"],
     ["/office", "table[aria-label='Daftar kantor']"],
     ["/employee", "table[aria-label='Daftar karyawan']"],
@@ -599,7 +619,7 @@ async function run() {
   await page.waitForLoadState("networkidle");
   await expectMobileShell(page);
 
-  for (const route of ["/presence", "/presence/requests", "/office", "/employee"]) {
+  for (const route of ["/presence", "/presence/report", "/presence/requests", "/office", "/employee"]) {
     await page.goto(`${BASE_URL}${route}`);
     await page.waitForLoadState("networkidle");
     await expectMobileShell(page);

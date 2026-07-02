@@ -17,6 +17,8 @@ type DateRangeFieldsProps = {
   startDate: string;
   endDate: string;
   maxDate: string;
+  startMaxDate?: string;
+  endMaxDate?: string;
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
   error?: string;
@@ -56,6 +58,8 @@ export function DateRangeFields({
   startDate,
   endDate,
   maxDate,
+  startMaxDate,
+  endMaxDate,
   onStartDateChange,
   onEndDateChange,
   error,
@@ -68,6 +72,10 @@ export function DateRangeFields({
     (invalidRange && showInvalidRangeError
       ? INVALID_REQUEST_DATE_RANGE_MESSAGE
       : "");
+  const activeMaxDate =
+    activeField === "end"
+      ? endMaxDate ?? maxDate
+      : startMaxDate ?? maxDate;
 
   function handleConfirm(date: string) {
     if (activeField === "start") onStartDateChange(date);
@@ -97,7 +105,7 @@ export function DateRangeFields({
       <MobileDatePicker
         open={activeField !== null}
         value={activeField === "end" ? endDate : startDate}
-        maxDate={maxDate}
+        maxDate={activeMaxDate}
         title={
           activeField === "end" ? "Pilih Tanggal Akhir" : "Pilih Tanggal Mulai"
         }

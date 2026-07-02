@@ -6,6 +6,15 @@ type AttendanceTotalsProps = {
   loading?: boolean;
 };
 
+const SUMMARY_COLUMNS = [
+  { key: "on_time_count", label: "Tepat", shortLabel: "Tepat" },
+  { key: "late_count", label: "Terlambat", shortLabel: "Telat" },
+  { key: "sick_count", label: "Sakit", shortLabel: "Sakit" },
+  { key: "leave_count", label: "Cuti", shortLabel: "Cuti" },
+  { key: "permit_count", label: "Izin", shortLabel: "Izin" },
+  { key: "absent_count", label: "Tidak Hadir", shortLabel: "Absen" },
+] as const;
+
 export function AttendanceTotals({
   summaries,
   loading = false,
@@ -20,10 +29,10 @@ export function AttendanceTotals({
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-foreground">
-            Total Kehadiran
+            Ringkasan Absensi
           </h2>
           <p className="text-xs text-taupe-400">
-            Hanya menghitung absen masuk nyata
+            Termasuk sakit, cuti, izin, dan tidak hadir
           </p>
         </div>
         {!loading && (
@@ -48,21 +57,15 @@ export function AttendanceTotals({
               </div>
             ),
           },
-          {
-            key: "on_time",
-            header: "Tepat",
-            cell: (summary) => summary.on_time_count,
-            align: "center",
-          },
-          {
-            key: "late",
-            header: "Terlambat",
-            cell: (summary) => summary.late_count,
-            align: "center",
-          },
+          ...SUMMARY_COLUMNS.map((column) => ({
+            key: column.key,
+            header: column.label,
+            cell: (summary: AttendanceSummary) => summary[column.key],
+            align: "center" as const,
+          })),
           {
             key: "total",
-            header: "Total",
+            header: "Real",
             cell: (summary) => (
               <span className="text-base font-bold">
                 {summary.total_real_check_ins}
@@ -104,9 +107,13 @@ export function AttendanceTotals({
                 <p className="truncate text-xs text-taupe-400">
                   @{summary.username}
                 </p>
-                <p className="mt-1 text-[10px] font-medium text-taupe-500">
-                  Tepat {summary.on_time_count} · Terlambat {summary.late_count}
-                </p>
+                <div className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] font-medium text-taupe-500">
+                  {SUMMARY_COLUMNS.map((column) => (
+                    <span key={column.key} className="whitespace-nowrap">
+                      {column.shortLabel} {summary[column.key]}
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-2xl font-bold leading-none text-foreground">

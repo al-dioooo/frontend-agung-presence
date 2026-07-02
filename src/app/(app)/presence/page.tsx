@@ -2,21 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import {
-  useAttendanceSummary,
-  useAttendances,
-} from "@/lib/api/hooks";
+import { useAttendances } from "@/lib/api/hooks";
 import {
   mutateCheckOut,
   mutateCreateManualAttendance,
-  mutateDownloadAttendanceExport,
 } from "@/lib/api/mutations";
 import type { Employee, ManualAttendanceInput, Office } from "@/lib/api/types";
 import type { AttendanceStatusKey } from "@/lib/attendance-status";
 import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, SearchInput } from "@/components/ui";
 import { AttendanceHistoryList } from "@/app/components/attendance-history-list";
-import { AttendanceTotals } from "@/app/components/attendance-totals";
 import { ManualAttendanceSheet } from "@/app/components/manual-attendance-sheet";
 import { AppPage } from "@/app/components/responsive-layout";
 import { PresenceFilterChips } from "@/app/components/presence-filter-chips";
@@ -26,11 +21,6 @@ import {
 } from "@/app/components/presence-filter-state";
 import { PresenceFilterSheet } from "@/app/components/presence-filter-sheet";
 import {
-  PresenceView,
-  PresenceViewToggle,
-} from "@/app/components/presence-view-toggle";
-import {
-  DownloadIcon,
   FilterIcon,
   PencilIcon,
 } from "@/components/icons/outline";
@@ -57,7 +47,6 @@ export default function PresencePage() {
   const isAdministrator = user?.role === "administrator";
   const today = toDateKey(new Date());
 
-  const [view, setView] = useState<PresenceView>("history");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -72,8 +61,6 @@ export default function PresencePage() {
   const [manualInputOpen, setManualInputOpen] = useState(false);
   const [manualError, setManualError] = useState("");
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportError, setExportError] = useState("");
 
   const attendanceParams = useMemo(
     () =>
@@ -114,10 +101,6 @@ export default function PresencePage() {
     dateRangeActive;
 
   const { data: attendances = [], isLoading } = useAttendances(attendanceParams);
-  const {
-    data: attendanceSummary = [],
-    isLoading: isLoadingSummary,
-  } = useAttendanceSummary(isAdministrator, attendanceParams);
 
   const activeCheckIn = attendances.find(
     (attendance) =>
@@ -137,7 +120,7 @@ export default function PresencePage() {
   }
 
   async function handleCheckOut() {
-    if (!token || !activeCheckIn) return;
+    if (!token || !activeCheckIn || activeCheckIn.id === null) return;
     setIsCheckingOut(true);
     setCheckOutError("");
     try {
@@ -173,44 +156,22 @@ export default function PresencePage() {
     }
   }
 
-  async function handleExport() {
-    if (!token) return;
-
-    setIsExporting(true);
-    setExportError("");
-    try {
-      const result = await mutateDownloadAttendanceExport(
-        token,
-        attendanceParams,
-      );
-      const { blob, filename } = result.data;
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = filename;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success(apiSuccessMessage(result, "Rekap absensi berhasil diunduh."));
-    } catch (err) {
-      const message = apiErrorMessage(err, "Gagal mengunduh rekap absensi.");
-      setExportError(message);
-      toast.error(message);
-    } finally {
-      setIsExporting(false);
-    }
-  }
-
   return (
     <AppPage size="wide">
       <div className="mb-5 flex items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-foreground md:text-2xl">
           Presence History
         </h1>
-        <Button href="/presence/requests" variant="primary" size="sm">
-          Pengajuan
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {isAdministrator && (
+            <Button href="/presence/report" variant="secondary" size="sm">
+              Report
+            </Button>
+          )}
+          <Button href="/presence/requests" variant="primary" size="sm">
+            Pengajuan
+          </Button>
+        </div>
       </div>
 
       {activeCheckIn && (
@@ -259,11 +220,10 @@ export default function PresencePage() {
             <Button
               variant="secondary"
               size="icon"
-              onClick={handleExport}
-              loading={isExporting}
-              aria-label="Unduh rekapan sesuai filter"
+              onClick={() => setManualInputOpen(true)}
+              aria-label="Input manual cuti sakit atau izin"
             >
-              <DownloadIcon className="size-5" strokeWidth={2} />
+              <PencilIcon className="size-5" strokeWidth={2} />
             </Button>
             <Button
               variant={adminSheetHasFilters ? "primary" : "secondary"}
@@ -277,15 +237,8 @@ export default function PresencePage() {
         )}
       </div>
 
-      {exportError && (
-        <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
-          {exportError}
-        </p>
-      )}
-
       {isAdministrator && (
         <>
-          <PresenceViewToggle value={view} onChange={setView} />
           <PresenceFilterChips
             selectedEmployee={selectedEmployee}
             selectedOffice={selectedOffice}
@@ -330,21 +283,14 @@ export default function PresencePage() {
         onSubmit={handleManualSubmit}
       />
 
-      {isAdministrator && view === "summary" ? (
-        <AttendanceTotals
-          summaries={attendanceSummary}
-          loading={isLoadingSummary}
-        />
-      ) : (
-        <AttendanceHistoryList
-          attendances={attendances}
-          loading={isLoading}
-          isAdministrator={isAdministrator}
-          emptyMessage={
-            hasFilters ? "Tidak ada hasil ditemukan" : "Belum ada riwayat absensi"
-          }
-        />
-      )}
+      <AttendanceHistoryList
+        attendances={attendances}
+        loading={isLoading}
+        isAdministrator={isAdministrator}
+        emptyMessage={
+          hasFilters ? "Tidak ada hasil ditemukan" : "Belum ada riwayat absensi"
+        }
+      />
     </AppPage>
   );
 }

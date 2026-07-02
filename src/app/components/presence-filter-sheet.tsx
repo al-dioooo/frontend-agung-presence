@@ -25,6 +25,7 @@ import {
 type PresenceFilterSheetProps = {
   open: boolean;
   onClose: () => void;
+  title?: string;
   selectedEmployee: Employee | null;
   selectedOffice: Office | null;
   status: AttendanceStatusKey | "all";
@@ -52,6 +53,7 @@ function dateRangeLabel(active: boolean, startDate: string, endDate: string) {
 export function PresenceFilterSheet({
   open,
   onClose,
+  title = "Filter Riwayat",
   selectedEmployee,
   selectedOffice,
   status,
@@ -140,7 +142,7 @@ export function PresenceFilterSheet({
 
   return (
     <>
-      <BottomSheet open={open} onClose={onClose} title="Filter Riwayat">
+      <BottomSheet open={open} onClose={onClose} title={title}>
         <div className="space-y-3 px-2 pb-2">
           <div className="flex justify-end">
             <button

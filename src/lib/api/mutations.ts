@@ -248,6 +248,8 @@ export async function mutateCreateManualAttendance(
   const attendances = Array.isArray(result.data) ? result.data : [result.data];
 
   for (const attendance of attendances) {
+    if (attendance.id === null) continue;
+
     const detailKey = attendanceKey(token, attendance.id);
     if (detailKey) {
       mutate(detailKey, attendance, { revalidate: false });
