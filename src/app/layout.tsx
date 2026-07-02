@@ -13,7 +13,7 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: "Agung Presence",
-  description: "Sistem Absensi Karyawan - Universitas Katolik Musi Charitas",
+  description: "Sistem Absensi Karyawan - PT Agung Sumatera Development",
   manifest: "/manifest.json",
   icons: {
     icon: [
