@@ -5,6 +5,7 @@ import type {
   ApiEnvelope,
   ApiStatus,
   Attendance,
+  AttendanceChart,
   AttendanceQueryParams,
   AttendanceRequest,
   AttendanceRequestInput,
@@ -144,6 +145,15 @@ function appendOptionalParam(
   params.set(key, String(value));
 }
 
+function appendPaginationParams(
+  params: URLSearchParams,
+  page?: number,
+  perPage?: number,
+) {
+  appendOptionalParam(params, "page", page);
+  appendOptionalParam(params, "per_page", perPage);
+}
+
 function officeQueryString(params?: OfficeQueryParams) {
   const q = new URLSearchParams();
   appendOptionalParam(q, "search", params?.search?.trim());
@@ -153,6 +163,7 @@ function officeQueryString(params?: OfficeQueryParams) {
   appendOptionalParam(q, "latitude", params?.latitude);
   appendOptionalParam(q, "longitude", params?.longitude);
   appendOptionalParam(q, "limit", params?.limit);
+  appendPaginationParams(q, params?.page, params?.per_page);
 
   return q.toString();
 }
@@ -164,7 +175,7 @@ export async function getOffices(token: string, params?: OfficeQueryParams) {
     { token },
   );
 
-  return response.data;
+  return response;
 }
 
 export async function getOffice(token: string, id: number) {
@@ -186,6 +197,7 @@ function attendanceQueryString(params?: AttendanceQueryParams) {
   if (params?.date) q.set("date", params.date);
   if (params?.start_date) q.set("start_date", params.start_date);
   if (params?.end_date) q.set("end_date", params.end_date);
+  appendPaginationParams(q, params?.page, params?.per_page);
 
   return q.toString();
 }
@@ -200,7 +212,7 @@ export async function getAttendances(
     { token },
   );
 
-  return response.data;
+  return response;
 }
 
 export async function getAttendanceSummary(
@@ -208,8 +220,21 @@ export async function getAttendanceSummary(
   params?: AttendanceQueryParams,
 ) {
   const qs = attendanceQueryString(params);
-  const response = await apiRequest<ApiEnvelope<AttendanceSummary[]>>(
+  const response = await apiRequest<PaginatedEnvelope<AttendanceSummary>>(
     `/attendances/summary${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+
+  return response;
+}
+
+export async function getAttendanceChart(
+  token: string,
+  params?: AttendanceQueryParams,
+) {
+  const qs = attendanceQueryString(params);
+  const response = await apiRequest<ApiEnvelope<AttendanceChart>>(
+    `/attendances/chart${qs ? `?${qs}` : ""}`,
     { token },
   );
 
@@ -327,13 +352,15 @@ export async function getAttendanceRequests(
   if (params?.approval_status && params.approval_status !== "all") {
     q.set("approval_status", params.approval_status);
   }
+  if (params?.covers_date) q.set("covers_date", params.covers_date);
+  appendPaginationParams(q, params?.page, params?.per_page);
   const qs = q.toString();
-  const response = await apiRequest<ApiEnvelope<AttendanceRequest[]>>(
+  const response = await apiRequest<PaginatedEnvelope<AttendanceRequest>>(
     `/attendance-requests${qs ? `?${qs}` : ""}`,
     { token },
   );
 
-  return response.data;
+  return response;
 }
 
 export async function getAttendanceRequest(token: string, id: number) {
@@ -432,6 +459,7 @@ function employeeQueryString(params?: EmployeeQueryParams) {
     q.set("role", params.role);
   }
   appendOptionalParam(q, "limit", params?.limit);
+  appendPaginationParams(q, params?.page, params?.per_page);
 
   return q.toString();
 }
@@ -443,7 +471,7 @@ export async function getEmployees(token: string, params?: EmployeeQueryParams) 
     { token },
   );
 
-  return response.data;
+  return response;
 }
 
 export async function getEmployee(token: string, id: number) {

@@ -9,6 +9,7 @@ import type {
   OfficeActiveStatusFilter,
   OfficeSort,
 } from "@/lib/api/types";
+import { LIST_PAGE_SIZE, listNumberForIndex } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, Card, SearchInput } from "@/components/ui";
@@ -22,6 +23,7 @@ import {
 } from "@/components/icons/outline";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { ListNumberBadge } from "@/app/components/list-number-badge";
+import { PaginationControls } from "@/app/components/pagination-controls";
 import {
   SearchableSelectionDialog,
   type FilterSelectionOption,
@@ -49,6 +51,7 @@ export default function OfficePage() {
   const [search, setSearch] = useState("");
   const [activeStatus, setActiveStatus] =
     useState<OfficeActiveStatusFilter>("all");
+  const [page, setPage] = useState(1);
   const [sortMode, setSortMode] = useState<OfficeSort>("name");
   const [activeStatusOpen, setActiveStatusOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -61,14 +64,18 @@ export default function OfficePage() {
   const isAdministrator = user?.role === "administrator";
   const debouncedSearch = useDebouncedValue(search);
   const nearestActive = sortMode === "nearest" && nearestLocation !== null;
-  const { data: offices = [], isLoading } = useOffices({
+  const { data: officePage, isLoading } = useOffices({
     search: debouncedSearch,
     active_only: !isAdministrator,
     active_status: isAdministrator ? activeStatus : undefined,
     sort: nearestActive ? "nearest" : "name",
     latitude: nearestLocation?.lat,
     longitude: nearestLocation?.lng,
+    page,
+    per_page: LIST_PAGE_SIZE,
   });
+  const offices = officePage?.data ?? [];
+  const officeMeta = officePage?.meta;
   const [officeToDelete, setOfficeToDelete] = useState<Office | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -127,12 +134,14 @@ export default function OfficePage() {
       const location = await resolveCurrentLocation();
       setNearestLocation(location);
       setSortMode("nearest");
+      setPage(1);
     } catch {
       const message =
         "Lokasi saat ini belum tersedia. Izinkan akses lokasi untuk mengurutkan kantor terdekat.";
       setNearestLocation(null);
       setSortMode("name");
       setLocationError(message);
+      setPage(1);
       toast.error(message);
     } finally {
       setIsResolvingLocation(false);
@@ -148,6 +157,7 @@ export default function OfficePage() {
     setSortMode("name");
     setNearestLocation(null);
     setLocationError("");
+    setPage(1);
   }
 
   async function handleDeleteOffice() {
@@ -191,7 +201,10 @@ export default function OfficePage() {
             <SearchInput
               id="office-search"
               value={search}
-              onChange={setSearch}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
               placeholder="Search"
             />
           </div>
@@ -217,7 +230,7 @@ export default function OfficePage() {
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
-            {offices.length} kantor
+            {officeMeta?.total ?? offices.length} kantor
           </span>
           {hasOfficeFilters && (
             <button
@@ -228,6 +241,7 @@ export default function OfficePage() {
                 setSortMode("name");
                 setNearestLocation(null);
                 setLocationError("");
+                setPage(1);
               }}
               className="rounded-full px-2 py-1 text-xs font-semibold text-taupe-500 active:opacity-70"
             >
@@ -242,7 +256,10 @@ export default function OfficePage() {
           <SearchInput
             id="office-search-desktop"
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search"
           />
         </div>
@@ -267,7 +284,7 @@ export default function OfficePage() {
           {sortLabel}
         </Button>
         <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
-          {offices.length} kantor
+          {officeMeta?.total ?? offices.length} kantor
         </span>
       </DesktopToolbar>
       {locationError && (
@@ -288,7 +305,10 @@ export default function OfficePage() {
             key: "number",
             header: "No",
             cell: (_office, index) => (
-              <ListNumberBadge value={index + 1} className="mx-auto size-7" />
+              <ListNumberBadge
+                value={listNumberForIndex(index, officeMeta)}
+                className="mx-auto size-7"
+              />
             ),
             align: "center",
             className: "w-[8%]",
@@ -406,7 +426,7 @@ export default function OfficePage() {
                   inactive ? "opacity-55" : ""
                 }`}
               >
-                <ListNumberBadge value={index + 1} />
+                <ListNumberBadge value={listNumberForIndex(index, officeMeta)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-medium text-foreground">
@@ -446,6 +466,7 @@ export default function OfficePage() {
           })}
         </div>
       )}
+      <PaginationControls meta={officeMeta} onPageChange={setPage} />
       {isAdministrator && (
         <SearchableSelectionDialog
           open={activeStatusOpen}
@@ -453,9 +474,10 @@ export default function OfficePage() {
           title="Filter Status Kantor"
           options={activeStatusOptions}
           selectedValue={activeStatus}
-          onSelect={(option) =>
-            setActiveStatus(option.value as OfficeActiveStatusFilter)
-          }
+          onSelect={(option) => {
+            setActiveStatus(option.value as OfficeActiveStatusFilter);
+            setPage(1);
+          }}
           searchable={false}
         />
       )}

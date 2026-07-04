@@ -20,14 +20,19 @@ export function useEmployeeFilterOptions({
 }) {
   const debouncedSearch = useDebouncedValue(search);
 
-  return useEmployees(
+  const result = useEmployees(
     {
       search: debouncedSearch,
       role,
-      limit: FILTER_OPTION_LIMIT,
+      per_page: FILTER_OPTION_LIMIT,
     },
     open,
   );
+
+  return {
+    ...result,
+    data: result.data?.data ?? [],
+  };
 }
 
 export function useOfficeFilterOptions({
@@ -43,13 +48,18 @@ export function useOfficeFilterOptions({
 }) {
   const debouncedSearch = useDebouncedValue(search);
 
-  return useOffices(
+  const result = useOffices(
     {
       search: debouncedSearch,
       active_status: activeStatus,
       active_only: activeOnly,
-      limit: FILTER_OPTION_LIMIT,
+      per_page: FILTER_OPTION_LIMIT,
     },
     open,
   );
+
+  return {
+    ...result,
+    data: result.data?.data ?? [],
+  };
 }

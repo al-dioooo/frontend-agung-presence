@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useAttendanceRequests } from "@/lib/api/hooks";
@@ -15,6 +15,7 @@ import type {
   AttendanceRequestReviewInput,
   AttendanceRequestType,
 } from "@/lib/api/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import {
   REQUEST_STATUS_META,
   REQUEST_TYPE_OPTIONS,
@@ -48,6 +49,7 @@ import {
   RequestStatusBadge,
 } from "@/app/components/attendance-status-badge";
 import { DateRangeFields } from "@/app/components/date-range-fields";
+import { PaginationControls } from "@/app/components/pagination-controls";
 import { CameraCapture } from "@/app/components/camera-capture";
 import { ProofPhotoInput } from "@/app/components/proof-photo-input";
 import { RequestReviewSheet } from "@/app/components/request-review-sheet";
@@ -82,14 +84,6 @@ function addDays(date: Date, days: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
-}
-
-function sortRequests(requests: AttendanceRequest[]) {
-  return [...requests].sort(
-    (left, right) =>
-      new Date(right.created_at).getTime() -
-      new Date(left.created_at).getTime(),
-  );
 }
 
 function RequestCard({
@@ -165,10 +159,17 @@ export default function PresenceRequestsPage() {
   const [requestFilter, setRequestFilter] = useState<RequestFilter>(
     isAdministrator ? "pending" : "all",
   );
+  const [page, setPage] = useState(1);
   const {
-    data: requests = [],
+    data: requestPage,
     isLoading,
-  } = useAttendanceRequests({ approval_status: requestFilter });
+  } = useAttendanceRequests({
+    approval_status: requestFilter,
+    page,
+    per_page: LIST_PAGE_SIZE,
+  });
+  const requests = requestPage?.data ?? [];
+  const requestMeta = requestPage?.meta;
 
   const [selectedType, setSelectedType] =
     useState<AttendanceRequestType>("sick");
@@ -190,7 +191,6 @@ export default function PresenceRequestsPage() {
   const [reviewError, setReviewError] = useState("");
   const [isReviewing, setIsReviewing] = useState(false);
 
-  const sortedRequests = useMemo(() => sortRequests(requests), [requests]);
   const invalidDateRange = isInvalidRequestDateRange(startDate, endDate);
   const sickStartDateInFuture = selectedType === "sick" && startDate > today;
   const workdayCount = countRequestWorkdays(startDate, endDate);
@@ -226,6 +226,7 @@ export default function PresenceRequestsPage() {
       setProofPhoto("");
       setStartDate(today);
       setEndDate(today);
+      setPage(1);
       const message = apiSuccessMessage(result, "Pengajuan berhasil dikirim.");
       setSubmitSuccess(message);
       toast.success(message);
@@ -432,7 +433,10 @@ export default function PresenceRequestsPage() {
                 <button
                   key={filter.value}
                   type="button"
-                  onClick={() => setRequestFilter(filter.value)}
+                  onClick={() => {
+                    setRequestFilter(filter.value);
+                    setPage(1);
+                  }}
                   className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-colors active:opacity-80 ${
                     selected
                       ? "bg-primary text-white"
@@ -453,7 +457,10 @@ export default function PresenceRequestsPage() {
                   <button
                     key={filter.value}
                     type="button"
-                    onClick={() => setRequestFilter(filter.value)}
+                    onClick={() => {
+                      setRequestFilter(filter.value);
+                      setPage(1);
+                    }}
                     className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors active:opacity-80 ${
                       selected
                         ? "bg-primary text-white"
@@ -466,7 +473,7 @@ export default function PresenceRequestsPage() {
               })}
             </div>
             <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
-              {sortedRequests.length} pengajuan
+              {requestMeta?.total ?? requests.length} pengajuan
             </span>
           </DesktopToolbar>
 
@@ -542,7 +549,7 @@ export default function PresenceRequestsPage() {
                 className: "w-[10%]",
               },
             ]}
-            rows={sortedRequests}
+            rows={requests}
             getRowKey={(request) => request.id}
             emptyMessage={`Tidak ada pengajuan ${
               requestFilter === "all"
@@ -561,13 +568,13 @@ export default function PresenceRequestsPage() {
                 />
               ))}
             </div>
-          ) : sortedRequests.length === 0 ? (
+          ) : requests.length === 0 ? (
             <p className="mt-10 text-center text-sm text-taupe-400 lg:hidden">
               Tidak ada pengajuan {requestFilter === "all" ? "" : REQUEST_STATUS_META[requestFilter].label.toLowerCase()}
             </p>
           ) : (
             <div className="space-y-2 lg:hidden">
-              {sortedRequests.map((request) => (
+              {requests.map((request) => (
                 <RequestCard
                   key={request.id}
                   request={request}
@@ -580,6 +587,7 @@ export default function PresenceRequestsPage() {
               ))}
             </div>
           )}
+          <PaginationControls meta={requestMeta} onPageChange={setPage} />
         </>
       ) : (
         <div className="space-y-6">
@@ -770,7 +778,7 @@ export default function PresenceRequestsPage() {
                   className: "w-[12%]",
                 },
               ]}
-              rows={sortedRequests}
+              rows={requests}
               getRowKey={(request) => request.id}
               emptyMessage="Belum ada pengajuan"
               loading={isLoading}
@@ -784,13 +792,13 @@ export default function PresenceRequestsPage() {
                   />
                 ))}
               </div>
-            ) : sortedRequests.length === 0 ? (
+            ) : requests.length === 0 ? (
               <p className="rounded-2xl bg-white px-4 py-8 text-center text-sm text-taupe-400 ring-1 ring-taupe-200 shadow-sm lg:hidden">
                 Belum ada pengajuan
               </p>
             ) : (
               <div className="space-y-2 lg:hidden">
-                {sortedRequests.map((request) => (
+                {requests.map((request) => (
                   <RequestCard
                     key={request.id}
                     request={request}
@@ -799,6 +807,7 @@ export default function PresenceRequestsPage() {
                 ))}
               </div>
             )}
+            <PaginationControls meta={requestMeta} onPageChange={setPage} />
           </section>
         </div>
       )}

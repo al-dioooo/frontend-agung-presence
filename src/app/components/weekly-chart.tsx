@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import type { Attendance } from "@/lib/api/types";
+import type { AttendanceChart } from "@/lib/api/types";
 import {
   isAttendanceStatusKey,
   STATUS_KEYS,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/attendance-status";
 
 interface Props {
-  attendances: Attendance[];
+  chart?: AttendanceChart;
   selectedStatus?: ReportStatusFilter;
   startDate?: string;
   endDate?: string;
@@ -62,7 +62,7 @@ function labelForDate(date: Date, total: number) {
 }
 
 export function WeeklyChart({
-  attendances,
+  chart,
   selectedStatus = "all",
   startDate,
   endDate,
@@ -86,10 +86,14 @@ export function WeeklyChart({
       {} as Record<AttendanceStatusKey, number[]>,
     );
 
-    attendances.forEach((attendance) => {
-      const index = dateIndex.get(attendance.date);
-      if (index === undefined || !isAttendanceStatusKey(attendance.status)) return;
-      grouped[attendance.status][index] += 1;
+    chart?.days.forEach((day) => {
+      const index = dateIndex.get(day.date);
+      if (index === undefined) return;
+
+      STATUS_KEYS.forEach((status) => {
+        if (!isAttendanceStatusKey(status)) return;
+        grouped[status][index] = day[status] ?? 0;
+      });
     });
 
     const visibleStatuses =
@@ -201,7 +205,7 @@ export function WeeklyChart({
       chartRef.current?.dispose();
       chartRef.current = null;
     };
-  }, [attendances, chartMode, days, selectedStatus]);
+  }, [chart, chartMode, days, selectedStatus]);
 
   useEffect(() => {
     function onResize() {

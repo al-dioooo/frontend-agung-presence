@@ -26,11 +26,8 @@ import type {
   AttendanceRequestReviewInput,
 } from "./types";
 import {
-  officesKey,
   officeKey,
-  employeesKey,
   employeeKey,
-  attendancesKey,
   attendanceKey,
   attendanceRequestKey,
   attendanceSummaryKey,
@@ -85,28 +82,17 @@ export async function mutateUpdateOffice(
 export async function mutateDeleteOffice(
   token: string,
   id: number,
-  opts?: {
-    /** Current list to optimistically remove the item from */
+  _opts?: {
     currentList?: Office[];
   },
 ) {
-  // Optimistically remove from any known list cache
-  if (opts?.currentList) {
-    const optimistic = opts.currentList.filter((o) => o.id !== id);
-    // Update the default (no-search) list key optimistically
-    const listKey = officesKey(token);
-    if (listKey) {
-      mutate(listKey, optimistic, { revalidate: false });
-    }
-  }
+  void _opts;
 
   try {
     const result = await deleteOffice(token, id);
-    // Revalidate to ensure consistency
     revalidatePrefix("/offices");
     return result;
   } catch (err) {
-    // Rollback: revalidate everything
     revalidatePrefix("/offices");
     throw err;
   }
@@ -148,27 +134,17 @@ export async function mutateUpdateEmployee(
 export async function mutateDeleteEmployee(
   token: string,
   id: number,
-  opts?: {
-    /** Current list to optimistically remove the item from */
+  _opts?: {
     currentList?: Employee[];
   },
 ) {
-  // Optimistically remove from any known list cache
-  if (opts?.currentList) {
-    const optimistic = opts.currentList.filter((e) => e.id !== id);
-    const listKey = employeesKey(token);
-    if (listKey) {
-      mutate(listKey, optimistic, { revalidate: false });
-    }
-  }
+  void _opts;
 
   try {
     const result = await deleteEmployee(token, id);
-    // Revalidate to ensure consistency
     revalidatePrefix("/users");
     return result;
   } catch (err) {
-    // Rollback: revalidate everything
     revalidatePrefix("/users");
     throw err;
   }
@@ -190,6 +166,7 @@ export async function mutateCheckIn(
 
   // Revalidate all attendance caches
   revalidatePrefix("/attendances");
+  revalidatePrefix("/attendances/chart");
   revalidatePrefix("/attendances/summary");
 
   return result;
@@ -198,22 +175,11 @@ export async function mutateCheckIn(
 export async function mutateCheckOut(
   token: string,
   id: number,
-  opts?: {
-    /** Current list to optimistically update the attendance in */
+  _opts?: {
     currentList?: Attendance[];
   },
 ) {
-  // Optimistically mark as checked-out in the list
-  if (opts?.currentList) {
-    const now = new Date().toISOString();
-    const optimistic = opts.currentList.map((a) =>
-      a.id === id ? { ...a, out_at: now } : a,
-    );
-    const listKey = attendancesKey(token);
-    if (listKey) {
-      mutate(listKey, optimistic, { revalidate: false });
-    }
-  }
+  void _opts;
 
   try {
     const result = await checkOut(token, id);
@@ -226,6 +192,7 @@ export async function mutateCheckOut(
 
     // Revalidate all attendance caches for consistency
     revalidatePrefix("/attendances");
+    revalidatePrefix("/attendances/chart");
     revalidatePrefix("/attendances/summary");
 
     return result;
@@ -243,6 +210,7 @@ export async function mutateCreateManualAttendance(
   const result = await createManualAttendance(token, data);
 
   revalidatePrefix("/attendances");
+  revalidatePrefix("/attendances/chart");
   revalidatePrefix("/attendances/summary");
 
   const attendances = Array.isArray(result.data) ? result.data : [result.data];
@@ -289,6 +257,7 @@ export async function mutateReviewAttendanceRequest(
 
   revalidatePrefix("/attendance-requests");
   revalidatePrefix("/attendances");
+  revalidatePrefix("/attendances/chart");
   revalidatePrefix("/attendances/summary");
 
   const summaryKey = attendanceSummaryKey(token);
