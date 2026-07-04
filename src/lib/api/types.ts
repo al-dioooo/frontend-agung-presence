@@ -8,15 +8,24 @@ export type ApiActionResult<T> = {
   message: string;
 };
 
+export type PaginationMeta = {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number | null;
+  to: number | null;
+};
+
 export type PaginatedEnvelope<T> = {
   message?: string;
   data: T[];
-  meta?: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-  };
+  meta: PaginationMeta;
+};
+
+export type PaginationQueryParams = {
+  page?: number;
+  per_page?: number;
 };
 
 export type ApiStatus = {
@@ -161,17 +170,18 @@ export type AttendanceQueryParams = {
   date?: string;
   start_date?: string;
   end_date?: string;
-};
+} & PaginationQueryParams;
 
 export type AttendanceRequestQueryParams = {
   approval_status?: AttendanceRequestApprovalStatus | "all";
-};
+  covers_date?: string;
+} & PaginationQueryParams;
 
 export type EmployeeQueryParams = {
   search?: string;
   role?: EmployeeRoleFilter;
   limit?: number;
-};
+} & PaginationQueryParams;
 
 export type OfficeQueryParams = {
   search?: string;
@@ -181,7 +191,7 @@ export type OfficeQueryParams = {
   latitude?: number;
   longitude?: number;
   limit?: number;
-};
+} & PaginationQueryParams;
 
 export type AttendanceSummary = {
   user_id: number;
@@ -197,6 +207,24 @@ export type AttendanceSummary = {
   absent_count: number;
   first_attendance_date: string | null;
   latest_attendance_date: string | null;
+};
+
+export type AttendanceChartDay = {
+  date: string;
+  total: number;
+  on_time: number;
+  late: number;
+  absent: number;
+  sick: number;
+  leave: number;
+  permit: number;
+};
+
+export type AttendanceChart = {
+  start_date: string;
+  end_date: string;
+  total: number;
+  days: AttendanceChartDay[];
 };
 
 export type Employee = User;

@@ -706,7 +706,7 @@ async function expectAdminFilterAffordances(page) {
   await manualDateDialog.waitFor({ timeout: 15000 });
   await manualDateDialog.getByText("Tanggal Mulai").waitFor({ timeout: 15000 });
   await manualDateDialog.getByText("Tanggal Akhir").waitFor({ timeout: 15000 });
-  await manualDateDialog.getByRole("button", { name: "Simpan Tanggal" }).click();
+  await manualDateDialog.getByRole("button", { name: "Tutup" }).click();
   await manualDateDialog.waitFor({ state: "hidden", timeout: 15000 });
   await manualDialog.getByRole("button", { name: "Tutup" }).click();
   await manualDialog.waitFor({ state: "hidden", timeout: 15000 });

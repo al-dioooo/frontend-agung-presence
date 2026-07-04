@@ -8,12 +8,14 @@ import {
 } from "@/lib/api/hooks";
 import { mutateDownloadAttendanceExport } from "@/lib/api/mutations";
 import type { Employee, Office } from "@/lib/api/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import type { AttendanceStatusKey } from "@/lib/attendance-status";
 import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button } from "@/components/ui";
 import { AttendanceHistoryList } from "@/app/components/attendance-history-list";
 import { AttendanceTotals } from "@/app/components/attendance-totals";
 import { AdminOnly } from "@/app/components/admin-only";
+import { PaginationControls } from "@/app/components/pagination-controls";
 import { AppPage } from "@/app/components/responsive-layout";
 import { PresenceFilterChips } from "@/app/components/presence-filter-chips";
 import { ScrollablePillGroup } from "@/app/components/scrollable-pill-group";
@@ -49,13 +51,15 @@ function PresenceReportContent() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [statusFilter, setStatusFilter] = useState<AttendanceStatusKey | "all">("all");
+  const [summaryPage, setSummaryPage] = useState(1);
+  const [detailPage, setDetailPage] = useState(1);
   const [dateRangeActive, setDateRangeActive] = useState(true);
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
-  const attendanceParams = useMemo(
+  const baseAttendanceParams = useMemo(
     () =>
       buildPresenceAttendanceParams({
         search: "",
@@ -75,6 +79,22 @@ function PresenceReportContent() {
       statusFilter,
     ],
   );
+  const detailAttendanceParams = useMemo(
+    () => ({
+      ...baseAttendanceParams,
+      page: detailPage,
+      per_page: LIST_PAGE_SIZE,
+    }),
+    [baseAttendanceParams, detailPage],
+  );
+  const summaryAttendanceParams = useMemo(
+    () => ({
+      ...baseAttendanceParams,
+      page: summaryPage,
+      per_page: LIST_PAGE_SIZE,
+    }),
+    [baseAttendanceParams, summaryPage],
+  );
 
   const hasFilters = hasPresenceFilters({
     search: "",
@@ -91,12 +111,21 @@ function PresenceReportContent() {
     statusFilter !== "all" ||
     dateRangeActive;
 
-  const { data: attendances = [], isLoading: loadingAttendances } =
-    useAttendances(attendanceParams);
+  function resetReportPages() {
+    setSummaryPage(1);
+    setDetailPage(1);
+  }
+
+  const { data: attendancePage, isLoading: loadingAttendances } =
+    useAttendances(detailAttendanceParams);
+  const attendances = attendancePage?.data ?? [];
+  const attendanceMeta = attendancePage?.meta;
   const {
-    data: attendanceSummary = [],
+    data: attendanceSummaryPage,
     isLoading: loadingSummary,
-  } = useAttendanceSummary(true, attendanceParams);
+  } = useAttendanceSummary(true, summaryAttendanceParams);
+  const attendanceSummary = attendanceSummaryPage?.data ?? [];
+  const attendanceSummaryMeta = attendanceSummaryPage?.meta;
 
   function resetFilters() {
     setSelectedEmployee(null);
@@ -105,6 +134,8 @@ function PresenceReportContent() {
     setDateRangeActive(true);
     setStartDate(today);
     setEndDate(today);
+    setSummaryPage(1);
+    setDetailPage(1);
   }
 
   async function handleExport() {
@@ -115,7 +146,7 @@ function PresenceReportContent() {
     try {
       const result = await mutateDownloadAttendanceExport(
         token,
-        attendanceParams,
+        baseAttendanceParams,
       );
       const { blob, filename } = result.data;
       const url = window.URL.createObjectURL(blob);
@@ -195,10 +226,22 @@ function PresenceReportContent() {
         dateRangeActive={dateRangeActive}
         startDate={startDate}
         endDate={endDate}
-        onClearEmployee={() => setSelectedEmployee(null)}
-        onClearOffice={() => setSelectedOffice(null)}
-        onClearStatus={() => setStatusFilter("all")}
-        onClearDateRange={() => setDateRangeActive(false)}
+        onClearEmployee={() => {
+          setSelectedEmployee(null);
+          resetReportPages();
+        }}
+        onClearOffice={() => {
+          setSelectedOffice(null);
+          resetReportPages();
+        }}
+        onClearStatus={() => {
+          setStatusFilter("all");
+          resetReportPages();
+        }}
+        onClearDateRange={() => {
+          setDateRangeActive(false);
+          resetReportPages();
+        }}
         onClearAll={resetFilters}
       />
 
@@ -213,12 +256,30 @@ function PresenceReportContent() {
         startDate={startDate}
         endDate={endDate}
         maxDate={today}
-        onEmployeeChange={setSelectedEmployee}
-        onOfficeChange={setSelectedOffice}
-        onStatusChange={setStatusFilter}
-        onDateRangeActiveChange={setDateRangeActive}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
+        onEmployeeChange={(value) => {
+          setSelectedEmployee(value);
+          resetReportPages();
+        }}
+        onOfficeChange={(value) => {
+          setSelectedOffice(value);
+          resetReportPages();
+        }}
+        onStatusChange={(value) => {
+          setStatusFilter(value);
+          resetReportPages();
+        }}
+        onDateRangeActiveChange={(value) => {
+          setDateRangeActive(value);
+          resetReportPages();
+        }}
+        onStartDateChange={(value) => {
+          setStartDate(value);
+          resetReportPages();
+        }}
+        onEndDateChange={(value) => {
+          setEndDate(value);
+          resetReportPages();
+        }}
         onReset={resetFilters}
       />
 
@@ -231,19 +292,31 @@ function PresenceReportContent() {
       />
 
       {view === "summary" ? (
-        <AttendanceTotals
-          summaries={attendanceSummary}
-          loading={loadingSummary}
-        />
+        <>
+          <AttendanceTotals
+            summaries={attendanceSummary}
+            loading={loadingSummary}
+          />
+          <PaginationControls
+            meta={attendanceSummaryMeta}
+            onPageChange={setSummaryPage}
+          />
+        </>
       ) : (
-        <AttendanceHistoryList
-          attendances={attendances}
-          loading={loadingAttendances}
-          isAdministrator
-          emptyMessage={
-            hasFilters ? "Tidak ada hasil ditemukan" : "Belum ada detail laporan"
-          }
-        />
+        <>
+          <AttendanceHistoryList
+            attendances={attendances}
+            loading={loadingAttendances}
+            isAdministrator
+            emptyMessage={
+              hasFilters ? "Tidak ada hasil ditemukan" : "Belum ada detail laporan"
+            }
+          />
+          <PaginationControls
+            meta={attendanceMeta}
+            onPageChange={setDetailPage}
+          />
+        </>
       )}
     </AppPage>
   );

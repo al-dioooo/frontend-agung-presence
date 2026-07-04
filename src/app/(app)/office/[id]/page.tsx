@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { useOffice, useAttendances } from "@/lib/api/hooks";
 import { mutateDeleteOffice, mutateCheckIn } from "@/lib/api/mutations";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import {
   ChevronBackIcon,
@@ -54,6 +55,13 @@ function formatOfficeTime(time: string | null) {
   return time.slice(0, 5);
 }
 
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function OfficeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, user } = useAuth();
@@ -63,7 +71,12 @@ export default function OfficeDetailPage() {
 
   const { data: office, isLoading } = useOffice(id);
 
-  const { data: attendances = [], isLoading: loadingAttendances } = useAttendances();
+  const today = toDateKey(new Date());
+  const { data: attendancePage, isLoading: loadingAttendances } = useAttendances({
+    date: today,
+    per_page: LIST_PAGE_SIZE,
+  });
+  const attendances = attendancePage?.data ?? [];
   const activeAttendance =
     attendances.find((a) => a.user_id === user?.id && a.in_at && !a.out_at) ?? null;
 

@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import {
+  useAttendanceChart,
   useAttendanceRequests,
   useAttendances,
   useOffices,
 } from "@/lib/api/hooks";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import type { Office } from "@/lib/api/types";
 import {
   isManualAttendance,
@@ -111,9 +113,11 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const isAdministrator = user?.role === "administrator";
-  const { data: offices = [], isLoading: loadingOffices } = useOffices({
+  const { data: officePage, isLoading: loadingOffices } = useOffices({
     active_only: !isAdministrator,
+    per_page: 100,
   });
+  const offices = officePage?.data ?? [];
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [reportFilterOpen, setReportFilterOpen] = useState(false);
   const [reportFilterLevel, setReportFilterLevel] = useState<ReportFilterLevel>("root");
@@ -139,18 +143,28 @@ export default function DashboardPage() {
     return { start_date: toDateKey(addDays(today, -6)), end_date: todayIso };
   }, [customEndDate, customStartDate, dateRangePreset, todayIso]);
 
-  const { data: attendances = [], isLoading: loadingAttendances } = useAttendances(reportDateRange);
-  const { data: todayAttendances = [], isLoading: loadingTodayAttendances } = useAttendances({
+  const { data: attendanceChart, isLoading: loadingAttendanceChart } =
+    useAttendanceChart(reportDateRange);
+  const { data: todayAttendancePage, isLoading: loadingTodayAttendances } = useAttendances({
     date: todayIso,
+    per_page: LIST_PAGE_SIZE,
   });
+  const todayAttendances = useMemo(
+    () => todayAttendancePage?.data ?? [],
+    [todayAttendancePage],
+  );
   const {
-    data: pendingRequests = [],
+    data: pendingRequestPage,
     isLoading: loadingPendingRequests,
   } = useAttendanceRequests(
-    { approval_status: "pending" },
+    { approval_status: "pending", covers_date: todayIso, per_page: 1 },
     !isAdministrator,
   );
-  const isLoading = loadingAttendances || loadingTodayAttendances || loadingOffices;
+  const pendingRequests = useMemo(
+    () => pendingRequestPage?.data ?? [],
+    [pendingRequestPage],
+  );
+  const isLoading = loadingAttendanceChart || loadingTodayAttendances || loadingOffices;
   const isSearching = search.trim().length > 0;
 
   useEffect(() => {
@@ -183,24 +197,24 @@ export default function DashboardPage() {
       {} as Record<AttendanceStatusKey, number>,
     );
 
-    attendances.forEach((attendance) => {
-      if ((STATUS_KEYS as readonly string[]).includes(attendance.status)) {
-        counts[attendance.status as AttendanceStatusKey] += 1;
-      }
+    attendanceChart?.days.forEach((day) => {
+      STATUS_KEYS.forEach((status) => {
+        counts[status] += day[status];
+      });
     });
 
     return counts;
-  }, [attendances]);
+  }, [attendanceChart]);
 
   const selectedStatusLabel =
     selectedStatus === "all" ? "Semua Status" : STATUS_META[selectedStatus].label;
   const selectedRangeLabel =
     DATE_RANGE_FILTERS.find((filter) => filter.value === dateRangePreset)?.label ??
     "Hari Ini";
-  const chartAttendances =
+  const reportTotal =
     selectedStatus === "all"
-      ? attendances
-      : attendances.filter((attendance) => attendance.status === selectedStatus);
+      ? attendanceChart?.total ?? 0
+      : reportCounts[selectedStatus];
   const reportFilterActive =
     selectedStatus !== "all" || dateRangePreset !== "today";
 
@@ -307,13 +321,13 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <span className="rounded-full bg-taupe-50 px-3 py-1 text-[10px] font-semibold text-taupe-500 ring-1 ring-taupe-200">
-                  {chartAttendances.length} data
+                  {reportTotal} data
                 </span>
               </div>
 
               <div className="h-[170px]">
                 <WeeklyChart
-                  attendances={attendances}
+                  chart={attendanceChart}
                   selectedStatus={selectedStatus}
                   startDate={reportDateRange.start_date}
                   endDate={reportDateRange.end_date}

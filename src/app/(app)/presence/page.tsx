@@ -11,12 +11,14 @@ import {
   mutateCreateManualAttendance,
 } from "@/lib/api/mutations";
 import type { Employee, ManualAttendanceInput, Office } from "@/lib/api/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import type { AttendanceStatusKey } from "@/lib/attendance-status";
 import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, SearchInput } from "@/components/ui";
 import { AttendanceHistoryList } from "@/app/components/attendance-history-list";
 import { AttendanceStatusPillFilter } from "@/app/components/attendance-status-pill-filter";
 import { ManualAttendanceSheet } from "@/app/components/manual-attendance-sheet";
+import { PaginationControls } from "@/app/components/pagination-controls";
 import { AppPage } from "@/app/components/responsive-layout";
 import { PresenceFilterChips } from "@/app/components/presence-filter-chips";
 import {
@@ -58,6 +60,7 @@ export default function PresencePage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [statusFilter, setStatusFilter] = useState<AttendanceStatusKey | "all">("all");
+  const [page, setPage] = useState(1);
   const [dateRangeActive, setDateRangeActive] = useState(true);
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
@@ -69,8 +72,8 @@ export default function PresencePage() {
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
   const attendanceParams = useMemo(
-    () =>
-      buildPresenceAttendanceParams({
+    () => ({
+      ...buildPresenceAttendanceParams({
         search,
         selectedUserId: isAdministrator ? selectedEmployee?.id ?? null : null,
         selectedOfficeId: isAdministrator ? selectedOffice?.id ?? null : null,
@@ -79,10 +82,14 @@ export default function PresencePage() {
         startDate,
         endDate,
       }),
+      page,
+      per_page: LIST_PAGE_SIZE,
+    }),
     [
       dateRangeActive,
       endDate,
       isAdministrator,
+      page,
       search,
       selectedEmployee,
       selectedOffice,
@@ -105,17 +112,27 @@ export default function PresencePage() {
     selectedOffice !== null ||
     dateRangeActive;
 
-  const { data: attendances = [], isLoading } = useAttendances(attendanceParams);
+  const { data: attendancePage, isLoading } = useAttendances(attendanceParams);
+  const attendances = attendancePage?.data ?? [];
+  const attendanceMeta = attendancePage?.meta;
   const {
-    data: todayAttendances = [],
+    data: todayAttendancePage,
     isLoading: isLoadingTodayAttendances,
-  } = useAttendances({ date: today }, !isAdministrator);
+  } = useAttendances({ date: today, per_page: LIST_PAGE_SIZE }, !isAdministrator);
+  const todayAttendances = useMemo(
+    () => todayAttendancePage?.data ?? [],
+    [todayAttendancePage],
+  );
   const {
-    data: pendingRequests = [],
+    data: pendingRequestPage,
     isLoading: isLoadingPendingRequests,
   } = useAttendanceRequests(
-    { approval_status: "pending" },
+    { approval_status: "pending", covers_date: today, per_page: 1 },
     !isAdministrator,
+  );
+  const pendingRequests = useMemo(
+    () => pendingRequestPage?.data ?? [],
+    [pendingRequestPage],
   );
   const todayStatus = useMemo(
     () =>
@@ -145,6 +162,7 @@ export default function PresencePage() {
     setDateRangeActive(true);
     setStartDate(today);
     setEndDate(today);
+    setPage(1);
   }
 
   async function handleCheckOut() {
@@ -247,7 +265,10 @@ export default function PresencePage() {
           <SearchInput
             id="presence-search"
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search"
           />
         </div>
@@ -282,10 +303,22 @@ export default function PresencePage() {
             dateRangeActive={dateRangeActive}
             startDate={startDate}
             endDate={endDate}
-            onClearEmployee={() => setSelectedEmployee(null)}
-            onClearOffice={() => setSelectedOffice(null)}
-            onClearStatus={() => setStatusFilter("all")}
-            onClearDateRange={() => setDateRangeActive(false)}
+            onClearEmployee={() => {
+              setSelectedEmployee(null);
+              setPage(1);
+            }}
+            onClearOffice={() => {
+              setSelectedOffice(null);
+              setPage(1);
+            }}
+            onClearStatus={() => {
+              setStatusFilter("all");
+              setPage(1);
+            }}
+            onClearDateRange={() => {
+              setDateRangeActive(false);
+              setPage(1);
+            }}
             onClearAll={resetAdminFilters}
             showStatus={false}
           />
@@ -294,7 +327,10 @@ export default function PresencePage() {
 
       <AttendanceStatusPillFilter
         value={statusFilter}
-        onChange={setStatusFilter}
+        onChange={(value) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}
         className="mb-4"
       />
 
@@ -308,12 +344,30 @@ export default function PresencePage() {
         startDate={startDate}
         endDate={endDate}
         maxDate={today}
-        onEmployeeChange={setSelectedEmployee}
-        onOfficeChange={setSelectedOffice}
-        onStatusChange={setStatusFilter}
-        onDateRangeActiveChange={setDateRangeActive}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
+        onEmployeeChange={(value) => {
+          setSelectedEmployee(value);
+          setPage(1);
+        }}
+        onOfficeChange={(value) => {
+          setSelectedOffice(value);
+          setPage(1);
+        }}
+        onStatusChange={(value) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}
+        onDateRangeActiveChange={(value) => {
+          setDateRangeActive(value);
+          setPage(1);
+        }}
+        onStartDateChange={(value) => {
+          setStartDate(value);
+          setPage(1);
+        }}
+        onEndDateChange={(value) => {
+          setEndDate(value);
+          setPage(1);
+        }}
         onReset={resetAdminFilters}
         showStatusFilter={false}
       />
@@ -335,6 +389,7 @@ export default function PresencePage() {
           hasFilters ? "Tidak ada hasil ditemukan" : "Belum ada riwayat absensi"
         }
       />
+      <PaginationControls meta={attendanceMeta} onPageChange={setPage} />
     </AppPage>
   );
 }

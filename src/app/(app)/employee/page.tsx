@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useEmployees } from "@/lib/api/hooks";
 import { mutateDeleteEmployee } from "@/lib/api/mutations";
 import type { Employee, EmployeeRoleFilter } from "@/lib/api/types";
+import { LIST_PAGE_SIZE, listNumberForIndex } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { apiErrorMessage, apiSuccessMessage } from "@/lib/toast-messages";
 import { Button, Card, SearchInput } from "@/components/ui";
@@ -18,6 +19,7 @@ import {
 } from "@/components/icons/outline";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { ListNumberBadge } from "@/app/components/list-number-badge";
+import { PaginationControls } from "@/app/components/pagination-controls";
 import {
   SearchableSelectionDialog,
   type FilterSelectionOption,
@@ -40,16 +42,21 @@ export default function EmployeePage() {
   const toast = useToast();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<EmployeeRoleFilter>("all");
+  const [page, setPage] = useState(1);
   const [roleFilterOpen, setRoleFilterOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const isAdministrator = user?.role === "administrator";
   const debouncedSearch = useDebouncedValue(search);
-  const { data: employees = [], isLoading } = useEmployees({
+  const { data: employeePage, isLoading } = useEmployees({
     search: debouncedSearch,
     role: roleFilter,
+    page,
+    per_page: LIST_PAGE_SIZE,
   });
+  const employees = employeePage?.data ?? [];
+  const employeeMeta = employeePage?.meta;
 
   const roleOptions: FilterSelectionOption[] = [
     { value: "all", title: "Semua role", subtitle: "Tampilkan semua akun" },
@@ -124,7 +131,10 @@ export default function EmployeePage() {
             <SearchInput
               id="employee-search"
               value={search}
-              onChange={setSearch}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
               placeholder="Search"
             />
           </div>
@@ -139,12 +149,15 @@ export default function EmployeePage() {
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
-            {employees.length} karyawan
+            {employeeMeta?.total ?? employees.length} karyawan
           </span>
           {roleFilter !== "all" && (
             <button
               type="button"
-              onClick={() => setRoleFilter("all")}
+              onClick={() => {
+                setRoleFilter("all");
+                setPage(1);
+              }}
               className="rounded-full px-2 py-1 text-xs font-semibold text-taupe-500 active:opacity-70"
             >
               Reset filter
@@ -158,7 +171,10 @@ export default function EmployeePage() {
           <SearchInput
             id="employee-search-desktop"
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
             placeholder="Search"
           />
         </div>
@@ -171,7 +187,7 @@ export default function EmployeePage() {
           {selectedRoleLabel}
         </Button>
         <span className="shrink-0 rounded-full bg-taupe-50 px-3 py-1 text-xs font-semibold text-taupe-500 ring-1 ring-taupe-200">
-          {employees.length} karyawan
+          {employeeMeta?.total ?? employees.length} karyawan
         </span>
       </DesktopToolbar>
       {deleteError && (
@@ -187,7 +203,10 @@ export default function EmployeePage() {
             key: "number",
             header: "No",
             cell: (_employee, index) => (
-              <ListNumberBadge value={index + 1} className="mx-auto size-7" />
+              <ListNumberBadge
+                value={listNumberForIndex(index, employeeMeta)}
+                className="mx-auto size-7"
+              />
             ),
             align: "center",
             className: "w-[8%]",
@@ -287,7 +306,7 @@ export default function EmployeePage() {
               id={`employee-${employee.id}`}
               className="flex items-center justify-between gap-3 px-4 py-3.5"
             >
-              <ListNumberBadge value={index + 1} />
+              <ListNumberBadge value={listNumberForIndex(index, employeeMeta)} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground">
                   {employee.name}
@@ -304,13 +323,17 @@ export default function EmployeePage() {
           ))}
         </div>
       )}
+      <PaginationControls meta={employeeMeta} onPageChange={setPage} />
       <SearchableSelectionDialog
         open={roleFilterOpen}
         onClose={() => setRoleFilterOpen(false)}
         title="Filter Role"
         options={roleOptions}
         selectedValue={roleFilter}
-        onSelect={(option) => setRoleFilter(option.value as EmployeeRoleFilter)}
+        onSelect={(option) => {
+          setRoleFilter(option.value as EmployeeRoleFilter);
+          setPage(1);
+        }}
         searchable={false}
       />
       <BottomSheet

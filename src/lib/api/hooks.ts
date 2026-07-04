@@ -8,6 +8,7 @@ import {
   getAttendances,
   getAttendance,
   getAttendanceRequests,
+  getAttendanceChart,
   getAttendanceSummary,
 } from "./client";
 import type {
@@ -34,6 +35,8 @@ export function officesKey(token: string | null, params?: OfficeQueryParams) {
     params?.latitude ?? "",
     params?.longitude ?? "",
     params?.limit ?? "",
+    params?.page ?? "",
+    params?.per_page ?? "",
   ] as const;
 }
 
@@ -50,6 +53,8 @@ export function employeesKey(token: string | null, params?: EmployeeQueryParams)
     params?.search ?? "",
     params?.role ?? "",
     params?.limit ?? "",
+    params?.page ?? "",
+    params?.per_page ?? "",
   ] as const;
 }
 
@@ -73,6 +78,8 @@ export function attendancesKey(
     params?.date ?? "",
     params?.start_date ?? "",
     params?.end_date ?? "",
+    params?.page ?? "",
+    params?.per_page ?? "",
   ] as const;
 }
 
@@ -101,6 +108,26 @@ export function filteredAttendanceSummaryKey(
     params?.date ?? "",
     params?.start_date ?? "",
     params?.end_date ?? "",
+    params?.page ?? "",
+    params?.per_page ?? "",
+  ] as const;
+}
+
+export function attendanceChartKey(
+  token: string | null,
+  params?: AttendanceQueryParams,
+) {
+  if (!token) return null;
+  return [
+    "/attendances/chart",
+    token,
+    params?.search ?? "",
+    params?.user_id ?? "",
+    params?.status ?? "",
+    params?.office_id ?? "",
+    params?.date ?? "",
+    params?.start_date ?? "",
+    params?.end_date ?? "",
   ] as const;
 }
 
@@ -113,6 +140,9 @@ export function attendanceRequestsKey(
     "/attendance-requests",
     token,
     params?.approval_status ?? "all",
+    params?.covers_date ?? "",
+    params?.page ?? "",
+    params?.per_page ?? "",
   ] as const;
 }
 
@@ -126,7 +156,7 @@ export function attendanceRequestKey(token: string | null, id: number | string) 
 export function useOffices(params?: OfficeQueryParams, enabled = true) {
   const { token } = useAuth();
 
-  return useSWR(enabled ? officesKey(token, params) : null, ([, tok, search, activeOnly, activeStatus, sort, latitude, longitude, limit]) =>
+  return useSWR(enabled ? officesKey(token, params) : null, ([, tok, search, activeOnly, activeStatus, sort, latitude, longitude, limit, page, perPage]) =>
     getOffices(tok, {
       search: search || undefined,
       active_only: activeOnly === "active-only",
@@ -135,6 +165,8 @@ export function useOffices(params?: OfficeQueryParams, enabled = true) {
       latitude: latitude === "" ? undefined : Number(latitude),
       longitude: longitude === "" ? undefined : Number(longitude),
       limit: limit === "" ? undefined : Number(limit),
+      page: page === "" ? undefined : Number(page),
+      per_page: perPage === "" ? undefined : Number(perPage),
     }),
   );
 }
@@ -148,11 +180,13 @@ export function useOffice(id: number | string) {
 export function useEmployees(params?: EmployeeQueryParams, enabled = true) {
   const { token } = useAuth();
 
-  return useSWR(enabled ? employeesKey(token, params) : null, ([, tok, search, role, limit]) =>
+  return useSWR(enabled ? employeesKey(token, params) : null, ([, tok, search, role, limit, page, perPage]) =>
     getEmployees(tok, {
       search: search || undefined,
       role: (role || undefined) as EmployeeRoleFilter | undefined,
       limit: limit === "" ? undefined : Number(limit),
+      page: page === "" ? undefined : Number(page),
+      per_page: perPage === "" ? undefined : Number(perPage),
     }),
   );
 }
@@ -168,7 +202,7 @@ export function useEmployee(id: number | string) {
 export function useAttendances(params?: AttendanceQueryParams, enabled = true) {
   const { token } = useAuth();
 
-  return useSWR(enabled ? attendancesKey(token, params) : null, ([, tok, search, userId, status, officeId, date, startDate, endDate]) =>
+  return useSWR(enabled ? attendancesKey(token, params) : null, ([, tok, search, userId, status, officeId, date, startDate, endDate, page, perPage]) =>
     getAttendances(tok, {
       search: search || undefined,
       user_id: userId ? Number(userId) : undefined,
@@ -177,6 +211,8 @@ export function useAttendances(params?: AttendanceQueryParams, enabled = true) {
       date: date || undefined,
       start_date: startDate || undefined,
       end_date: endDate || undefined,
+      page: page === "" ? undefined : Number(page),
+      per_page: perPage === "" ? undefined : Number(perPage),
     }),
   );
 }
@@ -195,8 +231,29 @@ export function useAttendanceSummary(
 ) {
   const { token } = useAuth();
 
-  return useSWR(enabled ? filteredAttendanceSummaryKey(token, params) : null, ([, tok, search, userId, status, officeId, date, startDate, endDate]) =>
+  return useSWR(enabled ? filteredAttendanceSummaryKey(token, params) : null, ([, tok, search, userId, status, officeId, date, startDate, endDate, page, perPage]) =>
     getAttendanceSummary(tok, {
+      search: search || undefined,
+      user_id: userId ? Number(userId) : undefined,
+      status: status || undefined,
+      office_id: officeId ? Number(officeId) : undefined,
+      date: date || undefined,
+      start_date: startDate || undefined,
+      end_date: endDate || undefined,
+      page: page === "" ? undefined : Number(page),
+      per_page: perPage === "" ? undefined : Number(perPage),
+    }),
+  );
+}
+
+export function useAttendanceChart(
+  params?: AttendanceQueryParams,
+  enabled = true,
+) {
+  const { token } = useAuth();
+
+  return useSWR(enabled ? attendanceChartKey(token, params) : null, ([, tok, search, userId, status, officeId, date, startDate, endDate]) =>
+    getAttendanceChart(tok, {
       search: search || undefined,
       user_id: userId ? Number(userId) : undefined,
       status: status || undefined,
@@ -214,12 +271,15 @@ export function useAttendanceRequests(
 ) {
   const { token } = useAuth();
 
-  return useSWR(enabled ? attendanceRequestsKey(token, params) : null, ([, tok, approvalStatus]) =>
+  return useSWR(enabled ? attendanceRequestsKey(token, params) : null, ([, tok, approvalStatus, coversDate, page, perPage]) =>
     getAttendanceRequests(tok, {
       approval_status:
         approvalStatus === "all"
           ? undefined
           : (approvalStatus as AttendanceRequestQueryParams["approval_status"]),
+      covers_date: coversDate || undefined,
+      page: page === "" ? undefined : Number(page),
+      per_page: perPage === "" ? undefined : Number(perPage),
     }),
   );
 }
